@@ -48,6 +48,8 @@
 ### Navigation
 
 - Use Expo Router for navigation
+- Always use Expo Router for file-based routing
+- Follow Expo Router conventions for route organization
 
 ### Performance
 
