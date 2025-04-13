@@ -1,6 +1,10 @@
 // App.tsx
-import { Slot } from 'expo-router';
+import { Text, View } from 'react-native';
 
 export default function App() {
-  return <Slot />;
+  return (
+    <View>
+      <Text>Hello World</Text>
+    </View>
+  );
 }
