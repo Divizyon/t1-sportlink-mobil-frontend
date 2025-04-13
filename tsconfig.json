@@ -2,11 +2,14 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "baseUrl": ".",
     "paths": {
       "@/*": [
-        "./*"
+        "src/*"
       ]
-    }
+    },
+    "lib": ["ES2015", "DOM"],
+    "types": ["node"]
   },
   "include": [
     "**/*.ts",
