@@ -785,13 +785,13 @@ export default function DashboardScreen() {
 
   const handleCreateEvent = () => {
     // @ts-ignore
-    router.navigate("/(dashboard)/create-event");
+    router.navigate("/(tabs)/dashboard/create-event");
   };
 
   const handleEventPress = (eventId: number) => {
     // @ts-ignore
     router.navigate({
-      pathname: "/(dashboard)/event-details",
+      pathname: "/(tabs)/dashboard/event-details",
       params: { id: eventId },
     });
   };
@@ -1342,13 +1342,6 @@ export default function DashboardScreen() {
         {/* Bottom Spacing */}
         <View style={{ height: 80 }} />
       </ScrollView>
-
-      {/* Bottom Navigation - Basit bir gösterim için */}
-      <Box style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.homeIndicator} />
-        </TouchableOpacity>
-      </Box>
 
       {/* Rating Modal */}
       {showRatingModal && (
