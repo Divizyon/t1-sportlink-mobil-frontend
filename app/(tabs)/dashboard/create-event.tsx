@@ -57,7 +57,6 @@ export default function CreateEventScreen() {
     isClubEvent: false,
     clubName: "",
     clubInfo: "",
-    eventType: "Spor",
   });
 
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -103,7 +102,7 @@ export default function CreateEventScreen() {
           {/* Header */}
           <Box style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={handleCancel}>
-              <ArrowLeft size={24} color="#333" />
+              <ArrowLeft size={24} color="#0F0F0F" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Yeni Etkinlik</Text>
             <View style={{ width: 24 }} />
@@ -119,68 +118,8 @@ export default function CreateEventScreen() {
                 placeholder="Etkinlik adını girin"
                 value={formData.title}
                 onChangeText={(text) => handleInputChange("title", text)}
+                placeholderTextColor="#9CA3AF"
               />
-            </Box>
-
-            {/* Etkinlik Türü */}
-            <Box style={styles.formGroup}>
-              <Text style={styles.label}>Etkinlik Türü</Text>
-              <HStack style={styles.eventTypeContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.eventTypeButton,
-                    formData.eventType === "Spor" && styles.selectedEventType,
-                  ]}
-                  onPress={() => handleInputChange("eventType", "Spor")}
-                >
-                  <Text
-                    style={[
-                      styles.eventTypeText,
-                      formData.eventType === "Spor" &&
-                        styles.selectedEventTypeText,
-                    ]}
-                  >
-                    Spor
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.eventTypeButton,
-                    formData.eventType === "Buluşma" &&
-                      styles.selectedEventType,
-                  ]}
-                  onPress={() => handleInputChange("eventType", "Buluşma")}
-                >
-                  <Text
-                    style={[
-                      styles.eventTypeText,
-                      formData.eventType === "Buluşma" &&
-                        styles.selectedEventTypeText,
-                    ]}
-                  >
-                    Buluşma
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.eventTypeButton,
-                    formData.eventType === "Kurs" && styles.selectedEventType,
-                  ]}
-                  onPress={() => handleInputChange("eventType", "Kurs")}
-                >
-                  <Text
-                    style={[
-                      styles.eventTypeText,
-                      formData.eventType === "Kurs" &&
-                        styles.selectedEventTypeText,
-                    ]}
-                  >
-                    Kurs
-                  </Text>
-                </TouchableOpacity>
-              </HStack>
             </Box>
 
             {/* Açıklama */}
@@ -193,6 +132,7 @@ export default function CreateEventScreen() {
                 numberOfLines={4}
                 value={formData.description}
                 onChangeText={(text) => handleInputChange("description", text)}
+                placeholderTextColor="#9CA3AF"
               />
             </Box>
 
@@ -204,7 +144,7 @@ export default function CreateEventScreen() {
                 onPress={() => setShowLocationModal(true)}
               >
                 <HStack style={styles.locationContent}>
-                  <MapPin size={20} color="#047857" style={styles.inputIcon} />
+                  <MapPin size={20} color="#4F46E5" style={styles.inputIcon} />
                   <Text
                     style={[
                       styles.locationText,
@@ -214,7 +154,7 @@ export default function CreateEventScreen() {
                     {formData.location || "Etkinlik konumunu seçin"}
                   </Text>
                 </HStack>
-                <ChevronDown size={20} color="#666" />
+                <ChevronDown size={20} color="#6B7280" />
               </TouchableOpacity>
 
               {formData.location && (
@@ -236,7 +176,7 @@ export default function CreateEventScreen() {
                 <Box style={styles.inputWithIcon}>
                   <Calendar
                     size={20}
-                    color="#047857"
+                    color="#4F46E5"
                     style={styles.inputIcon}
                   />
                   <TextInput
@@ -244,6 +184,7 @@ export default function CreateEventScreen() {
                     placeholder="GG/AA/YYYY"
                     value={formData.date}
                     onChangeText={(text) => handleInputChange("date", text)}
+                    placeholderTextColor="#9CA3AF"
                   />
                 </Box>
               </Box>
@@ -251,12 +192,13 @@ export default function CreateEventScreen() {
               <Box style={styles.formGroupHalf}>
                 <Text style={styles.label}>Saat</Text>
                 <Box style={styles.inputWithIcon}>
-                  <Clock size={20} color="#047857" style={styles.inputIcon} />
+                  <Clock size={20} color="#4F46E5" style={styles.inputIcon} />
                   <TextInput
                     style={styles.iconInput}
                     placeholder="HH:MM"
                     value={formData.time}
                     onChangeText={(text) => handleInputChange("time", text)}
+                    placeholderTextColor="#9CA3AF"
                   />
                 </Box>
               </Box>
@@ -266,7 +208,7 @@ export default function CreateEventScreen() {
             <Box style={styles.formGroup}>
               <Text style={styles.label}>Maksimum Katılımcı Sayısı</Text>
               <Box style={styles.inputWithIcon}>
-                <Users size={20} color="#047857" style={styles.inputIcon} />
+                <Users size={20} color="#4F46E5" style={styles.inputIcon} />
                 <TextInput
                   style={styles.iconInput}
                   placeholder="Maksimum katılımcı sayısı"
@@ -275,6 +217,7 @@ export default function CreateEventScreen() {
                   onChangeText={(text) =>
                     handleInputChange("maxParticipants", text)
                   }
+                  placeholderTextColor="#9CA3AF"
                 />
               </Box>
             </Box>
@@ -287,7 +230,7 @@ export default function CreateEventScreen() {
                 onPress={() => setShowCategoryModal(true)}
               >
                 <HStack style={styles.categoryContent}>
-                  <Tag size={20} color="#047857" style={styles.inputIcon} />
+                  <Tag size={20} color="#4F46E5" style={styles.inputIcon} />
                   <Text
                     style={[
                       styles.categoryText,
@@ -297,7 +240,7 @@ export default function CreateEventScreen() {
                     {formData.category || "Etkinlik kategorisi"}
                   </Text>
                 </HStack>
-                <ChevronDown size={20} color="#666" />
+                <ChevronDown size={20} color="#6B7280" />
               </TouchableOpacity>
             </Box>
 
@@ -305,7 +248,7 @@ export default function CreateEventScreen() {
             <Box style={styles.formGroup}>
               <Text style={styles.label}>Gereksinimler</Text>
               <Box style={styles.inputWithIcon}>
-                <FileText size={20} color="#047857" style={styles.inputIcon} />
+                <FileText size={20} color="#4F46E5" style={styles.inputIcon} />
                 <TextInput
                   style={[styles.iconInput, { height: 80 }]}
                   placeholder="Katılımcıların getirmesi gerekenler"
@@ -315,6 +258,7 @@ export default function CreateEventScreen() {
                   onChangeText={(text) =>
                     handleInputChange("requirements", text)
                   }
+                  placeholderTextColor="#9CA3AF"
                 />
               </Box>
             </Box>
@@ -328,8 +272,9 @@ export default function CreateEventScreen() {
                   onValueChange={(value) =>
                     handleInputChange("isClubEvent", value)
                   }
-                  trackColor={{ false: "#e2e8f0", true: "#047857" }}
-                  thumbColor="#fff"
+                  trackColor={{ false: "#E4E4E7", true: "#4F46E5" }}
+                  thumbColor="#ffffff"
+                  ios_backgroundColor="#E4E4E7"
                 />
               </HStack>
 
@@ -340,7 +285,7 @@ export default function CreateEventScreen() {
                     <Box style={styles.inputWithIcon}>
                       <Building
                         size={20}
-                        color="#047857"
+                        color="#4F46E5"
                         style={styles.inputIcon}
                       />
                       <TextInput
@@ -350,6 +295,7 @@ export default function CreateEventScreen() {
                         onChangeText={(text) =>
                           handleInputChange("clubName", text)
                         }
+                        placeholderTextColor="#9CA3AF"
                       />
                     </Box>
                   </Box>
@@ -365,6 +311,7 @@ export default function CreateEventScreen() {
                       onChangeText={(text) =>
                         handleInputChange("clubInfo", text)
                       }
+                      placeholderTextColor="#9CA3AF"
                     />
                   </Box>
                 </VStack>
@@ -375,20 +322,20 @@ export default function CreateEventScreen() {
             <Box style={styles.formGroup}>
               <Text style={styles.label}>Etkinlik Görseli</Text>
               <TouchableOpacity style={styles.imageUploadButton}>
-                <Camera size={24} color="#047857" />
-                <Text style={styles.imageUploadText}>Görsel Ekle</Text>
+                <Camera size={24} color="#4F46E5" />
+                <Text style={styles.imageUploadText}>Etkinlik Görseli Ekle</Text>
               </TouchableOpacity>
             </Box>
 
             {/* Buttons */}
             <Box style={styles.buttonGroup}>
-              <Button style={styles.saveButton} onPress={handleSave}>
-                <ButtonText style={styles.saveButtonText}>Kaydet</ButtonText>
-              </Button>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                <Text style={styles.saveButtonText}>Kaydet</Text>
+              </TouchableOpacity>
 
-              <Button style={styles.cancelButton} onPress={handleCancel}>
-                <ButtonText style={styles.cancelButtonText}>İptal</ButtonText>
-              </Button>
+              <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                <Text style={styles.cancelButtonText}>İptal</Text>
+              </TouchableOpacity>
             </Box>
           </VStack>
         </ScrollView>
@@ -409,13 +356,16 @@ export default function CreateEventScreen() {
               {sportCategories.map((category) => (
                 <TouchableOpacity
                   key={category.id}
-                  style={styles.categoryItem}
+                  style={[
+                    styles.categoryItem,
+                    formData.category === category.name && styles.selectedCategoryItem,
+                  ]}
                   onPress={() => handleSelectCategory(category.name)}
                 >
                   <Text style={styles.categoryIcon}>{category.icon}</Text>
                   <Text style={styles.categoryItemText}>{category.name}</Text>
                   {formData.category === category.name && (
-                    <CheckCircle size={20} color="#047857" />
+                    <CheckCircle size={20} color="#4F46E5" />
                   )}
                 </TouchableOpacity>
               ))}
@@ -443,10 +393,11 @@ export default function CreateEventScreen() {
             <Text style={styles.modalTitle}>Konum Seçin</Text>
 
             <Box style={styles.searchContainer}>
-              <Search size={20} color="#666" />
+              <Search size={20} color="#6B7280" />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Konum ara..."
+                placeholderTextColor="#9CA3AF"
               />
             </Box>
 
@@ -455,7 +406,7 @@ export default function CreateEventScreen() {
                 style={styles.locationItem}
                 onPress={handleSelectLocation}
               >
-                <MapPin size={20} color="#047857" />
+                <MapPin size={20} color="#4F46E5" />
                 <VStack style={styles.locationItemInfo}>
                   <Text style={styles.locationItemTitle}>
                     Konya Spor Kompleksi
@@ -470,7 +421,7 @@ export default function CreateEventScreen() {
                 style={styles.locationItem}
                 onPress={handleSelectLocation}
               >
-                <MapPin size={20} color="#047857" />
+                <MapPin size={20} color="#4F46E5" />
                 <VStack style={styles.locationItemInfo}>
                   <Text style={styles.locationItemTitle}>
                     Meram Spor Salonu
@@ -483,7 +434,7 @@ export default function CreateEventScreen() {
                 style={styles.locationItem}
                 onPress={handleSelectLocation}
               >
-                <MapPin size={20} color="#047857" />
+                <MapPin size={20} color="#4F46E5" />
                 <VStack style={styles.locationItemInfo}>
                   <Text style={styles.locationItemTitle}>Karatay Stadyumu</Text>
                   <Text style={styles.locationItemSubtitle}>
@@ -509,7 +460,7 @@ export default function CreateEventScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#FFFFFF",
   },
   scrollView: {
     flex: 1,
@@ -519,20 +470,20 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: "#F3F4F6",
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#0F0F0F",
   },
   backButton: {
     padding: 4,
   },
   form: {
-    padding: 16,
+    padding: 20,
   },
   formGroup: {
     marginBottom: 20,
@@ -541,74 +492,81 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 20,
+    gap: 12,
   },
   formGroupHalf: {
-    width: "48%",
+    flex: 1,
   },
   label: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
     marginBottom: 8,
-    color: "#333",
+    color: "#1F2937",
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
-    color: "#333",
+    color: "#1F2937",
   },
   textArea: {
-    height: 100,
+    height: 120,
     textAlignVertical: "top",
   },
   inputWithIcon: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    paddingHorizontal: 16,
   },
   inputIcon: {
-    marginRight: 10,
+    marginRight: 12,
   },
   iconInput: {
     flex: 1,
-    padding: 12,
+    padding: 16,
     fontSize: 16,
-    color: "#333",
+    color: "#1F2937",
   },
   buttonGroup: {
-    marginTop: 24,
+    marginTop: 32,
     gap: 12,
   },
   saveButton: {
-    backgroundColor: "#047857",
-    borderRadius: 8,
+    backgroundColor: "#4F46E5",
+    borderRadius: 12,
     padding: 16,
     alignItems: "center",
+    shadowColor: "#4F46E5",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   saveButtonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   cancelButton: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
     padding: 16,
     alignItems: "center",
   },
   cancelButtonText: {
-    color: "#333",
+    color: "#4B5563",
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
@@ -617,92 +575,109 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 10,
-    width: "80%",
+    backgroundColor: "#FFFFFF",
+    padding: 24,
+    borderRadius: 16,
+    width: "90%",
     maxHeight: "80%",
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 16,
-    color: "#333",
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 20,
+    color: "#1F2937",
+    textAlign: "center",
   },
   categoriesList: {
-    marginBottom: 16,
+    marginBottom: 20,
+    gap: 12,
   },
   categoryItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    backgroundColor: "#F9FAFB",
+  },
+  selectedCategoryItem: {
+    borderColor: "#4F46E5",
+    backgroundColor: "#EEF2FF",
   },
   categoryIcon: {
-    marginRight: 12,
-    fontSize: 20,
+    marginRight: 16,
+    fontSize: 24,
   },
   categoryItemText: {
+    flex: 1,
     fontSize: 16,
-    color: "#333",
+    fontWeight: "500",
+    color: "#1F2937",
   },
   closeButton: {
-    backgroundColor: "#047857",
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: "#4F46E5",
+    borderRadius: 12,
+    padding: 16,
     alignItems: "center",
+    marginTop: 8,
   },
   closeButtonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
     padding: 12,
+    marginBottom: 16,
   },
   searchInput: {
     flex: 1,
-    padding: 12,
+    marginLeft: 10,
     fontSize: 16,
-    color: "#333",
+    color: "#1F2937",
   },
   locationList: {
-    flex: 1,
+    maxHeight: 300,
+    marginBottom: 16,
   },
   locationItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    marginBottom: 12,
+    backgroundColor: "#F9FAFB",
   },
   locationItemInfo: {
-    marginLeft: 12,
+    marginLeft: 16,
+    flex: 1,
   },
   locationItemTitle: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: "600",
+    color: "#1F2937",
   },
   locationItemSubtitle: {
     fontSize: 14,
-    color: "#666",
+    color: "#6B7280",
+    marginTop: 2,
   },
   mapPreviewContainer: {
-    height: 200,
+    height: 180,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
     overflow: "hidden",
+    marginTop: 12,
   },
   mapPreview: {
     flex: 1,
@@ -712,42 +687,22 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderColor: "#047857",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 3,
+    borderColor: "#4F46E5",
     top: "50%",
     left: "50%",
     transform: [{ translateX: -10 }, { translateY: -10 }],
   },
-  eventTypeContainer: {
+  categorySelector: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  eventTypeButton: {
-    backgroundColor: "#fff",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-  },
-  selectedEventType: {
-    backgroundColor: "#047857",
-  },
-  eventTypeText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
-  },
-  selectedEventTypeText: {
-    color: "#fff",
-  },
-  categorySelector: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 16,
   },
   categoryContent: {
     flexDirection: "row",
@@ -755,48 +710,58 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 16,
-    color: "#333",
+    color: "#1F2937",
   },
   placeholderText: {
-    color: "#666",
+    color: "#9CA3AF",
   },
   toggleContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
   },
   clubInfoContainer: {
-    marginBottom: 20,
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    gap: 16,
   },
   formSubGroup: {
-    marginBottom: 12,
+    gap: 8,
   },
   subLabel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "500",
-    marginBottom: 8,
-    color: "#333",
+    color: "#4B5563",
   },
   imageUploadButton: {
-    backgroundColor: "#fff",
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 24,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 12,
   },
   imageUploadText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#333",
+    color: "#4B5563",
   },
   locationSelector: {
-    backgroundColor: "#fff",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 16,
   },
   locationContent: {
     flexDirection: "row",
@@ -804,6 +769,6 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 16,
-    color: "#333",
+    color: "#1F2937",
   },
 });
