@@ -11,6 +11,7 @@ import {
   Switch,
   Modal,
   Image,
+  StatusBar,
 } from "react-native";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -32,6 +33,11 @@ import {
   Building,
   FileText,
   Camera,
+  Home,
+  User,
+  MessageCircle,
+  Settings,
+  Plus,
 } from "lucide-react-native";
 
 // Kategori listesi
@@ -95,6 +101,7 @@ export default function CreateEventScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -103,10 +110,10 @@ export default function CreateEventScreen() {
           {/* Header */}
           <Box style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={handleCancel}>
-              <ArrowLeft size={24} color="#333" />
+              <ArrowLeft size={20} color="#000" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Yeni Etkinlik</Text>
-            <View style={{ width: 24 }} />
+            <View style={{ width: 20 }} />
           </Box>
 
           {/* Form */}
@@ -204,7 +211,7 @@ export default function CreateEventScreen() {
                 onPress={() => setShowLocationModal(true)}
               >
                 <HStack style={styles.locationContent}>
-                  <MapPin size={20} color="#047857" style={styles.inputIcon} />
+                  <MapPin size={20} color="#666" style={styles.inputIcon} />
                   <Text
                     style={[
                       styles.locationText,
@@ -214,19 +221,8 @@ export default function CreateEventScreen() {
                     {formData.location || "Etkinlik konumunu seçin"}
                   </Text>
                 </HStack>
-                <ChevronDown size={20} color="#666" />
+                <ChevronDown size={16} color="#666" />
               </TouchableOpacity>
-
-              {formData.location && (
-                <Box style={styles.mapPreviewContainer}>
-                  <Image
-                    source={{ uri: selectedLocationImage }}
-                    style={styles.mapPreview}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.mapMarker} />
-                </Box>
-              )}
             </Box>
 
             {/* Tarih ve Saat */}
@@ -236,7 +232,7 @@ export default function CreateEventScreen() {
                 <Box style={styles.inputWithIcon}>
                   <Calendar
                     size={20}
-                    color="#047857"
+                    color="#666"
                     style={styles.inputIcon}
                   />
                   <TextInput
@@ -251,7 +247,11 @@ export default function CreateEventScreen() {
               <Box style={styles.formGroupHalf}>
                 <Text style={styles.label}>Saat</Text>
                 <Box style={styles.inputWithIcon}>
-                  <Clock size={20} color="#047857" style={styles.inputIcon} />
+                  <Clock
+                    size={20}
+                    color="#666"
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={styles.iconInput}
                     placeholder="HH:MM"
@@ -262,15 +262,19 @@ export default function CreateEventScreen() {
               </Box>
             </HStack>
 
-            {/* Katılımcı Sayısı */}
+            {/* Maksimum Katılımcı Sayısı */}
             <Box style={styles.formGroup}>
               <Text style={styles.label}>Maksimum Katılımcı Sayısı</Text>
               <Box style={styles.inputWithIcon}>
-                <Users size={20} color="#047857" style={styles.inputIcon} />
+                <Users
+                  size={20}
+                  color="#666"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.iconInput}
                   placeholder="Maksimum katılımcı sayısı"
-                  keyboardType="number-pad"
+                  keyboardType="numeric"
                   value={formData.maxParticipants}
                   onChangeText={(text) =>
                     handleInputChange("maxParticipants", text)
@@ -286,18 +290,22 @@ export default function CreateEventScreen() {
                 style={styles.categorySelector}
                 onPress={() => setShowCategoryModal(true)}
               >
-                <HStack style={styles.categoryContent}>
-                  <Tag size={20} color="#047857" style={styles.inputIcon} />
+                <HStack style={styles.locationContent}>
+                  <Tag
+                    size={20}
+                    color="#666"
+                    style={styles.inputIcon}
+                  />
                   <Text
                     style={[
-                      styles.categoryText,
+                      styles.locationText,
                       !formData.category && styles.placeholderText,
                     ]}
                   >
                     {formData.category || "Etkinlik kategorisi"}
                   </Text>
                 </HStack>
-                <ChevronDown size={20} color="#666" />
+                <ChevronDown size={16} color="#666" />
               </TouchableOpacity>
             </Box>
 
@@ -380,47 +388,38 @@ export default function CreateEventScreen() {
               </TouchableOpacity>
             </Box>
 
-            {/* Buttons */}
-            <Box style={styles.buttonGroup}>
-              <Button style={styles.saveButton} onPress={handleSave}>
-                <ButtonText style={styles.saveButtonText}>Kaydet</ButtonText>
-              </Button>
-
-              <Button style={styles.cancelButton} onPress={handleCancel}>
-                <ButtonText style={styles.cancelButtonText}>İptal</ButtonText>
-              </Button>
-            </Box>
+            {/* Create Button */}
+            <Button style={styles.createButton} onPress={handleSave}>
+              <ButtonText style={styles.createButtonText}>
+                Etkinlik Oluştur
+              </ButtonText>
+            </Button>
           </VStack>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Category Modal */}
+      {/* Modals */}
       <Modal
-        visible={showCategoryModal}
-        transparent={true}
         animationType="slide"
+        transparent={true}
+        visible={showCategoryModal}
         onRequestClose={() => setShowCategoryModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Kategori Seçin</Text>
-
-            <VStack style={styles.categoriesList}>
-              {sportCategories.map((category) => (
+            <ScrollView style={styles.modalScroll}>
+              {sportCategories.map((cat) => (
                 <TouchableOpacity
-                  key={category.id}
+                  key={cat.id}
                   style={styles.categoryItem}
-                  onPress={() => handleSelectCategory(category.name)}
+                  onPress={() => handleSelectCategory(cat.name)}
                 >
-                  <Text style={styles.categoryIcon}>{category.icon}</Text>
-                  <Text style={styles.categoryItemText}>{category.name}</Text>
-                  {formData.category === category.name && (
-                    <CheckCircle size={20} color="#047857" />
-                  )}
+                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                  <Text style={styles.categoryName}>{cat.name}</Text>
                 </TouchableOpacity>
               ))}
-            </VStack>
-
+            </ScrollView>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setShowCategoryModal(false)}
@@ -431,68 +430,51 @@ export default function CreateEventScreen() {
         </View>
       </Modal>
 
-      {/* Location Modal */}
       <Modal
-        visible={showLocationModal}
-        transparent={true}
         animationType="slide"
+        transparent={true}
+        visible={showLocationModal}
         onRequestClose={() => setShowLocationModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Konum Seçin</Text>
-
-            <Box style={styles.searchContainer}>
+            <Box style={styles.searchBox}>
               <Search size={20} color="#666" />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Konum ara..."
               />
             </Box>
-
-            <ScrollView style={styles.locationList}>
+            <ScrollView style={styles.modalScroll}>
               <TouchableOpacity
                 style={styles.locationItem}
                 onPress={handleSelectLocation}
               >
-                <MapPin size={20} color="#047857" />
-                <VStack style={styles.locationItemInfo}>
-                  <Text style={styles.locationItemTitle}>
-                    Konya Spor Kompleksi
-                  </Text>
-                  <Text style={styles.locationItemSubtitle}>
-                    Selçuklu, Konya
-                  </Text>
-                </VStack>
+                <MapPin size={20} color="#666" />
+                <Text style={styles.locationItemText}>
+                  Konya Spor Kompleksi, Selçuklu
+                </Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 style={styles.locationItem}
                 onPress={handleSelectLocation}
               >
-                <MapPin size={20} color="#047857" />
-                <VStack style={styles.locationItemInfo}>
-                  <Text style={styles.locationItemTitle}>
-                    Meram Spor Salonu
-                  </Text>
-                  <Text style={styles.locationItemSubtitle}>Meram, Konya</Text>
-                </VStack>
+                <MapPin size={20} color="#666" />
+                <Text style={styles.locationItemText}>
+                  Meram Spor Salonu, Meram
+                </Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 style={styles.locationItem}
                 onPress={handleSelectLocation}
               >
-                <MapPin size={20} color="#047857" />
-                <VStack style={styles.locationItemInfo}>
-                  <Text style={styles.locationItemTitle}>Karatay Stadyumu</Text>
-                  <Text style={styles.locationItemSubtitle}>
-                    Karatay, Konya
-                  </Text>
-                </VStack>
+                <MapPin size={20} color="#666" />
+                <Text style={styles.locationItemText}>
+                  Selçuk Üniversitesi Spor Tesisleri
+                </Text>
               </TouchableOpacity>
             </ScrollView>
-
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setShowLocationModal(false)}
@@ -509,41 +491,43 @@ export default function CreateEventScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#FFFFFF",
   },
   scrollView: {
     flex: 1,
+    backgroundColor: "#FFFFFF",
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
-    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: "#F0F0F0",
+  },
+  backButton: {
+    padding: 8,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  backButton: {
-    padding: 4,
+    fontWeight: "600",
+    color: "#000",
   },
   form: {
     padding: 16,
+    gap: 16,
   },
   formGroup: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   rowFormGroup: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 16,
+    gap: 12,
   },
   formGroupHalf: {
-    width: "48%",
+    flex: 1,
   },
   label: {
     fontSize: 16,
@@ -552,213 +536,177 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: "#F7F7F7",
+    borderRadius: 12,
+    padding: 14,
     fontSize: 16,
     color: "#333",
+    borderWidth: 1,
+    borderColor: "#EBEBEB",
   },
   textArea: {
-    height: 100,
+    minHeight: 120,
     textAlignVertical: "top",
   },
   inputWithIcon: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#F7F7F7",
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: "#EBEBEB",
+    paddingHorizontal: 14,
   },
   inputIcon: {
     marginRight: 10,
   },
   iconInput: {
     flex: 1,
-    padding: 12,
+    padding: 14,
     fontSize: 16,
     color: "#333",
   },
-  buttonGroup: {
-    marginTop: 24,
+  locationSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F7F7F7",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#EBEBEB",
+  },
+  categorySelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F7F7F7",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#EBEBEB",
+  },
+  locationContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  locationText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  placeholderText: {
+    color: "#999",
+  },
+  eventTypeContainer: {
+    flexDirection: "row",
     gap: 12,
   },
-  saveButton: {
-    backgroundColor: "#047857",
-    borderRadius: 8,
-    padding: 16,
+  eventTypeButton: {
+    flex: 1,
+    backgroundColor: "#F7F7F7",
+    borderRadius: 25,
+    paddingVertical: 12,
     alignItems: "center",
-  },
-  saveButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  cancelButton: {
-    backgroundColor: "#fff",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
+    borderColor: "#EBEBEB",
   },
-  cancelButtonText: {
-    color: "#333",
+  selectedEventType: {
+    backgroundColor: "#6366F1",
+    borderColor: "#6366F1",
+  },
+  eventTypeText: {
     fontSize: 16,
     fontWeight: "500",
+    color: "#666",
   },
-  modalOverlay: {
+  selectedEventTypeText: {
+    color: "#FFFFFF",
+  },
+  modalContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     padding: 20,
-    borderRadius: 10,
-    width: "80%",
     maxHeight: "80%",
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "600",
     marginBottom: 16,
-    color: "#333",
+    textAlign: "center",
   },
-  categoriesList: {
-    marginBottom: 16,
+  modalScroll: {
+    maxHeight: 300,
   },
   categoryItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
   },
   categoryIcon: {
-    marginRight: 12,
-    fontSize: 20,
+    fontSize: 24,
+    marginRight: 16,
   },
-  categoryItemText: {
+  categoryName: {
     fontSize: 16,
     color: "#333",
   },
-  closeButton: {
-    backgroundColor: "#047857",
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-  },
-  closeButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  searchContainer: {
+  searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
+    backgroundColor: "#F7F7F7",
     borderRadius: 8,
-    padding: 12,
+    paddingHorizontal: 12,
+    marginBottom: 16,
   },
   searchInput: {
     flex: 1,
     padding: 12,
     fontSize: 16,
-    color: "#333",
-  },
-  locationList: {
-    flex: 1,
   },
   locationItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
   },
-  locationItemInfo: {
+  locationItemText: {
+    fontSize: 16,
+    color: "#333",
     marginLeft: 12,
   },
-  locationItemTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  locationItemSubtitle: {
-    fontSize: 14,
-    color: "#666",
-  },
-  mapPreviewContainer: {
-    height: 200,
-    borderWidth: 1,
-    borderColor: "#ddd",
+  closeButton: {
+    backgroundColor: "#F0F0F0",
     borderRadius: 8,
-    overflow: "hidden",
+    padding: 14,
+    alignItems: "center",
+    marginTop: 16,
   },
-  mapPreview: {
-    flex: 1,
-  },
-  mapMarker: {
-    position: "absolute",
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderColor: "#047857",
-    top: "50%",
-    left: "50%",
-    transform: [{ translateX: -10 }, { translateY: -10 }],
-  },
-  eventTypeContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  eventTypeButton: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-  },
-  selectedEventType: {
-    backgroundColor: "#047857",
-  },
-  eventTypeText: {
+  closeButtonText: {
     fontSize: 16,
     fontWeight: "500",
     color: "#333",
   },
-  selectedEventTypeText: {
-    color: "#fff",
-  },
-  categorySelector: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
+  createButton: {
+    backgroundColor: "#6366F1",
     borderRadius: 8,
-    padding: 12,
+    paddingVertical: 14,
+    marginTop: 20,
+    marginBottom: 20,
   },
-  categoryContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  categoryText: {
+  createButtonText: {
     fontSize: 16,
-    color: "#333",
-  },
-  placeholderText: {
-    color: "#666",
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   toggleContainer: {
     flexDirection: "row",
@@ -789,21 +737,6 @@ const styles = StyleSheet.create({
   imageUploadText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#333",
-  },
-  locationSelector: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-  },
-  locationContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  locationText: {
-    fontSize: 16,
     color: "#333",
   },
 });

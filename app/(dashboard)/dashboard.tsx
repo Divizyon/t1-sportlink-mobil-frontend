@@ -36,6 +36,7 @@ import {
   Building,
   TrendingUp,
 } from "lucide-react-native";
+import BottomNavigation from "@/components/BottomNavigation";
 
 // Geçici kullanıcı verileri
 const userData = {
@@ -798,7 +799,7 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         {/* Header */}
         <Box style={styles.header}>
           <HStack style={styles.userInfo}>
@@ -1343,13 +1344,6 @@ export default function DashboardScreen() {
         <View style={{ height: 80 }} />
       </ScrollView>
 
-      {/* Bottom Navigation - Basit bir gösterim için */}
-      <Box style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.homeIndicator} />
-        </TouchableOpacity>
-      </Box>
-
       {/* Rating Modal */}
       {showRatingModal && (
         <View style={styles.ratingModal}>
@@ -1393,6 +1387,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: "row",
