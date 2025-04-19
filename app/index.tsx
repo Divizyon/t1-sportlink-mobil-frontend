@@ -68,7 +68,7 @@ export default function Index() {
                 size="lg"
                 variant="outline"
                 className="border-emerald-600 rounded-lg"
-                onPress={() => router.navigate("/(dashboard)/dashboard")}
+                onPress={() => router.navigate("/(tabs)/dashboard")}
               >
                 <ButtonText
                   className="text-emerald-600"

@@ -92,7 +92,7 @@ export default function SignInPage() {
     if (validateForm()) {
       console.log("Giriş formu:", form);
       // @ts-ignore
-      router.navigate("/(dashboard)/dashboard");
+      router.navigate("/(tabs)/dashboard");
     }
   };
 
