@@ -91,7 +91,8 @@ export default function SignInPage() {
   const handleSignIn = () => {
     if (validateForm()) {
       console.log("Giriş formu:", form);
-      router.navigate("/");
+      // @ts-ignore
+      router.navigate("/(dashboard)/dashboard");
     }
   };
 
