@@ -64,6 +64,19 @@ export default function Index() {
                   Giriş Yap
                 </ButtonText>
               </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-emerald-600 rounded-lg"
+                onPress={() => router.navigate("/(dashboard)/dashboard")}
+              >
+                <ButtonText
+                  className="text-emerald-600"
+                  style={{ fontWeight: "bold" }}
+                >
+                  Göster
+                </ButtonText>
+              </Button>
             </VStack>
           </VStack>
         </Center>
