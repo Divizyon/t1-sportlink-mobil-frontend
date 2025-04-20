@@ -20,7 +20,7 @@ export const UPCOMING_EVENTS: Event[] = [
     maxParticipants: 22,
     status: "approved",
     organizer: "Mehmet Can",
-    image: require("../assets/images/events/football-match.jpg"),
+    image: require("../assets/images/icon.png"),
     isAttending: true,
   },
   {
@@ -36,7 +36,7 @@ export const UPCOMING_EVENTS: Event[] = [
     maxParticipants: 20,
     status: "approved",
     organizer: "Mehmet Can",
-    image: require("../assets/images/events/conditioning.jpg"),
+    image: require("../assets/images/icon.png"),
     isAttending: true,
   },
   {
@@ -52,7 +52,7 @@ export const UPCOMING_EVENTS: Event[] = [
     maxParticipants: 20,
     status: "approved",
     organizer: "Mehmet Can",
-    image: require("../assets/images/events/technical-skills.jpg"),
+    image: require("../assets/images/icon.png"),
     isAttending: false,
   },
   {
@@ -68,7 +68,7 @@ export const UPCOMING_EVENTS: Event[] = [
     maxParticipants: 22,
     status: "approved",
     organizer: "Emre Yıldırım",
-    image: require("../assets/images/events/league-match.jpg"),
+    image: require("../assets/images/icon.png"),
     isAttending: true,
   },
   {
@@ -84,7 +84,7 @@ export const UPCOMING_EVENTS: Event[] = [
     maxParticipants: 25,
     status: "approved",
     organizer: "Emre Yıldırım",
-    image: require("../assets/images/events/team-meeting.jpg"),
+    image: require("../assets/images/icon.png"),
     isAttending: true,
   },
 ];
@@ -104,7 +104,7 @@ export const PAST_EVENTS: Event[] = [
     maxParticipants: 22,
     status: "completed",
     organizer: "Emre Yıldırım",
-    image: require("../assets/images/events/season-opener.jpg"),
+    image: require("../assets/images/icon.png"),
     isAttending: true,
   },
   {
@@ -120,7 +120,7 @@ export const PAST_EVENTS: Event[] = [
     maxParticipants: 20,
     status: "completed",
     organizer: "Mehmet Can",
-    image: require("../assets/images/events/sprint-training.jpg"),
+    image: require("../assets/images/icon.png"),
     isAttending: true,
   },
   {
@@ -136,7 +136,7 @@ export const PAST_EVENTS: Event[] = [
     maxParticipants: 22,
     status: "completed",
     organizer: "Emre Yıldırım",
-    image: require("../assets/images/events/tournament.jpg"),
+    image: require("../assets/images/icon.png"),
     isAttending: true,
   },
 ];
@@ -156,7 +156,7 @@ export const TODAY_EVENTS: Event[] = [
     maxParticipants: 22,
     status: "approved",
     organizer: "Mehmet Can",
-    image: require("../assets/images/events/tactical-training.jpg"),
+    image: require("../assets/images/icon.png"),
     isAttending: true,
   },
   {
@@ -172,7 +172,7 @@ export const TODAY_EVENTS: Event[] = [
     maxParticipants: 30,
     status: "approved",
     organizer: "Emre Yıldırım",
-    image: require("../assets/images/events/nutrition-seminar.jpg"),
+    image: require("../assets/images/icon.png"),
     isAttending: true,
   },
 ];

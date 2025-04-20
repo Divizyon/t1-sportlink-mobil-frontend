@@ -22,6 +22,8 @@ import {
   TrashIcon,
   Info,
 } from "lucide-react-native";
+import { router } from "expo-router";
+import { Link } from "expo-router";
 
 // Bildirim tipi tanımlama
 interface Notification {
@@ -134,27 +136,64 @@ export default function NotificationsScreen() {
       )
     );
 
-    // Bildirim tipine göre yönlendirme yap (örnek)
+    // Bildirim tipine göre yönlendirme yap
     switch (notification.type) {
       case "event":
-        console.log(
-          `Etkinlik sayfasına yönlendiriliyor: ${notification.data?.eventId}`
-        );
-        // router.push(`/dashboard/event-details?id=${notification.data?.eventId}`);
+        // Eğer başlık "Etkinlik Hatırlatıcı" ise yaklaşan etkinlikler sayfasına yönlendir
+        if (notification.title === "Etkinlik Hatırlatıcı") {
+          // Yaklaşan etkinlikler sayfasına yönlendir
+          // @ts-ignore
+          router.push("/upcoming-events");
+        } else if (notification.title === "Etkinlik Güncellemesi") {
+          // Eğer başlık "Etkinlik Güncellemesi" ise güncellenen etkinlikler sayfasına yönlendir
+          // @ts-ignore
+          router.push("/event-updates");
+        } else {
+          // Diğer etkinlik bildirimleri için (örn. güncellemeler), spesifik etkinliğe yönlendir
+          if (notification.data?.eventId) {
+            router.push({
+              pathname: "/(tabs)/reminders/[id]",
+              params: { id: notification.data.eventId }
+            });
+          } else {
+            // Etkinlik yoksa etkinlikler listesine yönlendir
+            router.push("/(tabs)/reminders/index");
+          }
+        }
         break;
       case "message":
-        console.log(
-          `Mesaj sayfasına yönlendiriliyor: ${notification.data?.messageId}`
-        );
-        // router.push(`/messages/${notification.data?.userId}`);
+        // Mesaj bildirimleri için profil sayfasına yönlendir
+        if (notification.data?.userId) {
+          router.push({
+            pathname: "/(tabs)/profile",
+            params: { userId: notification.data.userId }
+          });
+        } else {
+          router.push("/(tabs)/profile");
+        }
         break;
       case "friend":
-        console.log(
-          `Kullanıcı profiline yönlendiriliyor: ${notification.data?.userId}`
-        );
-        // router.push(`/profile/${notification.data?.userId}`);
+        if (notification.data?.userId) {
+          router.push({
+            pathname: "/(tabs)/profile",
+            params: { id: notification.data.userId }
+          });
+        }
         break;
-      // Diğer durumlar için yönlendirmeler
+      case "like":
+        // Beğeni bildirimleri için şimdilik profil sayfasına yönlendir
+        if (notification.data?.userId) {
+          router.push({
+            pathname: "/(tabs)/profile",
+            params: { id: notification.data.userId }
+          });
+        }
+        break;
+      case "system":
+        // Sistem bildirimleri için henüz özel bir sayfa yok
+        break;
+      default:
+        break;
     }
   };
 
