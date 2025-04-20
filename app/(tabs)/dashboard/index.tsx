@@ -930,43 +930,6 @@ export default function DashboardScreen() {
           </View>
         </Box>
 
-        {/* Activity Progress Section */}
-        <Box style={styles.activitySection}>
-          <HStack style={styles.activityContent}>
-            <View style={styles.progressCircleContainer}>
-              <View style={styles.progressCircle}>
-                <View style={styles.progressInnerCircle}>
-                  <Text style={styles.progressPercentage}>
-                    {activityPercentage}%
-                  </Text>
-                </View>
-                {/* Progress arc - bu basit bir gösterim için. Gerçek bir circular progress kullanılmalı */}
-                <View
-                  style={[
-                    styles.progressArc,
-                    {
-                      transform: [
-                        { rotate: `${(activityPercentage / 100) * 360}deg` },
-                      ],
-                    },
-                  ]}
-                />
-              </View>
-              <View style={styles.checkmark}>
-                <Text style={{ color: "white" }}>✓</Text>
-              </View>
-            </View>
-
-            <VStack style={styles.activityInfo}>
-              <Text style={styles.activityTitle}>Aktivite</Text>
-              <Text style={styles.activityDesc}>
-                Bugünkü aktiviten {activityPercentage}%, ilerlemeyi sürdür ve
-                ileriye doğru git.
-              </Text>
-            </VStack>
-          </HStack>
-        </Box>
-
         {/* Featured Event - Yakındaki en iyi etkinlik */}
         {activeTab === "nearby" && filteredEvents.length > 0 && (
           <Box style={styles.featuredEventContainer}>
@@ -1109,7 +1072,7 @@ export default function DashboardScreen() {
                 activeTab === "nearby" && styles.activeTabButtonText,
               ]}
             >
-              Yakındaki Etkinlikler{isLocationLoading ? " (Yükleniyor...)" : ""}
+              Yaklaşan Etkinlikler{isLocationLoading ? " (Yükleniyor...)" : ""}
             </Text>
           </TouchableOpacity>
 
@@ -1140,7 +1103,7 @@ export default function DashboardScreen() {
           <HStack style={{ alignItems: "center" }}>
             <Text style={styles.sectionTitle}>
               {activeTab === "nearby"
-                ? "Yakındaki Etkinlikler"
+                ? "Yaklaşan Etkinlikler"
                 : "Katıldığım Etkinlikler"}
             </Text>
             {activeTab === "nearby" && (
@@ -1169,7 +1132,7 @@ export default function DashboardScreen() {
                     style={{ marginRight: 8 }}
                   />
                   <Text style={styles.locationInfoText}>
-                    Konumunuza göre yakındaki {filteredEvents.length} etkinlik
+                    Konumunuza göre yaklaşan {filteredEvents.length} etkinlik
                     listeleniyor ({userCoordinates.latitude.toFixed(4)},{" "}
                     {userCoordinates.longitude.toFixed(4)})
                   </Text>
