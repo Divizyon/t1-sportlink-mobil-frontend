@@ -142,12 +142,16 @@ export default function NotificationsScreen() {
         // Eğer başlık "Etkinlik Hatırlatıcı" ise yaklaşan etkinlikler sayfasına yönlendir
         if (notification.title === "Etkinlik Hatırlatıcı") {
           // Yaklaşan etkinlikler sayfasına yönlendir
-          // @ts-ignore
+          // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
           router.push("/upcoming-events");
         } else if (notification.title === "Etkinlik Güncellemesi") {
           // Eğer başlık "Etkinlik Güncellemesi" ise güncellenen etkinlikler sayfasına yönlendir
           // @ts-ignore
           router.push("/event-updates");
+        } else if (notification.title === "Yeni Etkinlik") {
+          // Eğer başlık "Yeni Etkinlik" ise tüm etkinlikler sayfasına yönlendir
+          // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
+          router.push("/all-events");
         } else {
           // Diğer etkinlik bildirimleri için (örn. güncellemeler), spesifik etkinliğe yönlendir
           if (notification.data?.eventId) {
@@ -162,23 +166,14 @@ export default function NotificationsScreen() {
         }
         break;
       case "message":
-        // Mesaj bildirimleri için profil sayfasına yönlendir
-        if (notification.data?.userId) {
-          router.push({
-            pathname: "/(tabs)/profile",
-            params: { userId: notification.data.userId }
-          });
-        } else {
-          router.push("/(tabs)/profile");
-        }
+        // Mesajlar sayfasına yönlendir
+        // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
+        router.push("/messages");
         break;
       case "friend":
-        if (notification.data?.userId) {
-          router.push({
-            pathname: "/(tabs)/profile",
-            params: { id: notification.data.userId }
-          });
-        }
+        // Arkadaşlık istekleri sayfasına yönlendir
+        // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
+        router.push("/friend-requests");
         break;
       case "like":
         // Beğeni bildirimleri için şimdilik profil sayfasına yönlendir
@@ -190,7 +185,9 @@ export default function NotificationsScreen() {
         }
         break;
       case "system":
-        // Sistem bildirimleri için henüz özel bir sayfa yok
+        // Sistem bildirimleri sayfasına yönlendir
+        // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
+        router.push("/system-notifications");
         break;
       default:
         break;

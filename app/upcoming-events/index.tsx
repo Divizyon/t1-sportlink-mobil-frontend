@@ -22,7 +22,7 @@ export default function UpcomingEventsScreen() {
 
   const handleEventPress = (eventId: number) => {
     router.push({
-      pathname: "/nontab-event-details/[id]",
+      pathname: "/event-detail/[id]",
       params: { id: eventId }
     });
   };

@@ -2,14 +2,15 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, router } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { 
@@ -78,7 +79,7 @@ const mockEventData: Record<string, Event> = {
   }
 };
 
-export default function EventReminderScreen() {
+export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState<Event | null>(null);
@@ -102,7 +103,7 @@ export default function EventReminderScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <SafeAreaView style={[styles.container, styles.loadingContainer]}>
         <StatusBar style="dark" />
         <ActivityIndicator size="large" color="#3498db" />
         <Text style={styles.loadingText}>Etkinlik bilgileri yükleniyor...</Text>
@@ -112,7 +113,7 @@ export default function EventReminderScreen() {
 
   if (!event) {
     return (
-      <SafeAreaView style={styles.errorContainer}>
+      <SafeAreaView style={[styles.container, styles.errorContainer]}>
         <StatusBar style="dark" />
         <AlertCircle size={60} color="#e74c3c" />
         <Text style={styles.errorText}>Etkinlik bulunamadı</Text>
@@ -127,7 +128,7 @@ export default function EventReminderScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar style="dark" />
       
       {/* Header */}
@@ -138,105 +139,116 @@ export default function EventReminderScreen() {
         >
           <ChevronLeft size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Etkinlik Hatırlatıcı</Text>
+        <Text style={styles.headerTitle}>Etkinlik Detayı</Text>
         <TouchableOpacity style={styles.shareIcon}>
           <Share2 size={20} color="#333" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView}>
-        {/* Etkinlik Görseli */}
-        {event.image && (
-          <View style={styles.imageContainer}>
-            <Image 
-              source={{ uri: event.image }} 
-              style={styles.eventImage} 
-              resizeMode="cover"
-            />
-            <View style={styles.imageOverlay} />
-            <View style={styles.reminderBadge}>
-              <Bell size={14} color={reminderSet ? "#fff" : "#666"} />
-              <Text style={styles.reminderBadgeText}>
-                {reminderSet ? "Hatırlatılacak" : "Hatırlatıcı Yok"}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Etkinlik Bilgileri */}
-        <View style={styles.contentContainer}>
-          <Text style={styles.eventTitle}>{event.title}</Text>
-          
-          <View style={styles.infoSection}>
-            <View style={styles.infoItem}>
-              <Calendar size={20} color="#3498db" />
-              <Text style={styles.infoText}>{event.date}</Text>
-            </View>
-            
-            <View style={styles.infoItem}>
-              <Clock size={20} color="#3498db" />
-              <Text style={styles.infoText}>{event.time}</Text>
-            </View>
-
-            <View style={styles.infoItem}>
-              <MapPin size={20} color="#3498db" />
-              <Text style={styles.infoText}>{event.location}</Text>
-            </View>
-
-            <View style={styles.infoItem}>
-              <Users size={20} color="#3498db" />
-              <Text style={styles.infoText}>{event.participants} Katılımcı</Text>
-            </View>
-          </View>
-          
-          <View style={styles.descriptionContainer}>
-            <Text style={styles.sectionTitle}>Etkinlik Açıklaması</Text>
-            <Text style={styles.descriptionText}>{event.description}</Text>
-          </View>
-          
-          <View style={styles.organizerContainer}>
-            <Text style={styles.sectionTitle}>Organizatör</Text>
-            <View style={styles.organizerInfo}>
-              <View style={styles.organizerAvatar}>
-                <Text style={styles.organizerInitial}>
-                  {event.organizerName.charAt(0)}
+      <View style={{ flex: 1 }}>
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Etkinlik Görseli */}
+          {event.image && (
+            <View style={styles.imageContainer}>
+              <Image 
+                source={{ uri: event.image }} 
+                style={styles.eventImage} 
+                resizeMode="cover"
+              />
+              <View style={styles.imageOverlay} />
+              <View style={styles.reminderBadge}>
+                <Bell size={14} color={reminderSet ? "#fff" : "#666"} />
+                <Text style={styles.reminderBadgeText}>
+                  {reminderSet ? "Hatırlatılacak" : "Hatırlatıcı Yok"}
                 </Text>
               </View>
-              <Text style={styles.organizerName}>{event.organizerName}</Text>
+            </View>
+          )}
+
+          {/* Etkinlik Bilgileri */}
+          <View style={styles.contentContainer}>
+            <Text style={styles.eventTitle}>{event.title}</Text>
+            
+            <View style={styles.infoSection}>
+              <View style={styles.infoItem}>
+                <Calendar size={20} color="#3498db" />
+                <Text style={styles.infoText}>{event.date}</Text>
+              </View>
+              
+              <View style={styles.infoItem}>
+                <Clock size={20} color="#3498db" />
+                <Text style={styles.infoText}>{event.time}</Text>
+              </View>
+
+              <View style={styles.infoItem}>
+                <MapPin size={20} color="#3498db" />
+                <Text style={styles.infoText}>{event.location}</Text>
+              </View>
+
+              <View style={styles.infoItem}>
+                <Users size={20} color="#3498db" />
+                <Text style={styles.infoText}>{event.participants} Katılımcı</Text>
+              </View>
+            </View>
+            
+            <View style={styles.descriptionContainer}>
+              <Text style={styles.sectionTitle}>Etkinlik Açıklaması</Text>
+              <Text style={styles.descriptionText}>{event.description}</Text>
+            </View>
+            
+            <View style={styles.organizerContainer}>
+              <Text style={styles.sectionTitle}>Organizatör</Text>
+              <View style={styles.organizerInfo}>
+                <View style={styles.organizerAvatar}>
+                  <Text style={styles.organizerInitial}>
+                    {event.organizerName.charAt(0)}
+                  </Text>
+                </View>
+                <Text style={styles.organizerName}>{event.organizerName}</Text>
+              </View>
+            </View>
+
+            <View style={styles.reminderSection}>
+              <Text style={styles.sectionTitle}>Hatırlatıcı Durumu</Text>
+              <View style={styles.reminderInfo}>
+                <Info size={18} color="#666" />
+                <Text style={styles.reminderInfoText}>
+                  Bu etkinlik için bir hatırlatıcı 
+                  {reminderSet ? " ayarlanmış" : " ayarlanmamış"}.
+                </Text>
+              </View>
             </View>
           </View>
+          
+          {/* En az 50px boşluk bırak */}
+          <View style={{ height: 80 }} />
+        </ScrollView>
+      </View>
 
-          <View style={styles.reminderSection}>
-            <Text style={styles.sectionTitle}>Hatırlatıcı Durumu</Text>
-            <View style={styles.reminderInfo}>
-              <Info size={18} color="#666" />
-              <Text style={styles.reminderInfoText}>
-                Bu etkinlik için bir hatırlatıcı 
-                {reminderSet ? " ayarlanmış" : " ayarlanmamış"}.
-              </Text>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* Alt Butonlar */}
-      <View style={styles.footer}>
-        <Button 
+      {/* Alt Butonlar - SafeAreaView'in dışında sabit pozisyonda */}
+      <View style={styles.absoluteFooter}>
+        <TouchableOpacity
           style={[
             styles.reminderButton, 
             reminderSet ? styles.reminderActiveButton : styles.reminderInactiveButton,
-            { width: '100%' } // Buton genişliğini %100 yapıyorum
           ]} 
           onPress={handleToggleReminder}
+          activeOpacity={0.8}
         >
-          <Bell size={16} color={reminderSet ? "#fff" : "#333"} />
-          <Text style={[
-            styles.reminderButtonText,
-            reminderSet ? styles.reminderActiveText : styles.reminderInactiveText
-          ]}>
-            {reminderSet ? "Hatırlatıcıyı Kapat" : "Hatırlatıcı Ayarla"}
-          </Text>
-        </Button>
+          <View style={styles.buttonContent}>
+            <Bell size={20} color={reminderSet ? "#fff" : "#333"} />
+            <Text style={[
+              styles.reminderButtonText,
+              reminderSet ? styles.reminderActiveText : styles.reminderInactiveText
+            ]}>
+              {reminderSet ? "Hatırlatıcıyı Kapat" : "Hatırlatıcı Ayarla"}
+            </Text>
+          </View>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -412,20 +424,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#555",
   },
-  footer: {
-    flexDirection: "row",
-    padding: 16,
+  absoluteFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: "#f1f1f1",
+    borderTopColor: '#f1f1f1',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   reminderButton: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginRight: 8,
+    paddingVertical: 16,
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   reminderActiveButton: {
     backgroundColor: "#3498db",
@@ -436,11 +462,21 @@ const styles = StyleSheet.create({
   reminderButtonText: {
     marginLeft: 8,
     fontWeight: "600",
+    fontSize: 16,
   },
   reminderActiveText: {
     color: "#fff",
   },
   reminderInactiveText: {
     color: "#333",
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
 }); 
