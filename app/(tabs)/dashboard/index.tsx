@@ -1151,12 +1151,6 @@ export default function DashboardScreen() {
               </Box>
             )}
           </HStack>
-          <TouchableOpacity
-            onPress={handleCreateEvent}
-            style={styles.addButton}
-          >
-            <Plus size={20} color="#fff" />
-          </TouchableOpacity>
         </Box>
 
         {/* Events List */}
