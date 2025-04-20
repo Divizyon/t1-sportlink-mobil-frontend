@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Tabs, usePathname } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme, TouchableOpacity, StyleSheet, View } from "react-native";
+import {
+  useColorScheme,
+  TouchableOpacity,
+  StyleSheet,
+  View,
+} from "react-native";
 import { router } from "expo-router";
 import { Plus } from "lucide-react-native";
 
@@ -10,10 +15,10 @@ export default function TabsLayout() {
   const activeColor = colorScheme === "dark" ? "#2ecc71" : "#2ecc71";
   const inactiveColor = colorScheme === "dark" ? "#7f8c8d" : "#95a5a6";
   const bgColor = colorScheme === "dark" ? "#1a1a1a" : "#ffffff";
-  
+
   const pathname = usePathname();
   const [isEventsScreen, setIsEventsScreen] = useState(false);
-  
+
   useEffect(() => {
     // Eğer etkinlikler sayfasındaysak butonu gizle
     setIsEventsScreen(pathname === "/(tabs)/events");
@@ -28,8 +33,8 @@ export default function TabsLayout() {
     <>
       {/* Sabit Artı Butonu - Etkinlikler sayfası dışında görünecek */}
       {!isEventsScreen && (
-        <TouchableOpacity 
-          style={styles.floatingButton} 
+        <TouchableOpacity
+          style={styles.floatingButton}
           onPress={handleCreateEvent}
           activeOpacity={0.8}
         >
@@ -116,17 +121,17 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   floatingButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     bottom: 80,
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#4F46E5',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#4F46E5",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 999,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -134,5 +139,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 6,
-  }
+  },
 });
