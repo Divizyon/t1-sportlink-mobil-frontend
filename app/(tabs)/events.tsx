@@ -9,6 +9,7 @@ import {
   ScrollView,
   TextInput,
   Modal,
+  Platform,
 } from "react-native";
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
@@ -27,6 +28,8 @@ import {
   Filter,
   Search,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react-native";
 
 // Event tipi tanımlama
@@ -148,6 +151,9 @@ export default function EventsScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string>("Tümü");
   const [showDateFilter, setShowDateFilter] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<string>("Tümü");
+  const [expandedYear, setExpandedYear] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
   // Kategori listesi
   const categories = [
@@ -159,13 +165,32 @@ export default function EventsScreen() {
     { id: 6, name: "Voleybol", icon: "🏐" },
   ];
 
-  // Tarih filtreleme seçenekleri
-  const dateFilters = [
+  // Yıl dizisi (son 2 yıl ve gelecek 3 yıl)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+
+  // Ay dizisi
+  const months = [
+    { value: 0, label: "Ocak" },
+    { value: 1, label: "Şubat" },
+    { value: 2, label: "Mart" },
+    { value: 3, label: "Nisan" },
+    { value: 4, label: "Mayıs" },
+    { value: 5, label: "Haziran" },
+    { value: 6, label: "Temmuz" },
+    { value: 7, label: "Ağustos" },
+    { value: 8, label: "Eylül" },
+    { value: 9, label: "Ekim" },
+    { value: 10, label: "Kasım" },
+    { value: 11, label: "Aralık" },
+  ];
+
+  // Temel tarih filtreleme seçenekleri
+  const basicDateFilters = [
     { id: 1, name: "Tümü", label: "Tüm Tarihler" },
     { id: 2, name: "Bugün", label: "Bugün" },
     { id: 3, name: "Bu Hafta", label: "Bu Hafta" },
     { id: 4, name: "Bu Ay", label: "Bu Ay" },
-    { id: 5, name: "Gelecek Ay", label: "Gelecek Ay" },
   ];
 
   useEffect(() => {
@@ -228,11 +253,13 @@ export default function EventsScreen() {
             event => event.date.includes("Ekim")
           );
           break;
-        case "Gelecek Ay":
-          // Tüm Kasım (örnek) etkinlikleri
-          tabFilteredEvents = tabFilteredEvents.filter(
-            event => event.date.includes("Kasım")
-          );
+        default:
+          // Özel tarih filtreleme (yıl-ay)
+          if (selectedYear && selectedMonth) {
+            tabFilteredEvents = tabFilteredEvents.filter(
+              event => event.date.includes(selectedMonth)
+            );
+          }
           break;
       }
     }
@@ -260,13 +287,38 @@ export default function EventsScreen() {
     setSelectedCategory(category);
   };
 
-  const handleDateSelect = (date: string) => {
+  const handleBasicDateSelect = (date: string) => {
     setSelectedDate(date);
-    setShowDateFilter(false);
+    setSelectedYear(null);
+    setSelectedMonth(null);
+    setExpandedYear(null);
   };
 
   const toggleDateFilter = () => {
     setShowDateFilter(!showDateFilter);
+    if (!showDateFilter) {
+      // Filtre açılırken genişletilen yılı sıfırla
+      setExpandedYear(null);
+    }
+  };
+
+  const toggleYearExpansion = (year: number) => {
+    setExpandedYear(expandedYear === year ? null : year);
+  };
+
+  const handleMonthSelect = (year: number, month: string) => {
+    setSelectedYear(year);
+    setSelectedMonth(month);
+    setSelectedDate(`${month} ${year}`);
+    setShowDateFilter(false);
+  };
+
+  const resetDateFilter = () => {
+    setSelectedDate("Tümü");
+    setSelectedYear(null);
+    setSelectedMonth(null);
+    setExpandedYear(null);
+    setShowDateFilter(false);
   };
 
   const toggleSearch = () => {
@@ -417,6 +469,102 @@ export default function EventsScreen() {
               </Text>
             </Box>
           )}
+        </Box>
+      )}
+
+      {/* Date Filter Panel */}
+      {showDateFilter && (
+        <Box style={styles.dateFilterPanel}>
+          <HStack style={styles.dateFilterHeader}>
+            <Text style={styles.dateFilterTitle}>Tarihe Göre Filtrele</Text>
+            <TouchableOpacity 
+              style={styles.resetFilterButton}
+              onPress={resetDateFilter}
+            >
+              <Text style={styles.resetFilterText}>Sıfırla</Text>
+            </TouchableOpacity>
+          </HStack>
+
+          {/* Basic Date Filters */}
+          {basicDateFilters.map((filter) => (
+            <TouchableOpacity
+              key={filter.id}
+              style={[
+                styles.dateFilterItem,
+                selectedDate === filter.name && styles.selectedDateFilterItem
+              ]}
+              onPress={() => handleBasicDateSelect(filter.name)}
+            >
+              <Text 
+                style={[
+                  styles.dateFilterText,
+                  selectedDate === filter.name && styles.selectedDateFilterText
+                ]}
+              >
+                {filter.label}
+              </Text>
+              {selectedDate === filter.name && (
+                <CheckCircle size={18} color="#047857" style={styles.checkIcon} />
+              )}
+            </TouchableOpacity>
+          ))}
+
+          {/* Year Buttons with Accordion */}
+          <Text style={styles.yearSectionTitle}>Yıl Seçin</Text>
+          {years.map((year) => (
+            <View key={year}>
+              <TouchableOpacity
+                style={[
+                  styles.yearButton,
+                  selectedYear === year && !selectedMonth && styles.selectedYearButton
+                ]}
+                onPress={() => toggleYearExpansion(year)}
+              >
+                <Text 
+                  style={[
+                    styles.yearButtonText,
+                    selectedYear === year && !selectedMonth && styles.selectedYearButtonText
+                  ]}
+                >
+                  {year}
+                </Text>
+                {expandedYear === year ? (
+                  <ChevronUp size={20} color="#666" />
+                ) : (
+                  <ChevronDown size={20} color="#666" />
+                )}
+              </TouchableOpacity>
+              
+              {/* Month Buttons (shown only when year is expanded) */}
+              {expandedYear === year && (
+                <View style={styles.monthButtonsContainer}>
+                  {months.map((month) => (
+                    <TouchableOpacity
+                      key={month.value}
+                      style={[
+                        styles.monthButton,
+                        selectedYear === year && 
+                        selectedMonth === month.label && 
+                        styles.selectedMonthButton
+                      ]}
+                      onPress={() => handleMonthSelect(year, month.label)}
+                    >
+                      <Text 
+                        style={[
+                          styles.monthButtonText,
+                          selectedYear === year && 
+                          selectedMonth === month.label && 
+                          styles.selectedMonthButtonText
+                        ]}
+                      >
+                        {month.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          ))}
         </Box>
       )}
 
@@ -609,7 +757,11 @@ export default function EventsScreen() {
               {selectedDate !== "Tümü" && (
                 <HStack style={styles.activeFilterBadge}>
                   <Text style={styles.activeFilterIcon}>🗓️</Text>
-                  <Text style={styles.activeFilterText}>{selectedDate}</Text>
+                  <Text style={styles.activeFilterText}>
+                    {selectedYear && selectedMonth 
+                      ? `${selectedMonth} ${selectedYear}` 
+                      : selectedDate}
+                  </Text>
                 </HStack>
               )}
             </HStack>
@@ -648,50 +800,6 @@ export default function EventsScreen() {
         {/* Bottom Spacing */}
         <View style={{ height: 80 }} />
       </ScrollView>
-
-      {/* Date Filter Modal */}
-      <Modal
-        visible={showDateFilter}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowDateFilter(false)}
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowDateFilter(false)}
-        >
-          <View 
-            style={styles.dateFilterModal}
-            onStartShouldSetResponder={() => true}
-            onTouchEnd={(e) => e.stopPropagation()}
-          >
-            <Text style={styles.dateFilterTitle}>Tarihe Göre Filtrele</Text>
-            {dateFilters.map((filter) => (
-              <TouchableOpacity
-                key={filter.id}
-                style={[
-                  styles.dateFilterItem,
-                  selectedDate === filter.name && styles.selectedDateFilterItem
-                ]}
-                onPress={() => handleDateSelect(filter.name)}
-              >
-                <Text 
-                  style={[
-                    styles.dateFilterText,
-                    selectedDate === filter.name && styles.selectedDateFilterText
-                  ]}
-                >
-                  {filter.label}
-                </Text>
-                {selectedDate === filter.name && (
-                  <CheckCircle size={18} color="#047857" style={styles.checkIcon} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -1135,29 +1243,30 @@ const styles = StyleSheet.create({
     color: '#047857',
     fontWeight: '500',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  dateFilterPanel: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
-  dateFilterModal: {
-    width: '80%',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+  dateFilterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
   },
   dateFilterTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 15,
-    textAlign: 'center',
+  },
+  resetFilterButton: {
+    padding: 5,
+  },
+  resetFilterText: {
+    color: '#047857',
+    fontSize: 14,
+    fontWeight: '500',
   },
   dateFilterItem: {
     flexDirection: 'row',
@@ -1167,6 +1276,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderRadius: 8,
     marginBottom: 8,
+    backgroundColor: '#f5f5f5',
   },
   selectedDateFilterItem: {
     backgroundColor: '#e6f7f4',
@@ -1181,5 +1291,58 @@ const styles = StyleSheet.create({
   },
   checkIcon: {
     marginLeft: 10,
+  },
+  yearSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  yearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f5f5f5',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  selectedYearButton: {
+    backgroundColor: '#e6f7f4',
+  },
+  yearButtonText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  selectedYearButtonText: {
+    color: '#047857',
+    fontWeight: '600',
+  },
+  monthButtonsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 10,
+    marginLeft: 10,
+  },
+  monthButton: {
+    backgroundColor: '#f5f5f5',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    margin: 4,
+  },
+  selectedMonthButton: {
+    backgroundColor: '#e6f7f4',
+  },
+  monthButtonText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectedMonthButtonText: {
+    color: '#047857',
+    fontWeight: '600',
   },
 });
