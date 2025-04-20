@@ -84,19 +84,6 @@ export default function TabsLayout() {
           }}
         />
         <Tabs.Screen
-          name="find-friends"
-          options={{
-            title: "Arkadaş Bul",
-            tabBarIcon: ({ color, size, focused }) => (
-              <Ionicons
-                name={focused ? "people" : "people-outline"}
-                color={color}
-                size={24}
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
           name="notifications"
           options={{
             title: "Bildirimler",
