@@ -8,7 +8,9 @@ import {
   TextInput,
   ScrollView,
   SafeAreaView,
+  Modal,
 } from "react-native";
+import Slider from '@react-native-community/slider';
 import { StatusBar } from "expo-status-bar";
 import { Text } from "@/components/ui/text";
 import {
@@ -19,6 +21,8 @@ import {
   UserPlus,
   CheckCircle,
   X,
+  Filter,
+  Calendar,
 } from "lucide-react-native";
 import { router } from "expo-router";
 
@@ -28,7 +32,6 @@ interface User {
   name: string;
   age: number;
   location: string;
-  distance: number;
   sportsInterested: string[];
   avatarUrl: string;
   isOnline: boolean;
@@ -48,7 +51,6 @@ const usersData: User[] = [
     name: "Ahmet Yılmaz",
     age: 28,
     location: "Kadıköy, İstanbul",
-    distance: 2.3,
     sportsInterested: ["Futbol", "Basketbol", "Koşu"],
     avatarUrl: "https://randomuser.me/api/portraits/men/32.jpg",
     isOnline: true,
@@ -58,7 +60,6 @@ const usersData: User[] = [
     name: "Zeynep Kaya",
     age: 25,
     location: "Beşiktaş, İstanbul",
-    distance: 3.7,
     sportsInterested: ["Tenis", "Yüzme", "Pilates"],
     avatarUrl: "https://randomuser.me/api/portraits/women/44.jpg",
     isOnline: false,
@@ -68,7 +69,6 @@ const usersData: User[] = [
     name: "Burak Demir",
     age: 32,
     location: "Ataşehir, İstanbul",
-    distance: 5.1,
     sportsInterested: ["Fitness", "Yoga", "Bisiklet"],
     avatarUrl: "https://randomuser.me/api/portraits/men/67.jpg",
     isOnline: true,
@@ -78,7 +78,6 @@ const usersData: User[] = [
     name: "Elif Şahin",
     age: 27,
     location: "Üsküdar, İstanbul",
-    distance: 4.2,
     sportsInterested: ["Pilates", "Koşu", "Dağ Yürüyüşü"],
     avatarUrl: "https://randomuser.me/api/portraits/women/28.jpg",
     isOnline: true,
@@ -88,7 +87,6 @@ const usersData: User[] = [
     name: "Mert Öztürk",
     age: 30,
     location: "Şişli, İstanbul",
-    distance: 6.8,
     sportsInterested: ["Basketbol", "Futbol", "Fitness"],
     avatarUrl: "https://randomuser.me/api/portraits/men/22.jpg",
     isOnline: false,
@@ -114,10 +112,16 @@ export default function FindFriendsScreen() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>(usersData);
   const [pendingRequests, setPendingRequests] = useState<number[]>([]);
+  
+  // Age filter states
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [ageRange, setAgeRange] = useState<[number, number]>([18, 60]);
+  const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([18, 60]);
+  const [isAgeFilterActive, setIsAgeFilterActive] = useState(false);
 
   useEffect(() => {
     filterUsers();
-  }, [searchQuery, selectedCategories]);
+  }, [searchQuery, selectedCategories, ageRange, isAgeFilterActive]);
 
   const filterUsers = () => {
     let result = usersData;
@@ -138,6 +142,13 @@ export default function FindFriendsScreen() {
       );
     }
 
+    // Yaş aralığına göre filtrele
+    if (isAgeFilterActive) {
+      result = result.filter(
+        (user) => user.age >= ageRange[0] && user.age <= ageRange[1]
+      );
+    }
+
     setFilteredUsers(result);
   };
 
@@ -147,6 +158,21 @@ export default function FindFriendsScreen() {
         ? prev.filter((cat) => cat !== category)
         : [...prev, category]
     );
+  };
+
+  // Handle age filter apply
+  const applyAgeFilter = () => {
+    setAgeRange(tempAgeRange);
+    setIsAgeFilterActive(true);
+    setIsFilterModalVisible(false);
+  };
+
+  // Handle reset filters
+  const resetFilters = () => {
+    setTempAgeRange([18, 60]);
+    setAgeRange([18, 60]);
+    setIsAgeFilterActive(false);
+    setIsFilterModalVisible(false);
   };
 
   const renderUserItem = ({ item }: { item: User }) => (
@@ -162,7 +188,13 @@ export default function FindFriendsScreen() {
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <MapPin size={14} color="#888" />
             <Text style={styles.userLocation}>
-              {item.location} · {item.distance} km
+              {item.location}
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+            <Calendar size={14} color="#888" />
+            <Text style={styles.userLocation}>
+              {item.age} yaşında
             </Text>
           </View>
         </View>
@@ -270,6 +302,75 @@ export default function FindFriendsScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
 
+      {/* Filter Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isFilterModalVisible}
+        onRequestClose={() => setIsFilterModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Yaş Filtresi</Text>
+              <TouchableOpacity onPress={() => setIsFilterModalVisible(false)}>
+                <X size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modalBody}>
+              <View style={styles.ageRangeContainer}>
+                <Text style={styles.ageRangeText}>
+                  {tempAgeRange[0]} - {tempAgeRange[1]} yaş aralığı
+                </Text>
+              </View>
+              
+              <Text style={styles.sliderLabel}>Minimum Yaş: {tempAgeRange[0]}</Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={18}
+                maximumValue={60}
+                step={1}
+                value={tempAgeRange[0]}
+                onValueChange={(value: number) => setTempAgeRange([value, tempAgeRange[1]])}
+                minimumTrackTintColor="#3498db"
+                maximumTrackTintColor="#d3d3d3"
+                thumbTintColor="#3498db"
+              />
+              
+              <Text style={styles.sliderLabel}>Maksimum Yaş: {tempAgeRange[1]}</Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={18}
+                maximumValue={60}
+                step={1}
+                value={tempAgeRange[1]}
+                onValueChange={(value: number) => setTempAgeRange([tempAgeRange[0], value])}
+                minimumTrackTintColor="#3498db"
+                maximumTrackTintColor="#d3d3d3"
+                thumbTintColor="#3498db"
+              />
+              
+              <View style={styles.filterActionButtons}>
+                <TouchableOpacity 
+                  style={styles.resetButton}
+                  onPress={resetFilters}
+                >
+                  <Text style={styles.resetButtonText}>Filtreleri Sıfırla</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.applyButton}
+                  onPress={applyAgeFilter}
+                >
+                  <Text style={styles.applyButtonText}>Uygula</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity 
@@ -292,7 +393,33 @@ export default function FindFriendsScreen() {
             onChangeText={setSearchQuery}
           />
         </View>
+        <TouchableOpacity 
+          style={[
+            styles.filterButton,
+            isAgeFilterActive && styles.filterButtonActive
+          ]}
+          onPress={() => setIsFilterModalVisible(true)}
+        >
+          <Filter size={20} color={isAgeFilterActive ? "#fff" : "#666"} />
+        </TouchableOpacity>
       </View>
+
+      {/* Filter indicators */}
+      {isAgeFilterActive && (
+        <View style={styles.activeFiltersContainer}>
+          <View style={styles.activeFilterBadge}>
+            <Text style={styles.activeFilterText}>Yaş: {ageRange[0]}-{ageRange[1]}</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setIsAgeFilterActive(false);
+                setAgeRange([18, 60]);
+              }}
+            >
+              <X size={16} color="#666" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       <View style={styles.categoriesContainer}>
         <Text style={styles.sectionTitle}>Spor Kategorileri</Text>
@@ -331,7 +458,6 @@ export default function FindFriendsScreen() {
           <Text style={styles.resultCount}>
             {filteredUsers.length} kişi bulundu
           </Text>
-          <Text style={styles.sortText}>En yakın</Text>
         </View>
 
         <FlatList
@@ -372,14 +498,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
+    flexDirection: "row",
+    alignItems: "center",
   },
   searchInputContainer: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f1f3f5",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
@@ -442,11 +572,6 @@ const styles = StyleSheet.create({
   resultCount: {
     fontSize: 14,
     color: "#666",
-  },
-  sortText: {
-    fontSize: 14,
-    color: "#4dabf7",
-    fontWeight: "500",
   },
   usersList: {
     padding: 16,
@@ -564,5 +689,115 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
     marginLeft: 8,
+  },
+  filterButton: {
+    backgroundColor: "#f1f3f5",
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  filterButtonActive: {
+    backgroundColor: "#4dabf7",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    maxHeight: "70%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  modalBody: {
+    paddingHorizontal: 10,
+  },
+  ageRangeContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  ageRangeText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  sliderLabel: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 8,
+  },
+  slider: {
+    width: "100%",
+    height: 40,
+    marginBottom: 20,
+  },
+  filterActionButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+  },
+  resetButton: {
+    flex: 1,
+    backgroundColor: "#f1f3f5",
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginRight: 10,
+    alignItems: "center",
+  },
+  resetButtonText: {
+    color: "#666",
+    fontWeight: "bold",
+  },
+  applyButton: {
+    flex: 1,
+    backgroundColor: "#4dabf7",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  applyButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  activeFiltersContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: "#fff",
+    flexWrap: "wrap",
+  },
+  activeFilterBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e9f5ff",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  activeFilterText: {
+    color: "#4dabf7",
+    fontSize: 14,
+    marginRight: 8,
   },
 }); 

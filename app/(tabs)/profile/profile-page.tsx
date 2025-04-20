@@ -151,6 +151,9 @@ const userData = {
   interests: ["Basketbol", "Futbol", "Yüzme", "Koşu", "Tenis"],
 };
 
+// Varsayılan profil fotoğrafı URL'si
+const DEFAULT_PROFILE_IMAGE = "https://randomuser.me/api/portraits/lego/1.jpg";
+
 // Geçici etkinlik verileri - Sadece katıldığım etkinlikler
 const eventData = [
   {
@@ -761,6 +764,27 @@ export default function ProfileScreen() {
     }
   };
 
+  // Handle deleting the profile picture
+  const handleDeleteProfilePicture = () => {
+    Alert.alert(
+      "Profil Fotoğrafı Silme",
+      "Profil fotoğrafınızı silmek istediğinize emin misiniz?",
+      [
+        { text: "İptal", style: "cancel" },
+        { 
+          text: "Sil", 
+          style: "destructive",
+          onPress: () => {
+            setEditedProfile({
+              ...editedProfile,
+              profileImage: DEFAULT_PROFILE_IMAGE,
+            });
+          } 
+        }
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
@@ -811,13 +835,23 @@ export default function ProfileScreen() {
                   source={{ uri: editedProfile.profileImage }}
                   style={styles.editProfileImage}
                 />
-                <TouchableOpacity 
-                  style={styles.changePhotoButton}
-                  onPress={handleChangeProfilePicture}
-                >
-                  <Camera size={18} color="#fff" style={styles.photoButtonIcon} />
-                  <Text style={styles.changePhotoText}>Fotoğrafı Değiştir</Text>
-                </TouchableOpacity>
+                <View style={styles.photoButtonsContainer}>
+                  <TouchableOpacity 
+                    style={styles.changePhotoButton}
+                    onPress={handleChangeProfilePicture}
+                  >
+                    <Camera size={18} color="#fff" style={styles.photoButtonIcon} />
+                    <Text style={styles.changePhotoText}>Fotoğrafı Değiştir</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.deletePhotoButton}
+                    onPress={handleDeleteProfilePicture}
+                  >
+                    <X size={18} color="#fff" style={styles.photoButtonIcon} />
+                    <Text style={styles.deletePhotoText}>Fotoğrafı Sil</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
               
               <View style={styles.inputGroup}>
@@ -1939,6 +1973,12 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#f0f0f0',
   },
+  photoButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    width: '100%',
+    gap: 10,
+  },
   changePhotoButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1947,10 +1987,23 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 20,
   },
+  deletePhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e74c3c',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
   photoButtonIcon: {
     marginRight: 8,
   },
   changePhotoText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  deletePhotoText: {
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,
