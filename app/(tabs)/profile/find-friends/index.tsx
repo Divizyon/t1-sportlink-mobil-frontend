@@ -15,10 +15,10 @@ import {
   MapPin,
   MessageCircle,
   Search,
-  Star,
-  Award,
-  Trophy,
   ArrowLeft,
+  UserPlus,
+  CheckCircle,
+  X,
 } from "lucide-react-native";
 import { router } from "expo-router";
 
@@ -30,9 +30,6 @@ interface User {
   location: string;
   distance: number;
   sportsInterested: string[];
-  rating: number;
-  reviews: number;
-  achievements: string[];
   avatarUrl: string;
   isOnline: boolean;
 }
@@ -53,9 +50,6 @@ const usersData: User[] = [
     location: "Kadıköy, İstanbul",
     distance: 2.3,
     sportsInterested: ["Futbol", "Basketbol", "Koşu"],
-    rating: 4.8,
-    reviews: 24,
-    achievements: ["Futbol Turnuva Birinciliği", "10K Maraton Tamamlama"],
     avatarUrl: "https://randomuser.me/api/portraits/men/32.jpg",
     isOnline: true,
   },
@@ -66,9 +60,6 @@ const usersData: User[] = [
     location: "Beşiktaş, İstanbul",
     distance: 3.7,
     sportsInterested: ["Tenis", "Yüzme", "Pilates"],
-    rating: 4.6,
-    reviews: 18,
-    achievements: ["Tenis Ligi Üçüncülüğü"],
     avatarUrl: "https://randomuser.me/api/portraits/women/44.jpg",
     isOnline: false,
   },
@@ -79,9 +70,6 @@ const usersData: User[] = [
     location: "Ataşehir, İstanbul",
     distance: 5.1,
     sportsInterested: ["Fitness", "Yoga", "Bisiklet"],
-    rating: 4.9,
-    reviews: 36,
-    achievements: ["Fitness Eğitmenliği", "100KM Bisiklet Turu"],
     avatarUrl: "https://randomuser.me/api/portraits/men/67.jpg",
     isOnline: true,
   },
@@ -92,9 +80,6 @@ const usersData: User[] = [
     location: "Üsküdar, İstanbul",
     distance: 4.2,
     sportsInterested: ["Pilates", "Koşu", "Dağ Yürüyüşü"],
-    rating: 4.7,
-    reviews: 21,
-    achievements: ["Yoga Eğitmenliği", "15K Koşu Tamamlama"],
     avatarUrl: "https://randomuser.me/api/portraits/women/28.jpg",
     isOnline: true,
   },
@@ -105,9 +90,6 @@ const usersData: User[] = [
     location: "Şişli, İstanbul",
     distance: 6.8,
     sportsInterested: ["Basketbol", "Futbol", "Fitness"],
-    rating: 4.5,
-    reviews: 15,
-    achievements: ["Yerel Basketbol Ligi MVP"],
     avatarUrl: "https://randomuser.me/api/portraits/men/22.jpg",
     isOnline: false,
   },
@@ -131,6 +113,7 @@ export default function FindFriendsScreen() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>(usersData);
+  const [pendingRequests, setPendingRequests] = useState<number[]>([]);
 
   useEffect(() => {
     filterUsers();
@@ -207,30 +190,41 @@ export default function FindFriendsScreen() {
             </View>
           ))}
         </View>
-
-        <View style={styles.userStatsContainer}>
-          <View style={styles.ratingStat}>
-            <Star size={14} color="#ffb700" />
-            <Text style={styles.ratingText}>
-              {item.rating} ({item.reviews})
-            </Text>
-          </View>
-
-          {item.achievements.length > 0 && (
-            <View style={styles.achievements}>
-              <Award size={14} color="#8e44ad" />
-              <Text style={styles.achievementText}>
-                {item.achievements.length} Başarı
-              </Text>
-            </View>
-          )}
-        </View>
       </View>
 
-      <TouchableOpacity style={styles.messageButton}>
-        <MessageCircle size={16} color="#fff" />
-        <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={[
+            styles.friendRequestButton, 
+            pendingRequests.includes(item.id) && styles.requestSentButton
+          ]}
+          onPress={() => 
+            pendingRequests.includes(item.id)
+              ? handleCancelRequest(item.id)
+              : handleFriendRequest(item.id)
+          }
+        >
+          {pendingRequests.includes(item.id) ? (
+            <>
+              <X size={16} color="#fff" />
+              <Text style={styles.friendRequestButtonText}>İsteği İptal Et</Text>
+            </>
+          ) : (
+            <>
+              <UserPlus size={16} color="#fff" />
+              <Text style={styles.friendRequestButtonText}>Takip Et</Text>
+            </>
+          )}
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.messageButton}
+          onPress={() => handleSendMessage(item.id)}
+        >
+          <MessageCircle size={16} color="#fff" />
+          <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -253,6 +247,24 @@ export default function FindFriendsScreen() {
       </Text>
     </TouchableOpacity>
   );
+
+  // Add these functions to handle button presses
+  const handleFriendRequest = (userId: number) => {
+    console.log(`Arkadaşlık isteği gönderildi: ${userId}`);
+    setPendingRequests(prev => [...prev, userId]);
+    // Friend request logic will be implemented here
+  };
+
+  const handleCancelRequest = (userId: number) => {
+    console.log(`Arkadaşlık isteği iptal edildi: ${userId}`);
+    setPendingRequests(prev => prev.filter(id => id !== userId));
+    // Request cancellation logic will be implemented here
+  };
+
+  const handleSendMessage = (userId: number) => {
+    console.log(`Mesaj gönderilecek: ${userId}`);
+    // Message sending logic will be implemented here
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -517,30 +529,13 @@ const styles = StyleSheet.create({
     color: "#1c7ed6",
     fontWeight: "500",
   },
-  userStatsContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  ratingStat: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  ratingText: {
-    marginLeft: 4,
-    fontSize: 14,
-    color: "#666",
-  },
-  achievements: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  achievementText: {
-    marginLeft: 4,
-    fontSize: 14,
-    color: "#666",
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
   },
   messageButton: {
+    flex: 1,
     flexDirection: "row",
     backgroundColor: "#4dabf7",
     padding: 12,
@@ -549,6 +544,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   messageButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+  friendRequestButton: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "#12b886",
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  requestSentButton: {
+    backgroundColor: "#ff6b6b",
+  },
+  friendRequestButtonText: {
     color: "#fff",
     fontWeight: "600",
     marginLeft: 8,
