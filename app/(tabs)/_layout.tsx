@@ -94,6 +94,12 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="reminders"
+        options={{
+          href: null
+        }}
+      />
     </Tabs>
   );
 }
