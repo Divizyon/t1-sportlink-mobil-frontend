@@ -4,38 +4,45 @@ import {
   SafeAreaView,
   StyleSheet,
   ScrollView,
+  Alert,
+  Platform,
+  Text,
   TouchableOpacity,
   Image,
-  Alert,
-  TextInput,
-  Platform,
 } from "react-native";
-import { Box } from "@/components/ui/box";
-import { Text } from "@/components/ui/text";
-import { Button, ButtonText } from "@/components/ui/button";
-import { Center } from "@/components/ui/center";
-import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
 import { router } from "expo-router";
 import {
-  MapPin,
-  Calendar,
-  Clock,
+  Header,
+  DateSelector,
+  CategorySelector,
+  DistanceFilter,
+  TabSelector,
+  EventCard,
+  RatingModal,
+} from "@/components/dashboard";
+import {
   Plus,
-  Bell,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  MoreVertical,
+  MapPin,
   Star,
-  UserCheck,
-  CheckCircle,
-  Filter,
   Users,
-  Layers,
-  Building,
-  TrendingUp,
+  Clock,
+  Calendar,
+  CheckCircle,
 } from "lucide-react-native";
+
+// Renk teması - fotoğraftaki açık yeşil
+const theme = {
+  primary: "#34D399", // Ana yeşil renk
+  primaryLight: "#D1FAE5", // Çok açık yeşil (fotoğraftaki badge rengi)
+  primaryPale: "#ECFDF5", // En açık yeşil tonu (arkaplan için)
+  primaryDark: "#10B981", // Koyu yeşil (vurgu için)
+  secondary: "#F59E0B", // Vurgu rengi (turuncu/amber)
+  background: "#F8FAFC", // Sayfa arkaplanı
+  surface: "#FFFFFF", // Kart arkaplanı
+  text: "#0F172A", // Ana metin rengi
+  textSecondary: "#64748B", // İkincil metin rengi
+  border: "#E2E8F0", // Sınır rengi
+};
 
 // Geçici kullanıcı verileri
 const userData = {
@@ -401,102 +408,63 @@ const eventData = [
     },
     distance: "1.5 km",
     participants: [
-      "https://randomuser.me/api/portraits/men/78.jpg",
-      "https://randomuser.me/api/portraits/women/23.jpg",
+      "https://randomuser.me/api/portraits/men/55.jpg",
+      "https://randomuser.me/api/portraits/women/22.jpg",
     ],
-    participantCount: 14,
-    maxParticipants: 20,
+    participantCount: 9,
+    maxParticipants: 12,
     rating: 4.6,
     reviews: [
       {
         id: 1,
-        userName: "Emre K.",
+        userName: "Kerem D.",
         rating: 5,
-        comment: "Harika bir rota ve arkadaş ortamı.",
+        comment: "Grup lideri çok profesyoneldi, rota mükemmeldi.",
       },
     ],
     isJoined: false,
     organizer: {
       id: 8,
-      name: "Bisikletliler Derneği",
+      name: "Konya Bisiklet Topluluğu",
       isVerified: true,
-      logoUrl: "https://randomuser.me/api/portraits/men/55.jpg",
+      logoUrl: "https://randomuser.me/api/portraits/men/82.jpg",
     },
     description:
-      "Konya şehir içi keyifli bisiklet turu. Orta seviye kondisyon gerektirmektedir.",
-    requirements: "Kendi bisikletinizi ve kaskınızı getirmeniz gerekiyor.",
+      "Konya'nın tarihi yerlerini keşfetmek için bisiklet turu. Orta zorlukta bir rotadır.",
+    requirements:
+      "Kendi bisikletinizi getirmeniz gerekmektedir. Kask zorunludur.",
   },
   {
     id: 9,
-    title: "Masa Tenisi Turnuvası",
-    type: "Turnuva",
-    category: "Masa Tenisi",
+    title: "Dağ Bisikleti Kursu",
+    type: "Kurs",
+    category: "Bisiklet",
     date: "25 Ekim",
-    time: "14:00-18:00",
-    location: "Bosna Hersek Gençlik Merkezi",
+    time: "10:00-14:00",
+    location: "Meram Dağlık Bölge",
     coordinates: {
-      latitude: 37.893,
-      longitude: 32.473,
+      latitude: 37.85,
+      longitude: 32.44,
     },
     distance: "5.8 km",
     participants: [
       "https://randomuser.me/api/portraits/men/62.jpg",
-      "https://randomuser.me/api/portraits/women/37.jpg",
+      "https://randomuser.me/api/portraits/men/47.jpg",
     ],
-    participantCount: 16,
-    maxParticipants: 32,
-    rating: 4.4,
+    participantCount: 5,
+    maxParticipants: 8,
+    rating: 4.3,
     reviews: [
       {
         id: 1,
-        userName: "Tolga B.",
+        userName: "Burak Y.",
         rating: 4,
-        comment: "Rekabetçi ve eğlenceli bir ortamdı.",
+        comment: "Zorlu ama öğreticiydi. Güvenlik önlemleri iyiydi.",
       },
     ],
     isJoined: false,
     organizer: {
       id: 9,
-      name: "Konya Masa Tenisi Kulübü",
-      isVerified: false,
-      logoUrl: "https://randomuser.me/api/portraits/men/91.jpg",
-    },
-    description:
-      "Amatör masa tenisi turnuvası. Her seviyeden oyuncu katılabilir.",
-    requirements:
-      "Kendi raketinizi getirmeniz önerilir. Spor ayakkabı zorunludur.",
-  },
-  {
-    id: 10,
-    title: "Dağ Bisikleti Eğitimi",
-    type: "Eğitim",
-    category: "Bisiklet",
-    date: "26 Ekim",
-    time: "10:00-13:00",
-    location: "Real AVM Yanı",
-    coordinates: {
-      latitude: 37.883,
-      longitude: 32.51,
-    },
-    distance: "4.1 km",
-    participants: [
-      "https://randomuser.me/api/portraits/men/39.jpg",
-      "https://randomuser.me/api/portraits/women/41.jpg",
-    ],
-    participantCount: 8,
-    maxParticipants: 10,
-    rating: 4.9,
-    reviews: [
-      {
-        id: 1,
-        userName: "Meryem H.",
-        rating: 5,
-        comment: "Çok profesyonel bir eğitimdi, temel teknikleri öğrendim.",
-      },
-    ],
-    isJoined: false,
-    organizer: {
-      id: 10,
       name: "Konya Extreme Sporlar",
       isVerified: true,
       logoUrl: "https://randomuser.me/api/portraits/men/24.jpg",
@@ -508,25 +476,6 @@ const eventData = [
   },
 ];
 
-// Geçici haber verileri
-const newsData = [
-  {
-    id: 1,
-    title: "Konyaspor'un yeni sezondaki ilk maçı",
-    image: "https://picsum.photos/300/150",
-    date: "21 Ekim",
-  },
-  {
-    id: 2,
-    title: "Yerel basketbol turnuvası kayıtları başladı",
-    image: "https://picsum.photos/300/151",
-    date: "22 Ekim",
-  },
-];
-
-// Haftanın günleri
-const daysOfWeek = ["Pzr", "Pzt", "Sal", "Çrş", "Per", "Cum", "Cmt"];
-
 // Spor kategorileri
 const sportCategories = [
   { id: 1, name: "Tümü", icon: "🏆" },
@@ -537,15 +486,17 @@ const sportCategories = [
   { id: 6, name: "Voleybol", icon: "🏐" },
 ];
 
+// Haftanın günleri
+const daysOfWeek = ["Pzr", "Pzt", "Sal", "Çrş", "Per", "Cum", "Cmt"];
+
 export default function DashboardScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [activityPercentage, setActivityPercentage] = useState(69);
-  const [filteredEvents, setFilteredEvents] = useState(eventData);
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>(eventData);
   const [selectedCategory, setSelectedCategory] = useState("Tümü");
   const [distanceFilter, setDistanceFilter] = useState(10); // km cinsinden
   const [activeTab, setActiveTab] = useState("nearby"); // "nearby" veya "joined"
   const [showRatingModal, setShowRatingModal] = useState(false);
-  const [eventToRate, setEventToRate] = useState<any>(null);
+  const [eventToRate, setEventToRate] = useState<Event | null>(null);
   const [rating, setRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [userCoordinates, setUserCoordinates] = useState(userLocation);
@@ -557,28 +508,6 @@ export default function DashboardScreen() {
     // Bu normalde Expo'nun Location API'ını kullanacak, ancak şimdilik sabit konum kullanıyoruz
     setUserCoordinates(userLocation);
     setIsLocationLoading(false);
-
-    // Gerçek uygulamada şöyle olurdu:
-    // const getLocation = async () => {
-    //   try {
-    //     const { status } = await Location.requestForegroundPermissionsAsync();
-    //     if (status !== 'granted') {
-    //       Alert.alert('İzin Hatası', 'Konum izni verilmedi');
-    //       setIsLocationLoading(false);
-    //       return;
-    //     }
-    //     const location = await Location.getCurrentPositionAsync({});
-    //     setUserCoordinates({
-    //       latitude: location.coords.latitude,
-    //       longitude: location.coords.longitude
-    //     });
-    //     setIsLocationLoading(false);
-    //   } catch (error) {
-    //     console.error('Konum alınamadı:', error);
-    //     setIsLocationLoading(false);
-    //   }
-    // };
-    // getLocation();
   }, []);
 
   // Mesafe hesapla ve olayları güncelle
@@ -614,9 +543,6 @@ export default function DashboardScreen() {
     month: "long",
   }).format(selectedDate);
   const currentDay = selectedDate.getDate();
-
-  // Kullanıcının katıldığı etkinlikleri filtreleme
-  const joinedEvents = eventData.filter((event) => event.isJoined);
 
   // Haftanın günlerini ve tarihlerini hesapla
   const getDaysInWeek = () => {
@@ -780,7 +706,6 @@ export default function DashboardScreen() {
     setActiveTab("nearby");
     // Mesafe filtrelemesi ile yakındaki etkinlikleri getir
     filterEvents(selectedDate, selectedCategory, distanceFilter, "nearby");
-    // Dialog kaldırıldı, etkinlikler doğrudan listelenecek
   };
 
   const handleCreateEvent = () => {
@@ -798,543 +723,159 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[0]}
+        contentContainerStyle={styles.contentContainer}
+      >
         {/* Header */}
-        <Box style={styles.header}>
-          <HStack style={styles.userInfo}>
-            <Image source={{ uri: userData.avatarUrl }} style={styles.avatar} />
-            <VStack style={{ marginLeft: 8 }}>
-              <Text style={styles.userName}>{userData.name}</Text>
-              {userData.isPro && (
-                <Box style={styles.proBadge}>
-                  <Text style={styles.proText}>PRO</Text>
-                </Box>
-              )}
-            </VStack>
-          </HStack>
-          <HStack>
-            <TouchableOpacity style={styles.iconButton}>
-              <Settings size={22} color="#333" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
-              <Bell size={22} color="#333" />
-            </TouchableOpacity>
-          </HStack>
-        </Box>
+        <View style={styles.headerWrapper}>
+          <Header
+            userName={userData.name}
+            userAvatar={userData.avatarUrl}
+            isPro={userData.isPro}
+          />
+        </View>
 
         {/* Calendar Section */}
-        <Box style={styles.calendarSection}>
-          <HStack style={styles.monthHeader}>
-            <Text style={styles.monthTitle}>
-              {currentDay} {currentMonth}
-            </Text>
-            <HStack>
-              <TouchableOpacity
-                onPress={handlePrevWeek}
-                style={styles.navButton}
-              >
-                <ChevronLeft size={20} color="#333" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleNextWeek}
-                style={styles.navButton}
-              >
-                <ChevronRight size={20} color="#333" />
-              </TouchableOpacity>
-            </HStack>
-          </HStack>
-
-          <HStack style={styles.daysContainer}>
-            {days.map((day, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[styles.dayItem, day.isSelected && styles.selectedDay]}
-                onPress={() => handleDateSelect(day.date)}
-              >
-                <Text style={styles.dayName}>{day.dayName}</Text>
-                <Text
-                  style={[
-                    styles.dayNumber,
-                    day.isSelected && styles.selectedDayText,
-                  ]}
-                >
-                  {day.dayNumber}
-                </Text>
-                {day.isSelected && <View style={styles.selectedDot} />}
-              </TouchableOpacity>
-            ))}
-          </HStack>
-        </Box>
+        <DateSelector
+          currentDay={currentDay}
+          currentMonth={currentMonth}
+          days={days}
+          onPrevWeek={handlePrevWeek}
+          onNextWeek={handleNextWeek}
+          onDateSelect={handleDateSelect}
+        />
 
         {/* Sport Categories */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoriesContainer}
-        >
-          {sportCategories.map((category) => (
-            <TouchableOpacity
-              key={category.id}
-              style={[
-                styles.categoryItem,
-                selectedCategory === category.name && styles.selectedCategory,
-              ]}
-              onPress={() => handleCategorySelect(category.name)}
-            >
-              <Text style={styles.categoryIcon}>{category.icon}</Text>
-              <Text
-                style={[
-                  styles.categoryName,
-                  selectedCategory === category.name &&
-                    styles.selectedCategoryText,
-                ]}
-              >
-                {category.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <CategorySelector
+          categories={sportCategories}
+          selectedCategory={selectedCategory}
+          onSelectCategory={handleCategorySelect}
+        />
 
         {/* Distance Filter */}
-        <Box style={styles.filterSection}>
-          <Text style={styles.filterLabel}>
-            Maksimum uzaklık: {distanceFilter} km
-          </Text>
-          <View style={styles.sliderContainer}>
-            <TouchableOpacity
-              style={styles.sliderButton}
-              onPress={() =>
-                handleDistanceFilterChange(Math.max(1, distanceFilter - 1))
-              }
-            >
-              <Text>-</Text>
-            </TouchableOpacity>
+        <DistanceFilter
+          distance={distanceFilter}
+          onDistanceChange={handleDistanceFilterChange}
+        />
 
-            <View style={styles.sliderTrack}>
-              <View
-                style={[
-                  styles.sliderFill,
-                  { width: `${(distanceFilter / 10) * 100}%` },
-                ]}
-              />
+        {/* Tabs */}
+        <TabSelector activeTab={activeTab} onTabChange={handleTabChange} />
+
+        {/* Events */}
+        <View style={styles.eventsSection}>
+          {isLocationLoading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Etkinlikler yükleniyor...</Text>
             </View>
-
-            <TouchableOpacity
-              style={styles.sliderButton}
-              onPress={() =>
-                handleDistanceFilterChange(Math.min(10, distanceFilter + 1))
-              }
-            >
-              <Text>+</Text>
-            </TouchableOpacity>
-          </View>
-        </Box>
-
-        {/* Featured Event - Yakındaki en iyi etkinlik */}
-        {activeTab === "nearby" && filteredEvents.length > 0 && (
-          <Box style={styles.featuredEventContainer}>
-            <HStack
-              style={{
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 15,
-              }}
-            >
-              <Text style={styles.featuredEventTitle}>Öne Çıkan Etkinlik</Text>
-              <HStack style={styles.trendingBadge}>
-                <TrendingUp size={14} color="#047857" />
-                <Text style={styles.trendingText}>Popüler</Text>
-              </HStack>
-            </HStack>
-
-            <TouchableOpacity
-              style={styles.featuredEventCard}
-              onPress={() => handleEventPress(filteredEvents[0].id)}
-            >
-              <Image
-                source={{ uri: "https://picsum.photos/500/300" }}
-                style={styles.featuredEventImage}
-              />
-              <Box style={styles.featuredEventBadge}>
-                <Text style={styles.featuredEventBadgeText}>ÖNE ÇIKAN</Text>
-              </Box>
-
-              <Box style={styles.featuredEventContent}>
-                <HStack style={styles.featuredEventMeta}>
-                  <Box style={styles.featuredEventCategory}>
-                    <Text style={styles.featuredEventCategoryText}>
-                      {filteredEvents[0].category}
-                    </Text>
-                  </Box>
-                  <HStack style={{ alignItems: "center" }}>
-                    <Star size={14} color="#f59e0b" fill="#f59e0b" />
-                    <Text style={styles.featuredEventRating}>
-                      {filteredEvents[0].rating}
-                    </Text>
-                  </HStack>
-                </HStack>
-
-                <Text style={styles.featuredEventName}>
-                  {filteredEvents[0].title}
-                </Text>
-                <Text style={styles.featuredEventDescription} numberOfLines={2}>
-                  {filteredEvents[0].description}
-                </Text>
-
-                <HStack style={styles.featuredEventDetails}>
-                  <HStack style={styles.featuredEventDetail}>
-                    <Calendar size={14} color="#666" />
-                    <Text style={styles.featuredEventDetailText}>
-                      {filteredEvents[0].date}
-                    </Text>
-                  </HStack>
-                  <HStack style={styles.featuredEventDetail}>
-                    <Clock size={14} color="#666" />
-                    <Text style={styles.featuredEventDetailText}>
-                      {filteredEvents[0].time}
-                    </Text>
-                  </HStack>
-                </HStack>
-
-                <HStack style={styles.featuredEventLocation}>
-                  <MapPin size={14} color="#666" />
-                  <Text style={styles.featuredEventDetailText}>
-                    {filteredEvents[0].location} ({filteredEvents[0].distance})
+          ) : filteredEvents.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                Bu kriterlere uygun etkinlik bulunamadı.
+              </Text>
+            </View>
+          ) : (
+            filteredEvents.map((event) => (
+              <TouchableOpacity
+                key={event.id}
+                style={styles.eventCard}
+                onPress={() => handleEventPress(event.id)}
+              >
+                <View style={styles.dateBox}>
+                  <Text style={styles.dayNumber}>
+                    {event.date.split(" ")[0]}
                   </Text>
-                </HStack>
+                  <Text style={styles.monthName}>Eki</Text>
+                </View>
 
-                <HStack style={styles.featuredEventOrganizer}>
-                  <Image
-                    source={{ uri: filteredEvents[0].organizer.logoUrl }}
-                    style={styles.featuredEventOrganizerLogo}
-                  />
-                  <VStack style={{ flex: 1 }}>
-                    <HStack style={{ alignItems: "center" }}>
-                      <Text style={styles.featuredEventOrganizerName}>
-                        {filteredEvents[0].organizer.name}
+                <View style={styles.eventDetails}>
+                  <View style={styles.eventTimeContainer}>
+                    <Text style={styles.eventTime}>{event.time}</Text>
+                    <View style={styles.organizerBadge}>
+                      <Text style={styles.organizerBadgeText}>
+                        {event.organizer.name}
                       </Text>
-                      {filteredEvents[0].organizer.isVerified && (
+                      {event.organizer.isVerified && (
                         <CheckCircle
                           size={12}
-                          color="#047857"
+                          color={theme.primary}
                           style={{ marginLeft: 4 }}
                         />
                       )}
-                    </HStack>
-                    <HStack style={styles.featuredEventParticipantsInfo}>
-                      <Users size={12} color="#666" />
-                      <Text style={styles.featuredEventParticipantsText}>
-                        {filteredEvents[0].participantCount}/
-                        {filteredEvents[0].maxParticipants} katılımcı
-                      </Text>
-                    </HStack>
-                  </VStack>
+                    </View>
+                  </View>
 
-                  <TouchableOpacity
-                    style={[
-                      styles.featuredJoinButton,
-                      filteredEvents[0].isJoined && styles.featuredJoinedButton,
-                    ]}
-                    onPress={() => handleJoinEvent(filteredEvents[0].id)}
-                  >
-                    <Text
-                      style={[
-                        styles.featuredJoinButtonText,
-                        filteredEvents[0].isJoined &&
-                          styles.featuredJoinedButtonText,
-                      ]}
-                    >
-                      {filteredEvents[0].isJoined ? "Katılıyor" : "Katıl"}
-                    </Text>
-                  </TouchableOpacity>
-                </HStack>
-              </Box>
-            </TouchableOpacity>
-          </Box>
-        )}
+                  <Text style={styles.eventTitle}>{event.title}</Text>
 
-        {/* Events Tabs */}
-        <HStack style={styles.tabsContainer}>
-          <TouchableOpacity
-            style={[
-              styles.tabButton,
-              activeTab === "nearby" && styles.activeTabButton,
-            ]}
-            onPress={() => handleTabChange("nearby")}
-          >
-            <MapPin
-              size={16}
-              color={activeTab === "nearby" ? "#047857" : "#666"}
-            />
-            <Text
-              style={[
-                styles.tabButtonText,
-                activeTab === "nearby" && styles.activeTabButtonText,
-              ]}
-            >
-              Yaklaşan Etkinlikler{isLocationLoading ? " (Yükleniyor...)" : ""}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.tabButton,
-              activeTab === "joined" && styles.activeTabButton,
-            ]}
-            onPress={() => handleTabChange("joined")}
-          >
-            <UserCheck
-              size={16}
-              color={activeTab === "joined" ? "#047857" : "#666"}
-            />
-            <Text
-              style={[
-                styles.tabButtonText,
-                activeTab === "joined" && styles.activeTabButtonText,
-              ]}
-            >
-              Katıldığım Etkinlikler
-            </Text>
-          </TouchableOpacity>
-        </HStack>
-
-        {/* Events Header */}
-        <Box style={styles.sectionHeader}>
-          <HStack style={{ alignItems: "center" }}>
-            <Text style={styles.sectionTitle}>
-              {activeTab === "nearby"
-                ? "Yaklaşan Etkinlikler"
-                : "Katıldığım Etkinlikler"}
-            </Text>
-            {activeTab === "nearby" && (
-              <Box style={styles.nearbyCountBadge}>
-                <Text style={styles.nearbyCountText}>
-                  {filteredEvents.length}
-                </Text>
-              </Box>
-            )}
-          </HStack>
-        </Box>
-
-        {/* Events List */}
-        <VStack style={styles.eventsContainer}>
-          {isLocationLoading && activeTab === "nearby" ? (
-            <Box style={styles.noEventsMessage}>
-              <Text style={styles.noEventsText}>Konum bilgisi alınıyor...</Text>
-            </Box>
-          ) : filteredEvents.length > 0 ? (
-            <>
-              {activeTab === "nearby" && (
-                <Box style={styles.locationInfoBox}>
-                  <MapPin
-                    size={16}
-                    color="#047857"
-                    style={{ marginRight: 8 }}
-                  />
-                  <Text style={styles.locationInfoText}>
-                    Konumunuza göre yaklaşan {filteredEvents.length} etkinlik
-                    listeleniyor ({userCoordinates.latitude.toFixed(4)},{" "}
-                    {userCoordinates.longitude.toFixed(4)})
+                  <Text style={styles.eventDescription} numberOfLines={1}>
+                    {event.description}
                   </Text>
-                </Box>
-              )}
-              {filteredEvents.map((event) => (
-                <TouchableOpacity
-                  key={event.id}
-                  style={styles.eventCard}
-                  onPress={() => handleEventPress(event.id)}
-                >
-                  <HStack style={styles.eventHeader}>
-                    <Box style={styles.dateBox}>
-                      <Text style={styles.dateNumber}>
-                        {event.date.split(" ")[0]}
+
+                  <View style={styles.tagContainer}>
+                    <View style={styles.typeTag}>
+                      <Text style={styles.typeTagText}>{event.type}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.eventLocation}>
+                    <MapPin
+                      size={14}
+                      color={theme.textSecondary}
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text style={styles.locationText}>
+                      {event.location} ({event.distance})
+                    </Text>
+                  </View>
+
+                  <View style={styles.eventFooter}>
+                    <View style={styles.participantsInfo}>
+                      <Users
+                        size={14}
+                        color={theme.textSecondary}
+                        style={{ marginRight: 4 }}
+                      />
+                      <Text style={styles.participantsText}>
+                        {event.participantCount}/{event.maxParticipants}{" "}
+                        katılımcı
                       </Text>
-                      <Text style={styles.dateMonth}>Eki</Text>
-                    </Box>
-                    <VStack style={styles.eventDetails}>
-                      <HStack style={styles.eventTopInfo}>
-                        <Text style={styles.eventTime}>{event.time}</Text>
-                        <HStack style={styles.organizerBadge}>
-                          <Building size={12} color="#047857" />
-                          <Text style={styles.organizerBadgeText}>
-                            {event.organizer.name}
-                          </Text>
-                        </HStack>
-                      </HStack>
-                      <Text style={styles.eventTitle}>{event.title}</Text>
-                      <Text style={styles.eventDescription} numberOfLines={1}>
-                        {event.description}
-                      </Text>
-                      <HStack style={styles.eventTypeContainer}>
-                        <Box
-                          style={
-                            event.type === "Spor"
-                              ? styles.workTag
-                              : styles.meetingTag
-                          }
-                        >
-                          <Text style={styles.tagText}>{event.type}</Text>
-                        </Box>
-                        <HStack style={styles.participants}>
-                          {event.participants.map((participant, index) => (
-                            <Image
-                              key={index}
-                              source={{ uri: participant }}
-                              style={[
-                                styles.participantAvatar,
-                                { marginLeft: index > 0 ? -10 : 0 },
-                              ]}
-                            />
-                          ))}
-                          {event.participantCount > 3 && (
-                            <Box style={styles.moreParticipantsBadge}>
-                              <Text style={styles.moreParticipantsText}>
-                                +{event.participantCount - 3}
-                              </Text>
-                            </Box>
-                          )}
-                        </HStack>
-                      </HStack>
-                      <HStack style={styles.eventExtraInfo}>
-                        <Box style={styles.distanceInfo}>
-                          <MapPin
+                    </View>
+
+                    <View style={styles.ratingContainer}>
+                      {event.rating > 0 && (
+                        <>
+                          <Star
                             size={14}
-                            color="#666"
-                            style={{ marginRight: 4 }}
+                            color={theme.secondary}
+                            fill={theme.secondary}
+                            style={{ marginRight: 2 }}
                           />
-                          <Text style={styles.distanceText}>
-                            {event.distance}
+                          <Text style={styles.ratingValue}>
+                            {event.rating.toFixed(1)}
                           </Text>
-                        </Box>
-                        <Box style={styles.ratingInfo}>
-                          <Text style={styles.ratingText}>
-                            ⭐ {event.rating}
-                          </Text>
-                        </Box>
-                      </HStack>
-                      <HStack style={styles.eventActions}>
-                        <TouchableOpacity
-                          style={[
-                            styles.joinButton,
-                            event.isJoined && styles.joinedButton,
-                          ]}
-                          onPress={() => handleJoinEvent(event.id)}
-                        >
-                          <Text
-                            style={[
-                              styles.joinButtonText,
-                              event.isJoined && styles.joinedButtonText,
-                            ]}
-                          >
-                            {event.isJoined ? "Katılıyor" : "Katıl"}
-                          </Text>
-                          {event.isJoined && (
-                            <CheckCircle
-                              size={14}
-                              color="#047857"
-                              style={{ marginLeft: 4 }}
-                            />
-                          )}
-                        </TouchableOpacity>
-
-                        {event.isJoined && (
-                          <TouchableOpacity
-                            style={styles.rateButton}
-                            onPress={() => handleRateEvent(event.id)}
-                          >
-                            <Text style={styles.rateButtonText}>
-                              Değerlendir
-                            </Text>
-                            <Star
-                              size={14}
-                              color="#f59e0b"
-                              style={{ marginLeft: 4 }}
-                            />
-                          </TouchableOpacity>
-                        )}
-                      </HStack>
-                    </VStack>
-                    <TouchableOpacity style={styles.moreButton}>
-                      <MoreVertical size={20} color="#666" />
-                    </TouchableOpacity>
-                  </HStack>
-                </TouchableOpacity>
-              ))}
-            </>
-          ) : (
-            <Box style={styles.noEventsMessage}>
-              <Text style={styles.noEventsText}>
-                {activeTab === "nearby"
-                  ? "Bu kriterlere uygun etkinlik bulunamadı. Mesafe filtresini artırmayı deneyin."
-                  : "Henüz katıldığın bir etkinlik bulunmuyor."}
-              </Text>
-            </Box>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))
           )}
-        </VStack>
-
-        {/* News Section */}
-        <Box style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Spor Haberleri</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAllText}>Tümünü Gör</Text>
-          </TouchableOpacity>
-        </Box>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.newsScrollContainer}
-        >
-          {newsData.map((news) => (
-            <TouchableOpacity key={news.id} style={styles.newsCard}>
-              <Image source={{ uri: news.image }} style={styles.newsImage} />
-              <Box style={styles.newsContent}>
-                <Text style={styles.newsTitle}>{news.title}</Text>
-                <Text style={styles.newsDate}>{news.date}</Text>
-              </Box>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Bottom Spacing */}
-        <View style={{ height: 80 }} />
+        </View>
       </ScrollView>
 
       {/* Rating Modal */}
-      {showRatingModal && (
-        <View style={styles.ratingModal}>
-          <View style={styles.ratingContent}>
-            <Text style={styles.ratingTitle}>Etkinlik Değerlendirme</Text>
-            <View style={styles.ratingStars}>
-              {[1, 2, 3, 4, 5].map((star, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.starButton}
-                  onPress={() => setRating(star)}
-                >
-                  <Star
-                    size={24}
-                    color={star <= rating ? "#f59e0b" : "#e2e8f0"}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-            <Text style={styles.ratingCommentLabel}>Yorumunuz:</Text>
-            <TextInput
-              style={styles.ratingCommentInput}
-              value={reviewComment}
-              onChangeText={setReviewComment}
-              multiline
-            />
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={submitRating}
-            >
-              <Text style={styles.submitButtonText}>Değerlendir</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+      <RatingModal
+        visible={showRatingModal}
+        eventTitle={eventToRate?.title}
+        rating={rating}
+        comment={reviewComment}
+        onChangeRating={setRating}
+        onChangeComment={setReviewComment}
+        onSubmit={submitRating}
+        onClose={() => setShowRatingModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -1342,807 +883,182 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: theme.background,
+    paddingTop: Platform.OS === "android" ? 25 : 0,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: "#fff",
+  contentContainer: {
+    paddingBottom: 20,
   },
-  userInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  proBadge: {
-    backgroundColor: "#f0d080",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    marginTop: 4,
-  },
-  proText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  iconButton: {
-    padding: 8,
-    marginLeft: 5,
-  },
-  calendarSection: {
-    backgroundColor: "#fff",
-    padding: 20,
-  },
-  monthHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  monthTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  navButton: {
-    padding: 5,
-    marginHorizontal: 5,
-  },
-  daysContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  dayItem: {
-    alignItems: "center",
-    width: 40,
-  },
-  dayName: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 5,
-  },
-  dayNumber: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#333",
-  },
-  selectedDay: {
-    borderRadius: 5,
-  },
-  selectedDayText: {
-    color: "#000",
-    fontWeight: "bold",
-  },
-  selectedDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: "#000",
-    marginTop: 4,
-  },
-  activitySection: {
-    backgroundColor: "#e8f4f8",
-    borderRadius: 15,
-    margin: 15,
-    padding: 15,
-  },
-  activityContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  progressCircleContainer: {
-    position: "relative",
-    width: 70,
-    height: 70,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  progressCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 8,
-    borderColor: "#cce6ef",
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
-    overflow: "hidden",
-  },
-  progressInnerCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  progressPercentage: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  progressArc: {
-    position: "absolute",
-    width: 35,
-    height: 70,
-    right: 0,
-    top: 0,
-    backgroundColor: "#4DB6AC",
-    borderTopRightRadius: 35,
-    borderBottomRightRadius: 35,
-  },
-  checkmark: {
-    position: "absolute",
-    right: 0,
-    bottom: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#4DB6AC",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  activityInfo: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  activityTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 5,
-  },
-  activityDesc: {
-    fontSize: 14,
-    color: "#666",
-    lineHeight: 20,
+  headerWrapper: {
+    backgroundColor: theme.background,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    zIndex: 10,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 15,
-    marginVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: "600",
+    color: theme.text,
   },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#000",
-    justifyContent: "center",
-    alignItems: "center",
+  seeAllButton: {
+    fontSize: 14,
+    color: theme.primary,
   },
-  eventsContainer: {
-    paddingHorizontal: 15,
-    marginBottom: 10,
+  eventsSection: {
+    paddingHorizontal: 16,
   },
   eventCard: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    marginBottom: 10,
-    padding: 15,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  eventHeader: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    backgroundColor: "white",
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    overflow: "hidden",
   },
   dateBox: {
-    width: 50,
-    height: 50,
-    backgroundColor: "#1a1a1a",
-    borderRadius: 8,
-    justifyContent: "center",
+    width: 60,
+    backgroundColor: "#1E1E1E",
     alignItems: "center",
+    justifyContent: "center",
+    padding: 10,
   },
-  dateNumber: {
-    fontSize: 20,
+  dayNumber: {
+    fontSize: 22,
     fontWeight: "bold",
-    color: "#fff",
+    color: "white",
   },
-  dateMonth: {
+  monthName: {
     fontSize: 14,
-    color: "#fff",
+    color: "white",
   },
   eventDetails: {
     flex: 1,
-    marginLeft: 15,
+    padding: 12,
+  },
+  eventTimeContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
   },
   eventTime: {
     fontSize: 14,
-    color: "#666",
-    marginBottom: 2,
-  },
-  eventTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
-  },
-  eventTypeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  workTag: {
-    backgroundColor: "#ffebee",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
-  },
-  meetingTag: {
-    backgroundColor: "#e8f5e9",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
-  },
-  tagText: {
-    fontSize: 12,
-    color: "#333",
-  },
-  participants: {
-    flexDirection: "row",
-  },
-  participantAvatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  moreButton: {
-    padding: 5,
-  },
-  viewAllText: {
-    fontSize: 14,
-    color: "#4DB6AC",
-  },
-  newsScrollContainer: {
-    paddingLeft: 15,
-  },
-  newsCard: {
-    width: 250,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    marginRight: 15,
-    overflow: "hidden",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  newsImage: {
-    width: "100%",
-    height: 120,
-  },
-  newsContent: {
-    padding: 10,
-  },
-  newsTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 5,
-  },
-  newsDate: {
-    fontSize: 12,
-    color: "#999",
-  },
-  bottomNav: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#fff",
-    height: 60,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-  },
-  navItem: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  homeIndicator: {
-    width: 40,
-    height: 5,
-    backgroundColor: "#ddd",
-    borderRadius: 3,
-  },
-  categoriesContainer: {
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    backgroundColor: "#fff",
-    marginBottom: 5,
-  },
-  categoryItem: {
-    alignItems: "center",
-    marginRight: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 15,
-    backgroundColor: "#f5f5f5",
-  },
-  selectedCategory: {
-    backgroundColor: "#e6f7f4",
-    borderColor: "#047857",
-    borderWidth: 1,
-  },
-  categoryIcon: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  categoryName: {
-    fontSize: 12,
-    color: "#666",
-  },
-  selectedCategoryText: {
-    color: "#047857",
-    fontWeight: "500",
-  },
-  filterSection: {
-    padding: 15,
-    backgroundColor: "#fff",
-    marginBottom: 10,
-  },
-  filterLabel: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 10,
-  },
-  sliderContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sliderTrack: {
-    flex: 1,
-    height: 6,
-    backgroundColor: "#e2e8f0",
-    borderRadius: 3,
-    marginHorizontal: 10,
-    overflow: "hidden",
-  },
-  sliderFill: {
-    height: "100%",
-    backgroundColor: "#047857",
-    borderRadius: 3,
-  },
-  sliderButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#f5f5f5",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  eventExtraInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  distanceInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  distanceText: {
-    fontSize: 12,
-    color: "#666",
-  },
-  ratingInfo: {
-    backgroundColor: "#fff9e6",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  ratingText: {
-    fontSize: 12,
-    color: "#f59e0b",
-  },
-  noEventsMessage: {
-    padding: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  noEventsText: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-  },
-  tabsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: "#fff",
-    marginBottom: 10,
-    borderRadius: 8,
-    marginHorizontal: 15,
-    padding: 5,
-  },
-  tabButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    borderRadius: 6,
-  },
-  activeTabButton: {
-    backgroundColor: "#e6f7f4",
-  },
-  tabButtonText: {
-    marginLeft: 6,
-    fontSize: 14,
-    color: "#666",
-  },
-  activeTabButtonText: {
-    color: "#047857",
-    fontWeight: "500",
-  },
-  ratingModal: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  ratingContent: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 10,
-    width: "80%",
-  },
-  ratingTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
-  ratingStars: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
-  starButton: {
-    padding: 10,
-  },
-  ratingCommentLabel: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 10,
-  },
-  ratingCommentInput: {
-    height: 100,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-  },
-  submitButton: {
-    backgroundColor: "#047857",
-    padding: 10,
-    borderRadius: 5,
-    alignItems: "center",
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  eventActions: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    marginTop: 8,
-  },
-  joinButton: {
-    backgroundColor: "#047857",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 10,
-  },
-  joinedButton: {
-    backgroundColor: "#e6f7f4",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: "#047857",
-  },
-  joinButtonText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  joinedButtonText: {
-    color: "#047857",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  rateButton: {
-    backgroundColor: "#fff9e6",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#f59e0b",
-  },
-  rateButtonText: {
-    color: "#f59e0b",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  featuredEventContainer: {
-    padding: 15,
-    backgroundColor: "#fff",
-    marginBottom: 10,
-  },
-  featuredEventTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 15,
-  },
-  featuredEventCard: {
-    borderRadius: 12,
-    overflow: "hidden",
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  featuredEventImage: {
-    width: "100%",
-    height: 180,
-  },
-  featuredEventBadge: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    backgroundColor: "#047857",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  featuredEventBadgeText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  featuredEventContent: {
-    padding: 15,
-  },
-  featuredEventMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  featuredEventCategory: {
-    backgroundColor: "#e6f7f4",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 15,
-  },
-  featuredEventCategoryText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#047857",
-  },
-  featuredEventRating: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#333",
-    marginLeft: 4,
-  },
-  featuredEventName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
-  },
-  featuredEventDetails: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  featuredEventDetail: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  featuredEventDetailText: {
-    fontSize: 14,
-    color: "#666",
-    marginLeft: 6,
-  },
-  featuredEventOrganizer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 8,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-  },
-  featuredEventOrganizerLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 10,
-  },
-  featuredEventOrganizerName: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  featuredEventParticipantsInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 2,
-  },
-  featuredEventParticipantsText: {
-    fontSize: 12,
-    color: "#666",
-    marginLeft: 4,
-  },
-  eventTopInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  eventDescription: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 8,
+    color: theme.textSecondary,
   },
   organizerBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#e6f7f4",
+    backgroundColor: theme.primaryLight,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
   organizerBadgeText: {
     fontSize: 12,
-    color: "#047857",
-    marginLeft: 4,
+    color: theme.primary,
   },
-  moreParticipantsBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#e6f7f4",
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: -5,
-    borderWidth: 2,
-    borderColor: "#fff",
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.text,
+    marginBottom: 4,
   },
-  moreParticipantsText: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: "#047857",
-  },
-  nearbyCountBadge: {
-    backgroundColor: "#e6f7f4",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    marginLeft: 8,
-  },
-  nearbyCountText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#047857",
-  },
-  trendingBadge: {
-    backgroundColor: "#e6f7f4",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  trendingText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#047857",
-    marginLeft: 4,
-  },
-  featuredJoinButton: {
-    backgroundColor: "#047857",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 10,
-  },
-  featuredJoinedButton: {
-    backgroundColor: "#e6f7f4",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: "#047857",
-  },
-  featuredJoinButtonText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  featuredJoinedButtonText: {
-    color: "#047857",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  featuredEventDescription: {
+  eventDescription: {
     fontSize: 14,
-    color: "#666",
+    color: theme.textSecondary,
+    marginBottom: 6,
+  },
+  tagContainer: {
+    flexDirection: "row",
     marginBottom: 8,
   },
-  featuredEventLocation: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  locationInfoBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#e6f7f4",
-    padding: 10,
+  typeTag: {
+    backgroundColor: theme.primaryPale,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: 8,
-    marginBottom: 10,
   },
-  locationInfoText: {
+  typeTagText: {
     fontSize: 12,
-    color: "#047857",
-    flex: 1,
+    color: theme.primary,
+  },
+  eventLocation: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  locationText: {
+    fontSize: 12,
+    color: theme.textSecondary,
+  },
+  eventFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  participantsInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  participantsText: {
+    fontSize: 12,
+    color: theme.textSecondary,
+  },
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  ratingValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.secondary,
+  },
+  fab: {
+    position: "absolute",
+    right: 16,
+    bottom: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  loadingContainer: {
+    padding: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    textAlign: "center",
+  },
+  emptyContainer: {
+    padding: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    textAlign: "center",
   },
 });

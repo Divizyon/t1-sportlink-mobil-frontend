@@ -115,12 +115,11 @@ export default function TabsLayout() {
           }}
         />
         <Tabs.Screen
-        name="reminders"
-        options={{
-          href: null
-        }}
-      />
-  
+          name="reminders"
+          options={{
+            href: null,
+          }}
+        />
       </Tabs>
     </>
   );
@@ -134,7 +133,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#34D399",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 999,
