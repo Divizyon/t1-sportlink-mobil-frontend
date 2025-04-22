@@ -62,7 +62,7 @@ const CategorySelectorModal: React.FC<CategorySelectorModalProps> = ({
                   <Text style={styles.categoryName}>{item.name}</Text>
                 </HStack>
                 {selectedCategory === item.name && (
-                  <Check size={20} color="#4F46E5" />
+                  <Check size={20} color="#10B981" />
                 )}
               </TouchableOpacity>
             )}

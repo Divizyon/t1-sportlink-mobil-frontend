@@ -49,6 +49,7 @@ const userData = {
   name: "Özgür Eren",
   avatarUrl: "https://randomuser.me/api/portraits/men/32.jpg",
   isPro: true,
+  unreadMessages: 5, // Okunmamış mesaj sayısı eklendi
 };
 
 // Kullanıcının mevcut konumu
@@ -734,6 +735,7 @@ export default function DashboardScreen() {
             userName={userData.name}
             userAvatar={userData.avatarUrl}
             isPro={userData.isPro}
+            unreadMessages={userData.unreadMessages}
           />
         </View>
 

@@ -141,7 +141,7 @@ const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
                 <HStack style={styles.locationContent}>
                   <MapPin
                     size={20}
-                    color="#4F46E5"
+                    color="#10B981"
                     style={styles.locationIcon}
                   />
                   <VStack style={styles.locationInfo}>
@@ -151,7 +151,7 @@ const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
                     </Text>
                   </VStack>
                   {selectedLocation?.id === item.id && (
-                    <Check size={20} color="#4F46E5" />
+                    <Check size={20} color="#10B981" />
                   )}
                 </HStack>
 

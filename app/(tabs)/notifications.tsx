@@ -157,7 +157,7 @@ export default function NotificationsScreen() {
           if (notification.data?.eventId) {
             router.push({
               pathname: "/(tabs)/reminders/[id]",
-              params: { id: notification.data.eventId }
+              params: { id: notification.data.eventId },
             });
           } else {
             // Etkinlik yoksa etkinlikler listesine yönlendir
@@ -180,7 +180,7 @@ export default function NotificationsScreen() {
         if (notification.data?.userId) {
           router.push({
             pathname: "/(tabs)/profile",
-            params: { id: notification.data.userId }
+            params: { id: notification.data.userId },
           });
         }
         break;

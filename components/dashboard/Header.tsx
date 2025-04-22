@@ -4,11 +4,12 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
-import { Settings, Bell } from "lucide-react-native";
+import { MessageCircle } from "lucide-react-native";
+import { router } from "expo-router";
 
-// Tema renkleri - daha açık, yumuşak yeşil
+// Tema renkleri - daha koyu, yumuşak yeşil
 const theme = {
-  primary: "#34D399", // Açık, yumuşak yeşil
+  primary: "#10B981", // Daha koyu, yumuşak yeşil (eski: #34D399)
   text: "#0F172A", // Ana metin
 };
 
@@ -16,9 +17,19 @@ interface HeaderProps {
   userName: string;
   userAvatar: string;
   isPro: boolean;
+  unreadMessages?: number;
 }
 
-const Header: React.FC<HeaderProps> = ({ userName, userAvatar, isPro }) => {
+const Header: React.FC<HeaderProps> = ({
+  userName,
+  userAvatar,
+  isPro,
+  unreadMessages = 0,
+}) => {
+  const handleMessagesPress = () => {
+    router.push("/messages");
+  };
+
   return (
     <Box style={styles.header}>
       <HStack style={styles.userInfo}>
@@ -33,11 +44,18 @@ const Header: React.FC<HeaderProps> = ({ userName, userAvatar, isPro }) => {
         </VStack>
       </HStack>
       <HStack>
-        <TouchableOpacity style={styles.iconButton}>
-          <Settings size={22} color={theme.text} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <Bell size={22} color={theme.text} />
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={handleMessagesPress}
+        >
+          <MessageCircle size={22} color={theme.text} />
+          {unreadMessages > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {unreadMessages > 99 ? "99+" : unreadMessages}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </HStack>
     </Box>
@@ -83,6 +101,24 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     marginLeft: 8,
+    position: "relative",
+  },
+  badge: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    backgroundColor: "#F43F5E",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "bold",
   },
 });
 

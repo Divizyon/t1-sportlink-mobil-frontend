@@ -2,11 +2,11 @@ import React from "react";
 import { StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { Text } from "@/components/ui/text";
 
-// Tema renkleri - daha açık, yumuşak yeşil
+// Tema renkleri - daha koyu, yumuşak yeşil
 const theme = {
-  primary: "#34D399", // Açık, yumuşak yeşil
-  primaryLight: "#ECFDF5", // Çok açık yeşil
-  primaryDark: "#10B981", // Orta yeşil
+  primary: "#10B981", // Daha koyu, yumuşak yeşil (eski: #34D399)
+  primaryLight: "#D1FAE5", // Açık yeşil (eski: #ECFDF5)
+  primaryDark: "#059669", // Koyu yeşil (eski: #10B981)
   background: "#FFFFFF", // Arka plan
   text: "#0F172A", // Ana metin
   textSecondary: "#64748B", // İkincil metin

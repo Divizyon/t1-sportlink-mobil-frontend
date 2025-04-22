@@ -31,9 +31,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       >
         <HStack style={styles.locationContent}>
           {isCategory ? (
-            <Tag size={20} color="#4F46E5" style={styles.inputIcon} />
+            <Tag size={20} color="#10B981" style={styles.inputIcon} />
           ) : (
-            <MapPin size={20} color="#4F46E5" style={styles.inputIcon} />
+            <MapPin size={20} color="#10B981" style={styles.inputIcon} />
           )}
           <Text style={[styles.locationText, !value && styles.placeholderText]}>
             {value ||
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     marginLeft: -10,
     marginTop: -20,
     borderRadius: 10,
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#10B981",
     borderWidth: 3,
     borderColor: "white",
   },

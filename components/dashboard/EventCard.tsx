@@ -15,18 +15,18 @@ import {
   CheckCircle,
 } from "lucide-react-native";
 
-// Tema renkleri - fotoğraftaki açık yeşil
+// Tema renkleri - daha koyu yeşil
 const theme = {
-  primary: "#34D399", // Ana yeşil renk
-  primaryLight: "#D1FAE5", // Çok açık yeşil (fotoğraftaki badge rengi)
-  primaryPale: "#ECFDF5", // En açık yeşil tonu (arkaplan için)
+  primary: "#10B981", // Ana yeşil renk - daha koyu (eski: #34D399)
+  primaryLight: "#A7F3D0", // Çok açık yeşil (eski: #D1FAE5)
+  primaryPale: "#D1FAE5", // En açık yeşil tonu (eski: #ECFDF5)
   secondary: "#F59E0B", // İkincil renk (turuncu)
   background: "#FFFFFF", // Kart arkaplanı
   surface: "#F1F5F9", // Yüzey rengi
   text: "#0F172A", // Ana metin
   textSecondary: "#64748B", // İkincil metin
   border: "#E2E8F0", // Kenar rengi
-  success: "#34D399", // Başarı rengi (yeşil)
+  success: "#10B981", // Başarı rengi (yeşil) - daha koyu (eski: #34D399)
 };
 
 // Event tipi tanımlama

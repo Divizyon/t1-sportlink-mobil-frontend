@@ -64,7 +64,7 @@ export const FormButton: React.FC<FormButtonProps> = ({
     >
       {isLoading ? (
         <ActivityIndicator
-          color={variant === "outline" ? "#4F46E5" : "#FFFFFF"}
+          color={variant === "outline" ? "#10B981" : "#FFFFFF"}
           size="small"
         />
       ) : (
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   primaryButton: {
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#10B981",
   },
   secondaryButton: {
     backgroundColor: "#6B7280",
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   outlineButton: {
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: "#4F46E5",
+    borderColor: "#10B981",
   },
   dangerButton: {
     backgroundColor: "#EF4444",
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   outlineText: {
-    color: "#4F46E5",
+    color: "#10B981",
     fontWeight: "600",
     fontSize: 16,
   },

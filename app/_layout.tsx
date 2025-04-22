@@ -6,8 +6,8 @@ import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 export const unstable_settings = {
   initialRouteName: "index",
   "event-updates": {
-    initialRouteName: "index"
-  }
+    initialRouteName: "index",
+  },
 };
 
 export default function RootLayout() {

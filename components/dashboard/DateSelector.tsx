@@ -5,11 +5,11 @@ import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
-// Tema renkleri - fotoğraftaki açık yeşil
+// Tema renkleri - daha koyu yeşil
 const theme = {
-  primary: "#34D399", // Ana yeşil renk
-  primaryLight: "#D1FAE5", // Çok açık yeşil (fotoğraftaki badge rengi)
-  primaryPale: "#ECFDF5", // En açık yeşil tonu (arkaplan için)
+  primary: "#10B981", // Ana yeşil renk - daha koyu (eski: #34D399)
+  primaryLight: "#A7F3D0", // Çok açık yeşil (eski: #D1FAE5)
+  primaryPale: "#D1FAE5", // En açık yeşil tonu (eski: #ECFDF5)
   background: "#FFFFFF", // Arka plan
   text: "#0F172A", // Ana metin
   textSecondary: "#64748B", // İkincil metin

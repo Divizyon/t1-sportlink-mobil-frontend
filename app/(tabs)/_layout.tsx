@@ -17,11 +17,26 @@ export default function TabsLayout() {
   const bgColor = colorScheme === "dark" ? "#1a1a1a" : "#ffffff";
 
   const pathname = usePathname();
-  const [isEventsScreen, setIsEventsScreen] = useState(false);
+  // Artı butonunu görünür yap - varsayılan olarak göster
+  const [showFloatingButton, setShowFloatingButton] = useState(true);
 
   useEffect(() => {
-    // Eğer etkinlikler sayfasındaysak butonu gizle
-    setIsEventsScreen(pathname === "/(tabs)/events");
+    // Ana sayfa dışındaki sayfalarda butonu gizle
+    const hideButtonOnPaths = [
+      "/profile",
+      "/notifications",
+      "/events",
+      "/dashboard/create-event",
+    ];
+
+    // Eğer şu anki path hideButtonOnPaths içindeki herhangi bir değerle başlıyorsa butonu gizle
+    const shouldHideButton = hideButtonOnPaths.some((path) =>
+      pathname.startsWith(path)
+    );
+    setShowFloatingButton(!shouldHideButton);
+
+    console.log("Mevcut path:", pathname);
+    console.log("Buton gösterilecek mi:", !shouldHideButton);
   }, [pathname]);
 
   // Yeni etkinlik oluşturma sayfasına yönlendir
@@ -31,8 +46,8 @@ export default function TabsLayout() {
 
   return (
     <>
-      {/* Sabit Artı Butonu - Etkinlikler sayfası dışında görünecek */}
-      {!isEventsScreen && (
+      {/* Sabit Artı Butonu */}
+      {showFloatingButton && (
         <TouchableOpacity
           style={styles.floatingButton}
           onPress={handleCreateEvent}
@@ -133,7 +148,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#34D399",
+    backgroundColor: "#0B9A6D",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 999,

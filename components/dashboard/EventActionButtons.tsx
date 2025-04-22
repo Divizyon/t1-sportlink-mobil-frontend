@@ -35,7 +35,7 @@ const EventActionButtons: React.FC<EventActionButtonsProps> = ({
         onPress={onToggleJoin}
       >
         {isJoined ? (
-          <UserCheck size={20} color="#4F46E5" />
+          <UserCheck size={20} color="#10B981" />
         ) : (
           <Users size={20} color="white" />
         )}
@@ -92,10 +92,10 @@ const styles = StyleSheet.create({
   },
   joinedButton: {
     backgroundColor: "transparent",
-    borderColor: "#4F46E5",
+    borderColor: "#10B981",
   },
   joinedText: {
-    color: "#4F46E5",
+    color: "#10B981",
   },
   secondaryActions: {
     justifyContent: "space-between",
