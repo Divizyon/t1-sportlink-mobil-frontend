@@ -68,7 +68,8 @@ const eventsData: Event[] = [
     isJoined: true,
     image: "https://picsum.photos/500/300?random=1",
     rating: 4.5,
-    description: "Basketbol severler için haftalık dostluk maçı. Her seviyeden oyuncular katılabilir."
+    description:
+      "Basketbol severler için haftalık dostluk maçı. Her seviyeden oyuncular katılabilir.",
   },
   {
     id: 2,
@@ -85,7 +86,8 @@ const eventsData: Event[] = [
     isJoined: true,
     image: "https://picsum.photos/500/300?random=2",
     rating: 4.2,
-    description: "5v5 halı saha futbol turnuvası. Kazanan takıma kupa verilecektir."
+    description:
+      "5v5 halı saha futbol turnuvası. Kazanan takıma kupa verilecektir.",
   },
   {
     id: 3,
@@ -102,7 +104,8 @@ const eventsData: Event[] = [
     isJoined: false,
     image: "https://picsum.photos/500/300?random=3",
     rating: 4.7,
-    description: "Tüm seviyelere uygun yüzme etkinliği. Profesyonel eğitmenler eşliğinde stil geliştirme."
+    description:
+      "Tüm seviyelere uygun yüzme etkinliği. Profesyonel eğitmenler eşliğinde stil geliştirme.",
   },
   {
     id: 4,
@@ -119,7 +122,8 @@ const eventsData: Event[] = [
     isJoined: false,
     image: "https://picsum.photos/500/300?random=4",
     rating: 4.9,
-    description: "Başlangıç seviyesinden ileri seviyeye tenis dersleri. Raketler kulüp tarafından sağlanmaktadır."
+    description:
+      "Başlangıç seviyesinden ileri seviyeye tenis dersleri. Raketler kulüp tarafından sağlanmaktadır.",
   },
   {
     id: 5,
@@ -136,7 +140,8 @@ const eventsData: Event[] = [
     isJoined: true,
     image: "https://picsum.photos/500/300?random=5",
     rating: 4.3,
-    description: "Hem eğlence hem de profesyonel antrenman için voleybol etkinliği."
+    description:
+      "Hem eğlence hem de profesyonel antrenman için voleybol etkinliği.",
   },
 ];
 
@@ -200,7 +205,7 @@ export default function EventsScreen() {
 
   const filterEvents = (tab: string, category: string, dateFilter: string) => {
     let tabFilteredEvents: Event[] = [];
-    
+
     switch (tab) {
       case "past":
         // Gerçek uygulamada geçmiş etkinlikleri filtreleyecek
@@ -217,63 +222,64 @@ export default function EventsScreen() {
       default:
         tabFilteredEvents = eventsData.slice(2, 4);
     }
-    
+
     // Kategori filtrelemesi
     if (category !== "Tümü") {
       tabFilteredEvents = tabFilteredEvents.filter(
-        event => event.category === category
+        (event) => event.category === category
       );
     }
-    
+
     // Tarih filtrelemesi
     if (dateFilter !== "Tümü") {
       const today = new Date();
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
-      
+
       // Bu basitleştirilmiş bir örnektir. Gerçek uygulamada tam tarih karşılaştırması yapılmalıdır.
       switch (dateFilter) {
         case "Bugün":
           // Örnek olarak "23 Ekim" formatındaki tarihi kontrol ediyoruz
           const todayStr = `${today.getDate()} Ekim`; // Gerçek uygulamada ay dinamik olmalı
           tabFilteredEvents = tabFilteredEvents.filter(
-            event => event.date === todayStr
+            (event) => event.date === todayStr
           );
           break;
         case "Bu Hafta":
           // Basitleştirilmiş örnek - gerçek uygulamada hafta hesaplaması yapılmalı
           tabFilteredEvents = tabFilteredEvents.filter(
-            event => parseInt(event.date.split(" ")[0]) >= today.getDate() && 
-                    parseInt(event.date.split(" ")[0]) < today.getDate() + 7
+            (event) =>
+              parseInt(event.date.split(" ")[0]) >= today.getDate() &&
+              parseInt(event.date.split(" ")[0]) < today.getDate() + 7
           );
           break;
         case "Bu Ay":
           // Tüm Ekim (örnek) etkinlikleri
-          tabFilteredEvents = tabFilteredEvents.filter(
-            event => event.date.includes("Ekim")
+          tabFilteredEvents = tabFilteredEvents.filter((event) =>
+            event.date.includes("Ekim")
           );
           break;
         default:
           // Özel tarih filtreleme (yıl-ay)
           if (selectedYear && selectedMonth) {
-            tabFilteredEvents = tabFilteredEvents.filter(
-              event => event.date.includes(selectedMonth)
+            tabFilteredEvents = tabFilteredEvents.filter((event) =>
+              event.date.includes(selectedMonth)
             );
           }
           break;
       }
     }
-    
+
     // Arama sorgusu varsa, isim veya adrese göre filtrele
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       tabFilteredEvents = tabFilteredEvents.filter(
-        event => 
-          event.title.toLowerCase().includes(query) || 
+        (event) =>
+          event.title.toLowerCase().includes(query) ||
           event.location.toLowerCase().includes(query)
       );
     }
-    
+
     setAllFilteredEvents(tabFilteredEvents);
     setFilteredEvents(tabFilteredEvents);
   };
@@ -335,9 +341,10 @@ export default function EventsScreen() {
   };
 
   // Öne çıkan etkinliği bul (rating'e göre)
-  const featuredEvent = filteredEvents.length > 0 
-    ? [...filteredEvents].sort((a, b) => (b.rating || 0) - (a.rating || 0))[0]
-    : null;
+  const featuredEvent =
+    filteredEvents.length > 0
+      ? [...filteredEvents].sort((a, b) => (b.rating || 0) - (a.rating || 0))[0]
+      : null;
 
   const getCategoryColor = (category: string): string => {
     const colors: Record<string, string> = {
@@ -361,33 +368,31 @@ export default function EventsScreen() {
           <Text style={styles.dateNumber}>{item.date.split(" ")[0]}</Text>
           <Text style={styles.dateMonth}>Eki</Text>
         </Box>
-        
+
         <VStack style={styles.eventDetails}>
           <HStack style={styles.eventTopInfo}>
             <Text style={styles.eventTime}>{item.time}</Text>
             <HStack style={styles.organizerBadge}>
-              <Text style={styles.organizerBadgeText}>
-                {item.organizer}
-              </Text>
-              <CheckCircle size={12} color="#047857" style={{ marginLeft: 4 }} />
+              <Text style={styles.organizerBadgeText}>{item.organizer}</Text>
+              <CheckCircle
+                size={12}
+                color="#047857"
+                style={{ marginLeft: 4 }}
+              />
             </HStack>
           </HStack>
-          
+
           <Text style={styles.eventTitle}>{item.title}</Text>
-          
+
           {item.description && (
             <Text style={styles.eventDescription} numberOfLines={1}>
               {item.description}
             </Text>
           )}
-          
+
           <HStack style={styles.eventTypeContainer}>
             <Box
-              style={
-                item.type === "Spor"
-                  ? styles.workTag
-                  : styles.meetingTag
-              }
+              style={item.type === "Spor" ? styles.workTag : styles.meetingTag}
             >
               <Text style={styles.tagText}>{item.type}</Text>
             </Box>
@@ -401,7 +406,9 @@ export default function EventsScreen() {
           <HStack style={styles.eventExtraInfo}>
             <Box style={styles.distanceInfo}>
               <MapPin size={14} color="#666" style={{ marginRight: 4 }} />
-              <Text style={styles.distanceText}>{item.location} ({item.distance})</Text>
+              <Text style={styles.distanceText}>
+                {item.location} ({item.distance})
+              </Text>
             </Box>
           </HStack>
 
@@ -428,22 +435,26 @@ export default function EventsScreen() {
       <Box style={styles.header}>
         <Text style={styles.headerTitle}>Etkinliklerim</Text>
         <HStack>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.headerIconButton}
             onPress={toggleDateFilter}
           >
-            <Filter size={20} color={selectedDate !== "Tümü" ? "#047857" : "#333"} />
+            <Filter
+              size={20}
+              color={selectedDate !== "Tümü" ? "#047857" : "#333"}
+            />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.headerIconButton}
             onPress={toggleSearch}
           >
-            {showSearch ? 
+            {showSearch ? (
               <TouchableOpacity onPress={toggleSearch}>
                 <Text style={styles.cancelSearchText}>İptal</Text>
-              </TouchableOpacity> : 
+              </TouchableOpacity>
+            ) : (
               <Search size={20} color="#333" />
-            }
+            )}
           </TouchableOpacity>
         </HStack>
       </Box>
@@ -477,7 +488,7 @@ export default function EventsScreen() {
         <Box style={styles.dateFilterPanel}>
           <HStack style={styles.dateFilterHeader}>
             <Text style={styles.dateFilterTitle}>Tarihe Göre Filtrele</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.resetFilterButton}
               onPress={resetDateFilter}
             >
@@ -491,20 +502,24 @@ export default function EventsScreen() {
               key={filter.id}
               style={[
                 styles.dateFilterItem,
-                selectedDate === filter.name && styles.selectedDateFilterItem
+                selectedDate === filter.name && styles.selectedDateFilterItem,
               ]}
               onPress={() => handleBasicDateSelect(filter.name)}
             >
-              <Text 
+              <Text
                 style={[
                   styles.dateFilterText,
-                  selectedDate === filter.name && styles.selectedDateFilterText
+                  selectedDate === filter.name && styles.selectedDateFilterText,
                 ]}
               >
                 {filter.label}
               </Text>
               {selectedDate === filter.name && (
-                <CheckCircle size={18} color="#047857" style={styles.checkIcon} />
+                <CheckCircle
+                  size={18}
+                  color="#047857"
+                  style={styles.checkIcon}
+                />
               )}
             </TouchableOpacity>
           ))}
@@ -516,14 +531,18 @@ export default function EventsScreen() {
               <TouchableOpacity
                 style={[
                   styles.yearButton,
-                  selectedYear === year && !selectedMonth && styles.selectedYearButton
+                  selectedYear === year &&
+                    !selectedMonth &&
+                    styles.selectedYearButton,
                 ]}
                 onPress={() => toggleYearExpansion(year)}
               >
-                <Text 
+                <Text
                   style={[
                     styles.yearButtonText,
-                    selectedYear === year && !selectedMonth && styles.selectedYearButtonText
+                    selectedYear === year &&
+                      !selectedMonth &&
+                      styles.selectedYearButtonText,
                   ]}
                 >
                   {year}
@@ -534,7 +553,7 @@ export default function EventsScreen() {
                   <ChevronDown size={20} color="#666" />
                 )}
               </TouchableOpacity>
-              
+
               {/* Month Buttons (shown only when year is expanded) */}
               {expandedYear === year && (
                 <View style={styles.monthButtonsContainer}>
@@ -543,18 +562,18 @@ export default function EventsScreen() {
                       key={month.value}
                       style={[
                         styles.monthButton,
-                        selectedYear === year && 
-                        selectedMonth === month.label && 
-                        styles.selectedMonthButton
+                        selectedYear === year &&
+                          selectedMonth === month.label &&
+                          styles.selectedMonthButton,
                       ]}
                       onPress={() => handleMonthSelect(year, month.label)}
                     >
-                      <Text 
+                      <Text
                         style={[
                           styles.monthButtonText,
-                          selectedYear === year && 
-                          selectedMonth === month.label && 
-                          styles.selectedMonthButtonText
+                          selectedYear === year &&
+                            selectedMonth === month.label &&
+                            styles.selectedMonthButtonText,
                         ]}
                       >
                         {month.label}
@@ -570,8 +589,8 @@ export default function EventsScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Category Filters - Always visible now */}
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.categoryFiltersContainer}
           contentContainerStyle={styles.categoryFiltersContent}
@@ -581,15 +600,17 @@ export default function EventsScreen() {
               key={category.id}
               style={[
                 styles.categoryButton,
-                selectedCategory === category.name && styles.selectedCategoryButton
+                selectedCategory === category.name &&
+                  styles.selectedCategoryButton,
               ]}
               onPress={() => handleCategorySelect(category.name)}
             >
               <Text style={styles.categoryIcon}>{category.icon}</Text>
-              <Text 
+              <Text
                 style={[
                   styles.categoryName,
-                  selectedCategory === category.name && styles.selectedCategoryName
+                  selectedCategory === category.name &&
+                    styles.selectedCategoryName,
                 ]}
               >
                 {category.name}
@@ -665,7 +686,9 @@ export default function EventsScreen() {
               onPress={() => handleEventPress(featuredEvent.id)}
             >
               <Image
-                source={{ uri: featuredEvent.image || "https://picsum.photos/500/300" }}
+                source={{
+                  uri: featuredEvent.image || "https://picsum.photos/500/300",
+                }}
                 style={styles.featuredEventImage}
               />
               <Box style={styles.featuredEventBadge}>
@@ -691,7 +714,10 @@ export default function EventsScreen() {
                   {featuredEvent.title}
                 </Text>
                 {featuredEvent.description && (
-                  <Text style={styles.featuredEventDescription} numberOfLines={2}>
+                  <Text
+                    style={styles.featuredEventDescription}
+                    numberOfLines={2}
+                  >
                     {featuredEvent.description}
                   </Text>
                 )}
@@ -725,7 +751,8 @@ export default function EventsScreen() {
                   <HStack style={{ alignItems: "center" }}>
                     <Users size={14} color="#666" />
                     <Text style={styles.featuredEventParticipantsText}>
-                      {featuredEvent.participants}/{featuredEvent.maxParticipants} katılımcı
+                      {featuredEvent.participants}/
+                      {featuredEvent.maxParticipants} katılımcı
                     </Text>
                   </HStack>
                 </HStack>
@@ -738,28 +765,30 @@ export default function EventsScreen() {
         <HStack style={styles.sectionHeader}>
           <VStack>
             <Text style={styles.sectionTitle}>
-              {activeTab === "past" 
-                ? "Geçmiş Etkinlikler" 
-                : activeTab === "upcoming" 
-                  ? "Yaklaşan Etkinlikler" 
-                  : "Oluşturduğum Etkinlikler"}
+              {activeTab === "past"
+                ? "Geçmiş Etkinlikler"
+                : activeTab === "upcoming"
+                ? "Yaklaşan Etkinlikler"
+                : "Oluşturduğum Etkinlikler"}
               {searchQuery.trim() !== "" && `: "${searchQuery}"`}
             </Text>
             <HStack style={styles.activeFiltersContainer}>
               {selectedCategory !== "Tümü" && (
                 <HStack style={styles.activeFilterBadge}>
                   <Text style={styles.activeFilterIcon}>
-                    {categories.find(c => c.name === selectedCategory)?.icon}
+                    {categories.find((c) => c.name === selectedCategory)?.icon}
                   </Text>
-                  <Text style={styles.activeFilterText}>{selectedCategory}</Text>
+                  <Text style={styles.activeFilterText}>
+                    {selectedCategory}
+                  </Text>
                 </HStack>
               )}
               {selectedDate !== "Tümü" && (
                 <HStack style={styles.activeFilterBadge}>
                   <Text style={styles.activeFilterIcon}>🗓️</Text>
                   <Text style={styles.activeFilterText}>
-                    {selectedYear && selectedMonth 
-                      ? `${selectedMonth} ${selectedYear}` 
+                    {selectedYear && selectedMonth
+                      ? `${selectedMonth} ${selectedYear}`
                       : selectedDate}
                   </Text>
                 </HStack>
@@ -775,9 +804,11 @@ export default function EventsScreen() {
         {/* Events List */}
         <VStack style={styles.eventsContainer}>
           {filteredEvents.length > 0 ? (
-            filteredEvents.filter(event => event.id !== featuredEvent?.id).map(event => (
-              <View key={event.id}>{renderEvent({ item: event })}</View>
-            ))
+            filteredEvents
+              .filter((event) => event.id !== featuredEvent?.id)
+              .map((event) => (
+                <View key={event.id}>{renderEvent({ item: event })}</View>
+              ))
           ) : (
             <Box style={styles.noEventsMessage}>
               {searchQuery.trim() !== "" ? (
@@ -1188,7 +1219,7 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   categoryFiltersContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     paddingVertical: 15,
     marginBottom: 10,
   },
@@ -1196,20 +1227,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
   categoryButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 8,
     paddingHorizontal: 16,
     marginRight: 10,
     borderRadius: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    flexDirection: 'row',
+    borderColor: "#e0e0e0",
+    flexDirection: "row",
   },
   selectedCategoryButton: {
-    backgroundColor: '#e6f7f4',
-    borderColor: '#047857',
+    backgroundColor: "#e6f7f4",
+    borderColor: "#047857",
   },
   categoryIcon: {
     fontSize: 16,
@@ -1217,21 +1248,21 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    color: "#666",
+    fontWeight: "500",
   },
   selectedCategoryName: {
-    color: '#047857',
-    fontWeight: '600',
+    color: "#047857",
+    fontWeight: "600",
   },
   activeFiltersContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginTop: 5,
   },
   activeFilterBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 5,
   },
   activeFilterIcon: {
@@ -1240,109 +1271,109 @@ const styles = StyleSheet.create({
   },
   activeFilterText: {
     fontSize: 12,
-    color: '#047857',
-    fontWeight: '500',
+    color: "#047857",
+    fontWeight: "500",
   },
   dateFilterPanel: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   dateFilterHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 15,
   },
   dateFilterTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   resetFilterButton: {
     padding: 5,
   },
   resetFilterText: {
-    color: '#047857',
+    color: "#047857",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   dateFilterItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderRadius: 8,
     marginBottom: 8,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   selectedDateFilterItem: {
-    backgroundColor: '#e6f7f4',
+    backgroundColor: "#e6f7f4",
   },
   dateFilterText: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   selectedDateFilterText: {
-    color: '#047857',
-    fontWeight: '600',
+    color: "#047857",
+    fontWeight: "600",
   },
   checkIcon: {
     marginLeft: 10,
   },
   yearSectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginTop: 15,
     marginBottom: 10,
   },
   yearButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#f5f5f5',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#f5f5f5",
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderRadius: 8,
     marginBottom: 8,
   },
   selectedYearButton: {
-    backgroundColor: '#e6f7f4',
+    backgroundColor: "#e6f7f4",
   },
   yearButtonText: {
     fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
+    color: "#333",
+    fontWeight: "500",
   },
   selectedYearButtonText: {
-    color: '#047857',
-    fontWeight: '600',
+    color: "#047857",
+    fontWeight: "600",
   },
   monthButtonsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginBottom: 10,
     marginLeft: 10,
   },
   monthButton: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
     margin: 4,
   },
   selectedMonthButton: {
-    backgroundColor: '#e6f7f4',
+    backgroundColor: "#e6f7f4",
   },
   monthButtonText: {
     fontSize: 14,
-    color: '#333',
+    color: "#333",
   },
   selectedMonthButtonText: {
-    color: '#047857',
-    fontWeight: '600',
+    color: "#047857",
+    fontWeight: "600",
   },
 });

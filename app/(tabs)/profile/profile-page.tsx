@@ -50,7 +50,7 @@ import {
   Check,
 } from "lucide-react-native";
 import { router } from "expo-router";
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 
 // Menü öğesi tipi tanımlama
 interface MenuItem {
@@ -123,31 +123,12 @@ const userData = {
   profileImage: "https://randomuser.me/api/portraits/men/32.jpg",
   isPro: true,
   age: 28,
-  biography: "Spor tutkunu, aktif yaşam tarzını seven ve yeni insanlar tanımayı seven biriyim. Haftada en az 3 kez koşu ve fitness yapıyorum. Özellikle takım sporlarına ilgi duyuyorum.",
+  biography:
+    "Spor tutkunu, aktif yaşam tarzını seven ve yeni insanlar tanımayı seven biriyim. Haftada en az 3 kez koşu ve fitness yapıyorum. Özellikle takım sporlarına ilgi duyuyorum.",
   stats: {
     events: 12,
     friends: 28,
   },
-  achievements: [
-    {
-      id: 1,
-      name: "Spor Tutkunu",
-      description: "10 etkinliğe katıldın",
-      icon: "🏆",
-    },
-    {
-      id: 2,
-      name: "Sosyal Sporcu",
-      description: "5 farklı kişiyle etkinlik gerçekleştirdin",
-      icon: "🤝",
-    },
-    {
-      id: 3,
-      name: "Erken Kuş",
-      description: "5 sabah etkinliğine katıldın",
-      icon: "🌅",
-    },
-  ],
   interests: ["Basketbol", "Futbol", "Yüzme", "Koşu", "Tenis"],
 };
 
@@ -286,7 +267,7 @@ interface Permission {
   id: string;
   title: string;
   description: string;
-  status: 'granted' | 'denied' | 'unknown';
+  status: "granted" | "denied" | "unknown";
   icon: React.ReactNode;
 }
 
@@ -301,7 +282,8 @@ const defaultNotificationCategories: NotificationCategory[] = [
   {
     id: "new_events",
     title: "Yeni Etkinlikler",
-    description: "İlgi alanlarınıza uygun yeni etkinlikler oluşturulduğunda bildirim alın",
+    description:
+      "İlgi alanlarınıza uygun yeni etkinlikler oluşturulduğunda bildirim alın",
     enabled: true,
   },
   {
@@ -325,50 +307,58 @@ const defaultNotificationCategories: NotificationCategory[] = [
   {
     id: "app_updates",
     title: "Uygulama Güncellemeleri",
-    description: "Uygulama güncellemeleri ve yeni özellikler hakkında bildirim alın",
+    description:
+      "Uygulama güncellemeleri ve yeni özellikler hakkında bildirim alın",
     enabled: false,
   },
 ];
 
 export default function ProfileScreen() {
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
-  const [isEditProfileModalVisible, setIsEditProfileModalVisible] = useState(false);
-  const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
+  const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
+    useState(false);
+  const [isNotificationsModalVisible, setIsNotificationsModalVisible] =
+    useState(false);
   const [isPrivacyModalVisible, setIsPrivacyModalVisible] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [notificationCategories, setNotificationCategories] = useState<NotificationCategory[]>([...defaultNotificationCategories]);
+  const [notificationCategories, setNotificationCategories] = useState<
+    NotificationCategory[]
+  >([...defaultNotificationCategories]);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [activePrivacySection, setActivePrivacySection] = useState<string | null>(null);
+  const [activePrivacySection, setActivePrivacySection] = useState<
+    string | null
+  >(null);
   const [permissions, setPermissions] = useState<Permission[]>([
     {
       id: "camera",
       title: "Kamera",
       description: "Kamera erişimine izin verin (profil fotoğrafı çekmek için)",
       status: "unknown",
-      icon: <Camera size={22} color="#3498db" />
+      icon: <Camera size={22} color="#3498db" />,
     },
     {
       id: "microfon",
       title: "Mikrofon",
       description: "Mikrofon erişimine izin verin (sesli mesaj göndermek için)",
       status: "unknown",
-      icon: <Mic size={22} color="#e74c3c" />
+      icon: <Mic size={22} color="#e74c3c" />,
     },
     {
       id: "location",
       title: "Konum",
-      description: "Konum erişimine izin verin (yakınınızdaki etkinlikleri görmek için)",
+      description:
+        "Konum erişimine izin verin (yakınınızdaki etkinlikleri görmek için)",
       status: "unknown",
-      icon: <Map size={22} color="#2ecc71" />
+      icon: <Map size={22} color="#2ecc71" />,
     },
     {
       id: "photos",
       title: "Fotoğraflar",
       description: "Galeri erişimine izin verin (profil fotoğrafı seçmek için)",
       status: "unknown",
-      icon: <ImageIcon size={22} color="#9b59b6" />
+      icon: <ImageIcon size={22} color="#9b59b6" />,
     },
   ]);
   const [editedProfile, setEditedProfile] = useState({
@@ -378,7 +368,7 @@ export default function ProfileScreen() {
     biography: userData.biography,
     profileImage: userData.profileImage,
   });
-  
+
   const handleEditProfile = () => {
     setIsEditProfileModalVisible(true);
   };
@@ -391,21 +381,23 @@ export default function ProfileScreen() {
     userData.interests = [...editedProfile.interests];
     userData.biography = editedProfile.biography;
     userData.profileImage = editedProfile.profileImage;
-    
+
     setIsEditProfileModalVisible(false);
   };
 
   const handleRemoveInterest = (interestToRemove: string) => {
     setEditedProfile({
       ...editedProfile,
-      interests: editedProfile.interests.filter(interest => interest !== interestToRemove)
+      interests: editedProfile.interests.filter(
+        (interest) => interest !== interestToRemove
+      ),
     });
   };
 
   const handleMenuItemPress = (itemId: string) => {
     console.log(`Menü öğesi tıklandı: ${itemId}`);
     setIsSettingsVisible(false);
-    
+
     if (itemId === "notifications") {
       setIsNotificationsModalVisible(true);
     } else if (itemId === "privacy") {
@@ -447,12 +439,12 @@ export default function ProfileScreen() {
 
   // Handler for profile picture change
   const handleChangeProfilePicture = async () => {
-    if (Platform.OS === 'ios') {
+    if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['İptal', 'Kamera', 'Galeri'],
+          options: ["İptal", "Kamera", "Galeri"],
           cancelButtonIndex: 0,
-          userInterfaceStyle: 'light',
+          userInterfaceStyle: "light",
         },
         async (buttonIndex) => {
           if (buttonIndex === 1) {
@@ -464,15 +456,11 @@ export default function ProfileScreen() {
       );
     } else {
       // For Android
-      Alert.alert(
-        'Profil Fotoğrafı',
-        'Lütfen bir seçenek belirleyin',
-        [
-          { text: 'İptal', style: 'cancel' },
-          { text: 'Kamera', onPress: takePicture },
-          { text: 'Galeri', onPress: pickImage },
-        ]
-      );
+      Alert.alert("Profil Fotoğrafı", "Lütfen bir seçenek belirleyin", [
+        { text: "İptal", style: "cancel" },
+        { text: "Kamera", onPress: takePicture },
+        { text: "Galeri", onPress: pickImage },
+      ]);
     }
   };
 
@@ -481,23 +469,23 @@ export default function ProfileScreen() {
     try {
       // Request camera permissions
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      
-      if (status !== 'granted') {
+
+      if (status !== "granted") {
         Alert.alert(
-          'İzin Gerekli',
-          'Kamerayı kullanabilmek için izin vermeniz gerekmektedir.',
-          [{ text: 'Tamam' }]
+          "İzin Gerekli",
+          "Kamerayı kullanabilmek için izin vermeniz gerekmektedir.",
+          [{ text: "Tamam" }]
         );
         return;
       }
-      
+
       // Launch camera
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
       });
-      
+
       if (!result.canceled) {
         setEditedProfile({
           ...editedProfile,
@@ -505,8 +493,8 @@ export default function ProfileScreen() {
         });
       }
     } catch (error) {
-      console.log('Kamera hatası:', error);
-      Alert.alert('Hata', 'Fotoğraf çekilirken bir hata oluştu');
+      console.log("Kamera hatası:", error);
+      Alert.alert("Hata", "Fotoğraf çekilirken bir hata oluştu");
     }
   };
 
@@ -514,25 +502,26 @@ export default function ProfileScreen() {
   const pickImage = async () => {
     try {
       // Request media library permissions
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (status !== 'granted') {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== "granted") {
         Alert.alert(
-          'İzin Gerekli',
-          'Galeriye erişebilmek için izin vermeniz gerekmektedir.',
-          [{ text: 'Tamam' }]
+          "İzin Gerekli",
+          "Galeriye erişebilmek için izin vermeniz gerekmektedir.",
+          [{ text: "Tamam" }]
         );
         return;
       }
-      
+
       // Launch image library
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: 'images',
+        mediaTypes: "images",
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
       });
-      
+
       if (!result.canceled) {
         setEditedProfile({
           ...editedProfile,
@@ -540,25 +529,25 @@ export default function ProfileScreen() {
         });
       }
     } catch (error) {
-      console.log('Galeri hatası:', error);
-      Alert.alert('Hata', 'Resim seçilirken bir hata oluştu');
+      console.log("Galeri hatası:", error);
+      Alert.alert("Hata", "Resim seçilirken bir hata oluştu");
     }
   };
 
   // Handler for toggling sports
   const handleToggleSport = (sport: string) => {
-    setEditedProfile(prevProfile => {
+    setEditedProfile((prevProfile) => {
       if (prevProfile.interests.includes(sport)) {
         // Remove sport if already selected
         return {
           ...prevProfile,
-          interests: prevProfile.interests.filter(item => item !== sport)
+          interests: prevProfile.interests.filter((item) => item !== sport),
         };
       } else {
         // Add sport if not selected
         return {
           ...prevProfile,
-          interests: [...prevProfile.interests, sport]
+          interests: [...prevProfile.interests, sport],
         };
       }
     });
@@ -567,13 +556,13 @@ export default function ProfileScreen() {
   // Toggle all notifications
   const toggleNotifications = (value: boolean) => {
     setNotificationsEnabled(value);
-    
+
     // If turning off all notifications, disable all categories
     if (!value) {
       setNotificationCategories(
-        notificationCategories.map(category => ({
+        notificationCategories.map((category) => ({
           ...category,
-          enabled: false
+          enabled: false,
         }))
       );
     } else {
@@ -581,30 +570,30 @@ export default function ProfileScreen() {
       setNotificationCategories([...defaultNotificationCategories]);
     }
   };
-  
+
   // Toggle individual notification category
   const toggleNotificationCategory = (categoryId: string, value: boolean) => {
     setNotificationCategories(
-      notificationCategories.map(category => 
+      notificationCategories.map((category) =>
         category.id === categoryId ? { ...category, enabled: value } : category
       )
     );
-    
+
     // If any category is enabled, main toggle should be on
-    const anyEnabled = notificationCategories.some(category => 
+    const anyEnabled = notificationCategories.some((category) =>
       category.id === categoryId ? value : category.enabled
     );
-    
+
     if (anyEnabled && !notificationsEnabled) {
       setNotificationsEnabled(true);
     }
   };
-  
+
   // Save notification settings
   const handleSaveNotificationSettings = () => {
     // Here would be API calls to save notification preferences
     Alert.alert(
-      "Bildirim Ayarları", 
+      "Bildirim Ayarları",
       "Bildirim tercihleriniz başarıyla kaydedildi.",
       [{ text: "Tamam", onPress: () => setIsNotificationsModalVisible(false) }]
     );
@@ -616,56 +605,71 @@ export default function ProfileScreen() {
       Alert.alert("Hata", "Lütfen tüm şifre alanlarını doldurunuz.");
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
       Alert.alert("Hata", "Yeni şifre ve şifre tekrarı eşleşmiyor.");
       return;
     }
-    
+
     if (newPassword.length < 8) {
       Alert.alert("Hata", "Şifre en az 8 karakter olmalıdır.");
       return;
     }
-    
+
     // Here you would implement actual password change API call
-    Alert.alert(
-      "Başarılı", 
-      "Şifreniz başarıyla değiştirildi.",
-      [{ text: "Tamam", onPress: () => {
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        setActivePrivacySection(null);
-      }}]
-    );
+    Alert.alert("Başarılı", "Şifreniz başarıyla değiştirildi.", [
+      {
+        text: "Tamam",
+        onPress: () => {
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+          setActivePrivacySection(null);
+        },
+      },
+    ]);
   };
-  
+
   const handleFreezeAccount = () => {
     Alert.alert(
       "Hesap Dondurma",
       "Hesabınızı dondurmak istediğinize emin misiniz? Bu işlem gerçekleştiğinde hesabınız gizlenecek ve yeniden aktifleştirene kadar erişilemez olacaktır.",
       [
         { text: "İptal", style: "cancel" },
-        { text: "Hesabı Dondur", style: "destructive", onPress: () => {
-          // Here you would implement actual account freezing logic
-          Alert.alert("Hesap Donduruldu", "Hesabınız başarıyla donduruldu. Tekrar giriş yaparak hesabınızı aktifleştirebilirsiniz.");
-          setActivePrivacySection(null);
-        }}
+        {
+          text: "Hesabı Dondur",
+          style: "destructive",
+          onPress: () => {
+            // Here you would implement actual account freezing logic
+            Alert.alert(
+              "Hesap Donduruldu",
+              "Hesabınız başarıyla donduruldu. Tekrar giriş yaparak hesabınızı aktifleştirebilirsiniz."
+            );
+            setActivePrivacySection(null);
+          },
+        },
       ]
     );
   };
-  
+
   const handleDeleteAccount = () => {
     Alert.alert(
       "Hesap Silme",
       "Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm verileriniz kalıcı olarak silinecektir.",
       [
         { text: "İptal", style: "cancel" },
-        { text: "Hesabı Sil", style: "destructive", onPress: () => {
-          // Here you would implement actual account deletion logic
-          Alert.alert("Hesap Silindi", "Hesabınız başarıyla silindi. Uygulama kapanacak.");
-          setActivePrivacySection(null);
-        }}
+        {
+          text: "Hesabı Sil",
+          style: "destructive",
+          onPress: () => {
+            // Here you would implement actual account deletion logic
+            Alert.alert(
+              "Hesap Silindi",
+              "Hesabınız başarıyla silindi. Uygulama kapanacak."
+            );
+            setActivePrivacySection(null);
+          },
+        },
       ]
     );
   };
@@ -678,48 +682,61 @@ export default function ProfileScreen() {
     setNewPassword("");
     setConfirmPassword("");
   };
-  
+
   // Function to check permission status
   const checkPermissions = async () => {
     try {
       // Create a copy of the current permissions
       const updatedPermissions = [...permissions];
-      
+
       // Check camera permission
       const cameraPermission = await ImagePicker.getCameraPermissionsAsync();
-      const cameraIndex = updatedPermissions.findIndex(p => p.id === "camera");
+      const cameraIndex = updatedPermissions.findIndex(
+        (p) => p.id === "camera"
+      );
       if (cameraIndex !== -1) {
         updatedPermissions[cameraIndex] = {
           ...updatedPermissions[cameraIndex],
-          status: cameraPermission.granted ? "granted" : cameraPermission.canAskAgain ? "unknown" : "denied"
+          status: cameraPermission.granted
+            ? "granted"
+            : cameraPermission.canAskAgain
+            ? "unknown"
+            : "denied",
         };
       }
-      
+
       // Check media library permission
-      const mediaLibraryPermission = await ImagePicker.getMediaLibraryPermissionsAsync();
-      const photosIndex = updatedPermissions.findIndex(p => p.id === "photos");
+      const mediaLibraryPermission =
+        await ImagePicker.getMediaLibraryPermissionsAsync();
+      const photosIndex = updatedPermissions.findIndex(
+        (p) => p.id === "photos"
+      );
       if (photosIndex !== -1) {
         updatedPermissions[photosIndex] = {
           ...updatedPermissions[photosIndex],
-          status: mediaLibraryPermission.granted ? "granted" : mediaLibraryPermission.canAskAgain ? "unknown" : "denied"
+          status: mediaLibraryPermission.granted
+            ? "granted"
+            : mediaLibraryPermission.canAskAgain
+            ? "unknown"
+            : "denied",
         };
       }
-      
+
       // For other permissions, we'd need to use their specific permission APIs
       // This is a simplified example that only checks permissions we have direct access to
-      
+
       // Update the permissions state
       setPermissions(updatedPermissions);
     } catch (error) {
-      console.log('Permission checking error:', error);
+      console.log("Permission checking error:", error);
     }
   };
-  
+
   // Function to request permission
   const requestPermission = async (permissionId: string) => {
     try {
       let result;
-      
+
       if (permissionId === "camera") {
         result = await ImagePicker.requestCameraPermissionsAsync();
       } else if (permissionId === "photos") {
@@ -731,23 +748,29 @@ export default function ProfileScreen() {
           "Bu izni ayarlamak için lütfen uygulama ayarlarını açın.",
           [
             { text: "İptal" },
-            { text: "Ayarları Aç", onPress: () => Linking.openSettings() }
+            { text: "Ayarları Aç", onPress: () => Linking.openSettings() },
           ]
         );
         return;
       }
-      
+
       // After requesting permission, update our state
-      const permissionIndex = permissions.findIndex(p => p.id === permissionId);
+      const permissionIndex = permissions.findIndex(
+        (p) => p.id === permissionId
+      );
       if (permissionIndex !== -1) {
         const updatedPermissions = [...permissions];
         updatedPermissions[permissionIndex] = {
           ...updatedPermissions[permissionIndex],
-          status: result.granted ? "granted" : result.canAskAgain ? "unknown" : "denied"
+          status: result.granted
+            ? "granted"
+            : result.canAskAgain
+            ? "unknown"
+            : "denied",
         };
         setPermissions(updatedPermissions);
       }
-      
+
       if (!result.granted && !result.canAskAgain) {
         // If permission is denied and we can't ask again, suggest opening settings
         Alert.alert(
@@ -755,12 +778,12 @@ export default function ProfileScreen() {
           "Bu izni etkinleştirmek için lütfen uygulama ayarlarını açın.",
           [
             { text: "İptal" },
-            { text: "Ayarları Aç", onPress: () => Linking.openSettings() }
+            { text: "Ayarları Aç", onPress: () => Linking.openSettings() },
           ]
         );
       }
     } catch (error) {
-      console.log('Permission request error:', error);
+      console.log("Permission request error:", error);
     }
   };
 
@@ -771,16 +794,16 @@ export default function ProfileScreen() {
       "Profil fotoğrafınızı silmek istediğinize emin misiniz?",
       [
         { text: "İptal", style: "cancel" },
-        { 
-          text: "Sil", 
+        {
+          text: "Sil",
           style: "destructive",
           onPress: () => {
             setEditedProfile({
               ...editedProfile,
               profileImage: DEFAULT_PROFILE_IMAGE,
             });
-          } 
-        }
+          },
+        },
       ]
     );
   };
@@ -788,7 +811,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      
+
       {/* Ayarlar Modal */}
       <Modal
         animationType="slide"
@@ -804,14 +827,14 @@ export default function ProfileScreen() {
                 <X size={24} color="#333" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modalBody}>
               {menuItems.map(renderMenuItem)}
             </View>
           </View>
         </View>
       </Modal>
-      
+
       {/* Profil Düzenleme Modal */}
       <Modal
         animationType="slide"
@@ -823,11 +846,13 @@ export default function ProfileScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Profili Düzenle</Text>
-              <TouchableOpacity onPress={() => setIsEditProfileModalVisible(false)}>
+              <TouchableOpacity
+                onPress={() => setIsEditProfileModalVisible(false)}
+              >
                 <X size={24} color="#333" />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.modalBody}>
               {/* Profile Picture Section */}
               <View style={styles.profilePictureSection}>
@@ -836,15 +861,21 @@ export default function ProfileScreen() {
                   style={styles.editProfileImage}
                 />
                 <View style={styles.photoButtonsContainer}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.changePhotoButton}
                     onPress={handleChangeProfilePicture}
                   >
-                    <Camera size={18} color="#fff" style={styles.photoButtonIcon} />
-                    <Text style={styles.changePhotoText}>Fotoğrafı Değiştir</Text>
+                    <Camera
+                      size={18}
+                      color="#fff"
+                      style={styles.photoButtonIcon}
+                    />
+                    <Text style={styles.changePhotoText}>
+                      Fotoğrafı Değiştir
+                    </Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.deletePhotoButton}
                     onPress={handleDeleteProfilePicture}
                   >
@@ -853,18 +884,20 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>İsim Soyisim</Text>
                 <TextInput
                   style={styles.textInput}
                   value={editedProfile.name}
-                  onChangeText={(text) => setEditedProfile({...editedProfile, name: text})}
+                  onChangeText={(text) =>
+                    setEditedProfile({ ...editedProfile, name: text })
+                  }
                   placeholder="İsim Soyisim"
                   autoCapitalize="words"
                 />
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Yaş</Text>
                 <TextInput
@@ -872,35 +905,37 @@ export default function ProfileScreen() {
                   value={String(editedProfile.age)}
                   onChangeText={(text) => {
                     const age = parseInt(text) || 0;
-                    setEditedProfile({...editedProfile, age});
+                    setEditedProfile({ ...editedProfile, age });
                   }}
                   placeholder="Yaş"
                   keyboardType="number-pad"
                   maxLength={3}
                 />
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Biyografi</Text>
                 <TextInput
                   style={[styles.textInput, styles.biographyInput]}
                   value={editedProfile.biography}
-                  onChangeText={(text) => setEditedProfile({...editedProfile, biography: text})}
+                  onChangeText={(text) =>
+                    setEditedProfile({ ...editedProfile, biography: text })
+                  }
                   placeholder="Kendinizi kısaca tanıtın..."
                   multiline={true}
                   numberOfLines={4}
                   textAlignVertical="top"
                 />
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>İlgi Alanları</Text>
-                
+
                 <View style={styles.interestsEditContainer}>
                   {editedProfile.interests.map((interest, index) => (
                     <View key={index} style={styles.interestEditTag}>
                       <Text style={styles.interestEditTagText}>{interest}</Text>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.removeInterestButton}
                         onPress={() => handleRemoveInterest(interest)}
                       >
@@ -909,23 +944,27 @@ export default function ProfileScreen() {
                     </View>
                   ))}
                 </View>
-                
-                <Text style={styles.sportSelectionLabel}>Mevcut Spor Dalları</Text>
-                
+
+                <Text style={styles.sportSelectionLabel}>
+                  Mevcut Spor Dalları
+                </Text>
+
                 <View style={styles.sportCategoriesContainer}>
                   {sportsCategories.map((sport, index) => (
                     <TouchableOpacity
                       key={index}
                       style={[
                         styles.sportCategoryItem,
-                        editedProfile.interests.includes(sport) && styles.selectedSportCategory
+                        editedProfile.interests.includes(sport) &&
+                          styles.selectedSportCategory,
                       ]}
                       onPress={() => handleToggleSport(sport)}
                     >
-                      <Text 
+                      <Text
                         style={[
                           styles.sportCategoryText,
-                          editedProfile.interests.includes(sport) && styles.selectedSportCategoryText
+                          editedProfile.interests.includes(sport) &&
+                            styles.selectedSportCategoryText,
                         ]}
                       >
                         {sport}
@@ -934,8 +973,8 @@ export default function ProfileScreen() {
                   ))}
                 </View>
               </View>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.saveButton}
                 onPress={handleSaveProfile}
               >
@@ -945,7 +984,7 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-      
+
       {/* Bildirim Ayarları Modal */}
       <Modal
         animationType="slide"
@@ -957,19 +996,25 @@ export default function ProfileScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Bildirim Ayarları</Text>
-              <TouchableOpacity onPress={() => setIsNotificationsModalVisible(false)}>
+              <TouchableOpacity
+                onPress={() => setIsNotificationsModalVisible(false)}
+              >
                 <X size={24} color="#333" />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.modalBody}>
               {/* Main notification toggle */}
               <View style={styles.notificationToggleContainer}>
                 <View style={styles.notificationToggleInfo}>
                   <Bell size={22} color="#f39c12" style={{ marginRight: 12 }} />
                   <View>
-                    <Text style={styles.notificationToggleTitle}>Tüm Bildirimleri Etkinleştir</Text>
-                    <Text style={styles.notificationToggleDesc}>Tüm bildirimleri açıp kapatın</Text>
+                    <Text style={styles.notificationToggleTitle}>
+                      Tüm Bildirimleri Etkinleştir
+                    </Text>
+                    <Text style={styles.notificationToggleDesc}>
+                      Tüm bildirimleri açıp kapatın
+                    </Text>
                   </View>
                 </View>
                 <Switch
@@ -980,30 +1025,38 @@ export default function ProfileScreen() {
                   value={notificationsEnabled}
                 />
               </View>
-              
+
               <View style={styles.notificationCategoriesHeader}>
-                <Text style={styles.notificationCategoriesTitle}>Bildirim Tercihleri</Text>
+                <Text style={styles.notificationCategoriesTitle}>
+                  Bildirim Tercihleri
+                </Text>
               </View>
-              
+
               {/* Notification category toggles */}
               {notificationCategories.map((category) => (
                 <View key={category.id} style={styles.notificationCategoryItem}>
                   <View style={styles.notificationCategoryInfo}>
-                    <Text style={styles.notificationCategoryTitle}>{category.title}</Text>
-                    <Text style={styles.notificationCategoryDesc}>{category.description}</Text>
+                    <Text style={styles.notificationCategoryTitle}>
+                      {category.title}
+                    </Text>
+                    <Text style={styles.notificationCategoryDesc}>
+                      {category.description}
+                    </Text>
                   </View>
                   <Switch
                     trackColor={{ false: "#e0e0e0", true: "#bde0fe" }}
                     thumbColor={category.enabled ? "#3498db" : "#f4f3f4"}
                     ios_backgroundColor="#e0e0e0"
-                    onValueChange={(value) => toggleNotificationCategory(category.id, value)}
+                    onValueChange={(value) =>
+                      toggleNotificationCategory(category.id, value)
+                    }
                     value={category.enabled}
                     disabled={!notificationsEnabled}
                   />
                 </View>
               ))}
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.saveButton}
                 onPress={handleSaveNotificationSettings}
               >
@@ -1013,7 +1066,7 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-      
+
       {/* Gizlilik ve Güvenlik Modal */}
       <Modal
         animationType="slide"
@@ -1028,31 +1081,32 @@ export default function ProfileScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {activePrivacySection === null 
-                  ? "Gizlilik ve Güvenlik" 
-                  : activePrivacySection === "password" 
-                    ? "Şifre Değiştir" 
-                    : activePrivacySection === "freeze" 
-                      ? "Hesabı Dondur" 
-                      : "Hesabı Sil"
-                }
+                {activePrivacySection === null
+                  ? "Gizlilik ve Güvenlik"
+                  : activePrivacySection === "password"
+                  ? "Şifre Değiştir"
+                  : activePrivacySection === "freeze"
+                  ? "Hesabı Dondur"
+                  : "Hesabı Sil"}
               </Text>
               {activePrivacySection !== null ? (
                 <TouchableOpacity onPress={handleBackToPrivacyMenu}>
                   <ArrowLeft size={24} color="#333" />
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity onPress={() => setIsPrivacyModalVisible(false)}>
+                <TouchableOpacity
+                  onPress={() => setIsPrivacyModalVisible(false)}
+                >
                   <X size={24} color="#333" />
                 </TouchableOpacity>
               )}
             </View>
-            
+
             <ScrollView style={styles.modalBody}>
               {activePrivacySection === null ? (
                 // Main Privacy and Security Menu
                 <View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.privacyMenuItem}
                     onPress={() => setActivePrivacySection("password")}
                   >
@@ -1060,13 +1114,17 @@ export default function ProfileScreen() {
                       <Shield size={22} color="#3498db" />
                     </View>
                     <View style={styles.privacyMenuTextContainer}>
-                      <Text style={styles.privacyMenuTitle}>Şifre Değiştirme</Text>
-                      <Text style={styles.privacyMenuDescription}>Hesap şifrenizi değiştirin</Text>
+                      <Text style={styles.privacyMenuTitle}>
+                        Şifre Değiştirme
+                      </Text>
+                      <Text style={styles.privacyMenuDescription}>
+                        Hesap şifrenizi değiştirin
+                      </Text>
                     </View>
                     <ChevronRight size={18} color="#ccc" />
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.privacyMenuItem}
                     onPress={() => setActivePrivacySection("permissions")}
                   >
@@ -1075,12 +1133,14 @@ export default function ProfileScreen() {
                     </View>
                     <View style={styles.privacyMenuTextContainer}>
                       <Text style={styles.privacyMenuTitle}>İzinler</Text>
-                      <Text style={styles.privacyMenuDescription}>Uygulama izinlerini yönet</Text>
+                      <Text style={styles.privacyMenuDescription}>
+                        Uygulama izinlerini yönet
+                      </Text>
                     </View>
                     <ChevronRight size={18} color="#ccc" />
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.privacyMenuItem}
                     onPress={() => setActivePrivacySection("freeze")}
                   >
@@ -1088,13 +1148,17 @@ export default function ProfileScreen() {
                       <Clock size={22} color="#f39c12" />
                     </View>
                     <View style={styles.privacyMenuTextContainer}>
-                      <Text style={styles.privacyMenuTitle}>Hesabı Dondurma</Text>
-                      <Text style={styles.privacyMenuDescription}>Hesabınızı geçici olarak askıya alın</Text>
+                      <Text style={styles.privacyMenuTitle}>
+                        Hesabı Dondurma
+                      </Text>
+                      <Text style={styles.privacyMenuDescription}>
+                        Hesabınızı geçici olarak askıya alın
+                      </Text>
                     </View>
                     <ChevronRight size={18} color="#ccc" />
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.privacyMenuItem}
                     onPress={() => setActivePrivacySection("delete")}
                   >
@@ -1103,7 +1167,9 @@ export default function ProfileScreen() {
                     </View>
                     <View style={styles.privacyMenuTextContainer}>
                       <Text style={styles.privacyMenuTitle}>Hesabı Silme</Text>
-                      <Text style={styles.privacyMenuDescription}>Hesabınızı ve tüm verilerinizi kalıcı olarak silin</Text>
+                      <Text style={styles.privacyMenuDescription}>
+                        Hesabınızı ve tüm verilerinizi kalıcı olarak silin
+                      </Text>
                     </View>
                     <ChevronRight size={18} color="#ccc" />
                   </TouchableOpacity>
@@ -1121,7 +1187,7 @@ export default function ProfileScreen() {
                       secureTextEntry={true}
                     />
                   </View>
-                  
+
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>Yeni Şifre</Text>
                     <TextInput
@@ -1132,7 +1198,7 @@ export default function ProfileScreen() {
                       secureTextEntry={true}
                     />
                   </View>
-                  
+
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>Yeni Şifre Tekrar</Text>
                     <TextInput
@@ -1143,24 +1209,27 @@ export default function ProfileScreen() {
                       secureTextEntry={true}
                     />
                   </View>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.primaryButton}
                     onPress={handlePasswordChange}
                   >
-                    <Text style={styles.primaryButtonText}>Şifreyi Değiştir</Text>
+                    <Text style={styles.primaryButtonText}>
+                      Şifreyi Değiştir
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ) : activePrivacySection === "permissions" ? (
                 // Permissions Section
                 <View style={styles.securitySection}>
                   <Text style={styles.securityDescription}>
-                    Uygulama özelliklerini kullanmak için aşağıdaki izinlere erişim vermeniz gerekiyor.
-                    İzin durumunu değiştirmek için ilgili butona tıklayın.
+                    Uygulama özelliklerini kullanmak için aşağıdaki izinlere
+                    erişim vermeniz gerekiyor. İzin durumunu değiştirmek için
+                    ilgili butona tıklayın.
                   </Text>
-                  
+
                   {permissions.map((permission) => (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       key={permission.id}
                       style={styles.permissionItem}
                       onPress={() => requestPermission(permission.id)}
@@ -1170,70 +1239,85 @@ export default function ProfileScreen() {
                       </View>
                       <View style={styles.permissionContent}>
                         <View style={styles.permissionHeader}>
-                          <Text style={styles.permissionTitle}>{permission.title}</Text>
+                          <Text style={styles.permissionTitle}>
+                            {permission.title}
+                          </Text>
                           {permission.status === "granted" && (
                             <View style={styles.permissionGrantedBadge}>
                               <Check size={14} color="#fff" />
                             </View>
                           )}
                         </View>
-                        <Text style={styles.permissionDescription}>{permission.description}</Text>
+                        <Text style={styles.permissionDescription}>
+                          {permission.description}
+                        </Text>
                         <View style={styles.permissionStatus}>
-                          <View style={[
-                            styles.permissionStatusIndicator,
-                            permission.status === "granted" 
-                              ? styles.permissionGranted 
-                              : permission.status === "denied" 
-                                ? styles.permissionDenied 
-                                : styles.permissionUnknown
-                          ]} />
+                          <View
+                            style={[
+                              styles.permissionStatusIndicator,
+                              permission.status === "granted"
+                                ? styles.permissionGranted
+                                : permission.status === "denied"
+                                ? styles.permissionDenied
+                                : styles.permissionUnknown,
+                            ]}
+                          />
                           <Text style={styles.permissionStatusText}>
-                            {permission.status === "granted" 
-                              ? "İzin Verildi" 
-                              : permission.status === "denied" 
-                                ? "İzin Reddedildi" 
-                                : "İzin Belirlenmedi"}
+                            {permission.status === "granted"
+                              ? "İzin Verildi"
+                              : permission.status === "denied"
+                              ? "İzin Reddedildi"
+                              : "İzin Belirlenmedi"}
                           </Text>
                         </View>
                       </View>
                     </TouchableOpacity>
                   ))}
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.secondaryButton}
                     onPress={() => Linking.openSettings()}
                   >
-                    <Text style={styles.secondaryButtonText}>Tüm İzinleri Uygulama Ayarlarında Yönet</Text>
+                    <Text style={styles.secondaryButtonText}>
+                      Tüm İzinleri Uygulama Ayarlarında Yönet
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ) : activePrivacySection === "freeze" ? (
                 // Account Freeze Section
                 <View style={styles.securitySection}>
                   <Text style={styles.securityDescription}>
-                    Hesabınızı dondurduğunuzda, profiliniz diğer kullanıcılara görünmez olacak ve etkinliklere katılamazsınız. 
-                    İstediğiniz zaman tekrar giriş yaparak hesabınızı aktifleştirebilirsiniz.
+                    Hesabınızı dondurduğunuzda, profiliniz diğer kullanıcılara
+                    görünmez olacak ve etkinliklere katılamazsınız. İstediğiniz
+                    zaman tekrar giriş yaparak hesabınızı
+                    aktifleştirebilirsiniz.
                   </Text>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.accountActionButton}
                     onPress={handleFreezeAccount}
                   >
-                    <Text style={styles.accountActionButtonText}>Hesabımı Dondur</Text>
+                    <Text style={styles.accountActionButtonText}>
+                      Hesabımı Dondur
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ) : (
                 // Account Deletion Section
                 <View style={styles.securitySection}>
                   <Text style={styles.securityDescription}>
-                    Hesabınızı sildiğinizde, tüm kişisel bilgileriniz, etkinlikleriniz, mesajlarınız ve değerlendirmeleriniz kalıcı olarak silinecektir. 
-                    Bu işlem geri alınamaz.
+                    Hesabınızı sildiğinizde, tüm kişisel bilgileriniz,
+                    etkinlikleriniz, mesajlarınız ve değerlendirmeleriniz kalıcı
+                    olarak silinecektir. Bu işlem geri alınamaz.
                   </Text>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.dangerButton}
                     onPress={handleDeleteAccount}
                   >
-                    <Text style={styles.dangerButtonText}>Hesabımı Kalıcı Olarak Sil</Text>
+                    <Text style={styles.dangerButtonText}>
+                      Hesabımı Kalıcı Olarak Sil
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -1241,18 +1325,18 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-      
+
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Profil</Text>
           <View style={styles.headerButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.headerButton}
               onPress={() => router.push("/(tabs)/profile/find-friends" as any)}
             >
               <Users size={24} color="#333" />
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.headerButton}
               onPress={() => setIsSettingsVisible(true)}
             >
@@ -1330,22 +1414,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Başarılar */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Başarılar</Text>
-          <View style={styles.achievementsContainer}>
-            {userData.achievements.map((achievement) => (
-              <View key={achievement.id} style={styles.achievementCard}>
-                <Text style={styles.achievementIcon}>{achievement.icon}</Text>
-                <Text style={styles.achievementName}>{achievement.name}</Text>
-                <Text style={styles.achievementDesc}>
-                  {achievement.description}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
         {/* Katıldığım Etkinlikler */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderContainer}>
@@ -1371,20 +1439,32 @@ export default function ProfileScreen() {
                   </View>
                   <View style={styles.eventDetails}>
                     <Text style={styles.eventTitle}>{event.title}</Text>
-                    
+
                     <View style={styles.eventMetaInfo}>
                       <View style={styles.metaRow}>
-                        <Clock size={14} color="#666" style={{ marginRight: 4 }} />
+                        <Clock
+                          size={14}
+                          color="#666"
+                          style={{ marginRight: 4 }}
+                        />
                         <Text style={styles.metaText}>{event.time}</Text>
                       </View>
-                      
+
                       <View style={styles.metaRow}>
-                        <MapPin size={14} color="#666" style={{ marginRight: 4 }} />
-                        <Text style={styles.metaText} numberOfLines={1} ellipsizeMode="tail">
+                        <MapPin
+                          size={14}
+                          color="#666"
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text
+                          style={styles.metaText}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
                           {event.location}
                         </Text>
                       </View>
-                      
+
                       <View style={styles.purposeContainer}>
                         <View
                           style={
@@ -1397,7 +1477,7 @@ export default function ProfileScreen() {
                         </View>
                       </View>
                     </View>
-                    
+
                     <View style={styles.ratingContainer}>
                       <View style={styles.ratingInfo}>
                         <Text style={styles.ratingText}>⭐ {event.rating}</Text>
@@ -1407,7 +1487,11 @@ export default function ProfileScreen() {
                         onPress={() => handleRateEvent(event.id)}
                       >
                         <Text style={styles.rateButtonText}>Değerlendir</Text>
-                        <Star size={14} color="#f59e0b" style={{ marginLeft: 4 }} />
+                        <Star
+                          size={14}
+                          color="#f59e0b"
+                          style={{ marginLeft: 4 }}
+                        />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -1621,35 +1705,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
-  achievementsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-  },
-  achievementCard: {
-    width: "31%",
-    backgroundColor: "#f9f9f9",
-    borderRadius: 10,
-    padding: 10,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  achievementIcon: {
-    fontSize: 24,
-    marginBottom: 8,
-  },
-  achievementName: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
-    marginBottom: 4,
-  },
-  achievementDesc: {
-    fontSize: 12,
-    color: "#7f8c8d",
-    textAlign: "center",
-  },
   menuContainer: {
     backgroundColor: "#fff",
     borderRadius: 15,
@@ -1688,7 +1743,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#95a5a6",
   },
-  // Etkinlik kartı stilleri
   eventCard: {
     backgroundColor: "#fff",
     borderRadius: 10,
@@ -1813,122 +1867,121 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
   },
-  // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingVertical: 20,
     paddingHorizontal: 15,
-    maxHeight: '70%',
+    maxHeight: "70%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   modalBody: {
-    maxHeight: '90%',
+    maxHeight: "90%",
   },
   inputGroup: {
     marginBottom: 20,
   },
   inputLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     padding: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
   },
   interestsEditContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginBottom: 10,
   },
   interestEditTag: {
-    backgroundColor: '#e8f4fc',
+    backgroundColor: "#e8f4fc",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
     marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   interestEditTagText: {
-    color: '#3498db',
+    color: "#3498db",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     marginRight: 6,
   },
   removeInterestButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: "#3498db",
     width: 18,
     height: 18,
     borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   addInterestContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   interestInput: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     padding: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
     marginRight: 10,
   },
   addInterestButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: "#3498db",
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   addInterestButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
     fontSize: 14,
   },
   saveButton: {
-    backgroundColor: '#2ecc71',
+    backgroundColor: "#2ecc71",
     paddingVertical: 15,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 10,
     marginBottom: 30,
   },
   saveButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
     fontSize: 16,
   },
   biographyContainer: {
@@ -1955,15 +2008,15 @@ const styles = StyleSheet.create({
   },
   biographyInput: {
     height: 100,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     paddingTop: 12,
   },
   profilePictureSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   editProfileImage: {
     width: 100,
@@ -1971,26 +2024,26 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     marginBottom: 15,
     borderWidth: 3,
-    borderColor: '#f0f0f0',
+    borderColor: "#f0f0f0",
   },
   photoButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "center",
+    width: "100%",
     gap: 10,
   },
   changePhotoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3498db',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#3498db",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
   },
   deletePhotoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#e74c3c',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e74c3c",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
@@ -1999,29 +2052,29 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   changePhotoText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
     fontSize: 14,
   },
   deletePhotoText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
     fontSize: 14,
   },
   sportSelectionLabel: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
+    fontWeight: "500",
+    color: "#666",
     marginTop: 15,
     marginBottom: 10,
   },
   sportCategoriesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginBottom: 15,
   },
   sportCategoryItem: {
-    backgroundColor: '#f1f3f5',
+    backgroundColor: "#f1f3f5",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
@@ -2029,19 +2082,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   selectedSportCategory: {
-    backgroundColor: '#e3f2fd',
+    backgroundColor: "#e3f2fd",
     borderWidth: 1,
-    borderColor: '#1c7ed6',
+    borderColor: "#1c7ed6",
   },
   sportCategoryText: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   selectedSportCategoryText: {
-    color: '#1c7ed6',
-    fontWeight: '500',
+    color: "#1c7ed6",
+    fontWeight: "500",
   },
-  // Notification styles
   notificationToggleContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -2098,7 +2150,6 @@ const styles = StyleSheet.create({
     color: "#777",
     lineHeight: 16,
   },
-  // Privacy and Security styles
   securitySection: {
     padding: 10,
   },
@@ -2252,4 +2303,4 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-}); 
+});

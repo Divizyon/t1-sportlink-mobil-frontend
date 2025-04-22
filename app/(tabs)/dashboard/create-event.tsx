@@ -1,38 +1,28 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  View,
   SafeAreaView,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Platform,
   KeyboardAvoidingView,
+  Platform,
   Switch,
-  Modal,
-  Image,
+  View,
+  TouchableOpacity,
 } from "react-native";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
-import { Button, ButtonText } from "@/components/ui/button";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
+import { Users } from "lucide-react-native";
 import {
-  ArrowLeft,
-  MapPin,
-  Calendar,
-  Clock,
-  Users,
-  Tag,
-  Info,
-  Search,
-  ChevronDown,
-  CheckCircle,
-  Building,
-  FileText,
-  Camera,
-} from "lucide-react-native";
+  FormHeader,
+  FormInput,
+  FormTextArea,
+  LocationSelector,
+  CategorySelectorModal,
+  LocationSelectorModal,
+} from "@/components/dashboard";
 
 // Kategori listesi
 const sportCategories = [
@@ -45,6 +35,7 @@ const sportCategories = [
 ];
 
 export default function CreateEventScreen() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -64,6 +55,19 @@ export default function CreateEventScreen() {
   const [selectedLocationImage, setSelectedLocationImage] = useState(
     "https://picsum.photos/600/200"
   );
+
+  // Form validasyonu
+  const isFormValid = useMemo(() => {
+    return (
+      formData.title.trim() !== "" &&
+      formData.description.trim() !== "" &&
+      formData.location.trim() !== "" &&
+      formData.date.trim() !== "" &&
+      formData.time.trim() !== "" &&
+      formData.maxParticipants.trim() !== "" &&
+      formData.category.trim() !== ""
+    );
+  }, [formData]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData({
@@ -92,6 +96,42 @@ export default function CreateEventScreen() {
     router.back();
   };
 
+  // Kulüp etkinliği toggle bileşeni
+  const ClubEventToggle = () => (
+    <Box style={styles.formGroup}>
+      <HStack style={styles.toggleContainer}>
+        <Text style={styles.label}>Spor Kulübü Etkinliği</Text>
+        <Switch
+          value={formData.isClubEvent}
+          onValueChange={(value) => handleInputChange("isClubEvent", value)}
+          trackColor={{ false: "#E4E4E7", true: "#4F46E5" }}
+          thumbColor="#ffffff"
+          ios_backgroundColor="#E4E4E7"
+        />
+      </HStack>
+      {formData.isClubEvent && (
+        <VStack style={styles.clubInfoContainer}>
+          <FormInput
+            label="Kulüp Adı"
+            placeholder="Kulüp adını girin"
+            value={formData.clubName}
+            onChangeText={(text: string) => handleInputChange("clubName", text)}
+            isSubInput={true}
+          />
+
+          <FormTextArea
+            label="Kulüp Hakkında"
+            placeholder="Kulüp hakkında kısa bilgi"
+            value={formData.clubInfo}
+            onChangeText={(text: string) => handleInputChange("clubInfo", text)}
+            numberOfLines={3}
+            isSubInput={true}
+          />
+        </VStack>
+      )}
+    </Box>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -99,360 +139,128 @@ export default function CreateEventScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView style={styles.scrollView}>
-          {/* Header */}
-          <Box style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={handleCancel}>
-              <ArrowLeft size={24} color="#0F0F0F" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Yeni Etkinlik</Text>
-            <View style={{ width: 24 }} />
-          </Box>
+          <FormHeader title="Yeni Etkinlik" onBack={handleCancel} />
 
-          {/* Form */}
           <VStack style={styles.form}>
-            {/* Etkinlik Adı */}
-            <Box style={styles.formGroup}>
-              <Text style={styles.label}>Etkinlik Adı</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Etkinlik adını girin"
-                value={formData.title}
-                onChangeText={(text) => handleInputChange("title", text)}
-                placeholderTextColor="#9CA3AF"
-              />
-            </Box>
+            {/* Temel Bilgiler */}
+            <FormInput
+              label="Etkinlik Adı"
+              placeholder="Etkinlik adını girin"
+              value={formData.title}
+              onChangeText={(text: string) => handleInputChange("title", text)}
+            />
 
-            {/* Açıklama */}
-            <Box style={styles.formGroup}>
-              <Text style={styles.label}>Açıklama</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Etkinlik açıklamasını girin"
-                multiline={true}
-                numberOfLines={4}
-                value={formData.description}
-                onChangeText={(text) => handleInputChange("description", text)}
-                placeholderTextColor="#9CA3AF"
-              />
-            </Box>
+            <FormTextArea
+              label="Açıklama"
+              placeholder="Etkinlik açıklamasını girin"
+              value={formData.description}
+              onChangeText={(text: string) =>
+                handleInputChange("description", text)
+              }
+              numberOfLines={4}
+            />
 
             {/* Konum */}
-            <Box style={styles.formGroup}>
-              <Text style={styles.label}>Konum</Text>
-              <TouchableOpacity
-                style={styles.locationSelector}
-                onPress={() => setShowLocationModal(true)}
-              >
-                <HStack style={styles.locationContent}>
-                  <MapPin size={20} color="#4F46E5" style={styles.inputIcon} />
-                  <Text
-                    style={[
-                      styles.locationText,
-                      !formData.location && styles.placeholderText,
-                    ]}
-                  >
-                    {formData.location || "Etkinlik konumunu seçin"}
-                  </Text>
-                </HStack>
-                <ChevronDown size={20} color="#6B7280" />
-              </TouchableOpacity>
-
-              {formData.location && (
-                <Box style={styles.mapPreviewContainer}>
-                  <Image
-                    source={{ uri: selectedLocationImage }}
-                    style={styles.mapPreview}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.mapMarker} />
-                </Box>
-              )}
-            </Box>
+            <LocationSelector
+              label="Konum"
+              value={formData.location}
+              mapPreviewUrl={selectedLocationImage}
+              onPress={() => setShowLocationModal(true)}
+            />
 
             {/* Tarih ve Saat */}
             <HStack style={styles.rowFormGroup}>
-              <Box style={styles.formGroupHalf}>
-                <Text style={styles.label}>Tarih</Text>
-                <Box style={styles.inputWithIcon}>
-                  <Calendar
-                    size={20}
-                    color="#4F46E5"
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={styles.iconInput}
-                    placeholder="GG/AA/YYYY"
-                    value={formData.date}
-                    onChangeText={(text) => handleInputChange("date", text)}
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </Box>
-              </Box>
+              <FormInput
+                label="Tarih"
+                placeholder="GG/AA/YYYY"
+                value={formData.date}
+                onChangeText={(text: string) => handleInputChange("date", text)}
+                containerStyle={styles.formGroupHalf}
+              />
 
-              <Box style={styles.formGroupHalf}>
-                <Text style={styles.label}>Saat</Text>
-                <Box style={styles.inputWithIcon}>
-                  <Clock size={20} color="#4F46E5" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.iconInput}
-                    placeholder="HH:MM"
-                    value={formData.time}
-                    onChangeText={(text) => handleInputChange("time", text)}
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </Box>
-              </Box>
+              <FormInput
+                label="Saat"
+                placeholder="HH:MM"
+                value={formData.time}
+                onChangeText={(text: string) => handleInputChange("time", text)}
+                containerStyle={styles.formGroupHalf}
+              />
             </HStack>
 
             {/* Katılımcı Sayısı */}
-            <Box style={styles.formGroup}>
-              <Text style={styles.label}>Maksimum Katılımcı Sayısı</Text>
-              <Box style={styles.inputWithIcon}>
-                <Users size={20} color="#4F46E5" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.iconInput}
-                  placeholder="Maksimum katılımcı sayısı"
-                  keyboardType="number-pad"
-                  value={formData.maxParticipants}
-                  onChangeText={(text) =>
-                    handleInputChange("maxParticipants", text)
-                  }
-                  placeholderTextColor="#9CA3AF"
-                />
-              </Box>
-            </Box>
+            <FormInput
+              label="Maksimum Katılımcı Sayısı"
+              placeholder="Maksimum katılımcı sayısı"
+              value={formData.maxParticipants}
+              onChangeText={(text: string) =>
+                handleInputChange("maxParticipants", text)
+              }
+              keyboardType="number-pad"
+              icon={<Users size={20} color="#4F46E5" />}
+            />
 
             {/* Kategori */}
             <Box style={styles.formGroup}>
               <Text style={styles.label}>Kategori</Text>
-              <TouchableOpacity
-                style={styles.categorySelector}
+              <LocationSelector
+                value={formData.category || "Etkinlik kategorisi"}
                 onPress={() => setShowCategoryModal(true)}
-              >
-                <HStack style={styles.categoryContent}>
-                  <Tag size={20} color="#4F46E5" style={styles.inputIcon} />
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      !formData.category && styles.placeholderText,
-                    ]}
-                  >
-                    {formData.category || "Etkinlik kategorisi"}
-                  </Text>
-                </HStack>
-                <ChevronDown size={20} color="#6B7280" />
-              </TouchableOpacity>
+                isCategory={true}
+              />
             </Box>
 
             {/* Gereksinimler */}
-            <Box style={styles.formGroup}>
-              <Text style={styles.label}>Gereksinimler</Text>
-              <Box style={styles.inputWithIcon}>
-                <FileText size={20} color="#4F46E5" style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.iconInput, { height: 80 }]}
-                  placeholder="Katılımcıların getirmesi gerekenler"
-                  multiline={true}
-                  numberOfLines={3}
-                  value={formData.requirements}
-                  onChangeText={(text) =>
-                    handleInputChange("requirements", text)
-                  }
-                  placeholderTextColor="#9CA3AF"
-                />
-              </Box>
-            </Box>
+            <FormTextArea
+              label="Gereksinimler"
+              placeholder="Katılımcıların getirmesi gerekenler"
+              value={formData.requirements}
+              onChangeText={(text: string) =>
+                handleInputChange("requirements", text)
+              }
+              numberOfLines={3}
+            />
 
-            {/* Spor Kulübü Etkinliği */}
-            <Box style={styles.formGroup}>
-              <HStack style={styles.toggleContainer}>
-                <Text style={styles.label}>Spor Kulübü Etkinliği</Text>
-                <Switch
-                  value={formData.isClubEvent}
-                  onValueChange={(value) =>
-                    handleInputChange("isClubEvent", value)
-                  }
-                  trackColor={{ false: "#E4E4E7", true: "#4F46E5" }}
-                  thumbColor="#ffffff"
-                  ios_backgroundColor="#E4E4E7"
-                />
-              </HStack>
+            {/* Kulüp Bilgileri */}
+            <ClubEventToggle />
 
-              {formData.isClubEvent && (
-                <VStack style={styles.clubInfoContainer}>
-                  <Box style={styles.formSubGroup}>
-                    <Text style={styles.subLabel}>Kulüp Adı</Text>
-                    <Box style={styles.inputWithIcon}>
-                      <Building
-                        size={20}
-                        color="#4F46E5"
-                        style={styles.inputIcon}
-                      />
-                      <TextInput
-                        style={styles.iconInput}
-                        placeholder="Kulüp adını girin"
-                        value={formData.clubName}
-                        onChangeText={(text) =>
-                          handleInputChange("clubName", text)
-                        }
-                        placeholderTextColor="#9CA3AF"
-                      />
-                    </Box>
-                  </Box>
-
-                  <Box style={styles.formSubGroup}>
-                    <Text style={styles.subLabel}>Kulüp Hakkında</Text>
-                    <TextInput
-                      style={[styles.input, styles.textArea]}
-                      placeholder="Kulüp hakkında kısa bilgi"
-                      multiline={true}
-                      numberOfLines={3}
-                      value={formData.clubInfo}
-                      onChangeText={(text) =>
-                        handleInputChange("clubInfo", text)
-                      }
-                      placeholderTextColor="#9CA3AF"
-                    />
-                  </Box>
-                </VStack>
-              )}
-            </Box>
-
-            {/* Etkinlik Görsel Yükleme */}
-            <Box style={styles.formGroup}>
-              <Text style={styles.label}>Etkinlik Görseli</Text>
-              <TouchableOpacity style={styles.imageUploadButton}>
-                <Camera size={24} color="#4F46E5" />
-                <Text style={styles.imageUploadText}>Etkinlik Görseli Ekle</Text>
-              </TouchableOpacity>
-            </Box>
-
-            {/* Buttons */}
-            <Box style={styles.buttonGroup}>
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                <Text style={styles.saveButtonText}>Kaydet</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+            {/* Kaydet ve İptal Butonları */}
+            <HStack style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton]}
+                onPress={handleCancel}
+              >
                 <Text style={styles.cancelButtonText}>İptal</Text>
               </TouchableOpacity>
-            </Box>
+
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.saveButton,
+                  !isFormValid && styles.disabledButton,
+                ]}
+                onPress={handleSave}
+                disabled={!isFormValid}
+              >
+                <Text style={styles.saveButtonText}>Kaydet</Text>
+              </TouchableOpacity>
+            </HStack>
           </VStack>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Category Modal */}
-      <Modal
+      <CategorySelectorModal
         visible={showCategoryModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowCategoryModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Kategori Seçin</Text>
+        categories={sportCategories}
+        selectedCategory={formData.category}
+        onSelect={handleSelectCategory}
+        onClose={() => setShowCategoryModal(false)}
+      />
 
-            <VStack style={styles.categoriesList}>
-              {sportCategories.map((category) => (
-                <TouchableOpacity
-                  key={category.id}
-                  style={[
-                    styles.categoryItem,
-                    formData.category === category.name && styles.selectedCategoryItem,
-                  ]}
-                  onPress={() => handleSelectCategory(category.name)}
-                >
-                  <Text style={styles.categoryIcon}>{category.icon}</Text>
-                  <Text style={styles.categoryItemText}>{category.name}</Text>
-                  {formData.category === category.name && (
-                    <CheckCircle size={20} color="#4F46E5" />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </VStack>
-
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowCategoryModal(false)}
-            >
-              <Text style={styles.closeButtonText}>Kapat</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Location Modal */}
-      <Modal
+      <LocationSelectorModal
         visible={showLocationModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowLocationModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Konum Seçin</Text>
-
-            <Box style={styles.searchContainer}>
-              <Search size={20} color="#6B7280" />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Konum ara..."
-                placeholderTextColor="#9CA3AF"
-              />
-            </Box>
-
-            <ScrollView style={styles.locationList}>
-              <TouchableOpacity
-                style={styles.locationItem}
-                onPress={handleSelectLocation}
-              >
-                <MapPin size={20} color="#4F46E5" />
-                <VStack style={styles.locationItemInfo}>
-                  <Text style={styles.locationItemTitle}>
-                    Konya Spor Kompleksi
-                  </Text>
-                  <Text style={styles.locationItemSubtitle}>
-                    Selçuklu, Konya
-                  </Text>
-                </VStack>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.locationItem}
-                onPress={handleSelectLocation}
-              >
-                <MapPin size={20} color="#4F46E5" />
-                <VStack style={styles.locationItemInfo}>
-                  <Text style={styles.locationItemTitle}>
-                    Meram Spor Salonu
-                  </Text>
-                  <Text style={styles.locationItemSubtitle}>Meram, Konya</Text>
-                </VStack>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.locationItem}
-                onPress={handleSelectLocation}
-              >
-                <MapPin size={20} color="#4F46E5" />
-                <VStack style={styles.locationItemInfo}>
-                  <Text style={styles.locationItemTitle}>Karatay Stadyumu</Text>
-                  <Text style={styles.locationItemSubtitle}>
-                    Karatay, Konya
-                  </Text>
-                </VStack>
-              </TouchableOpacity>
-            </ScrollView>
-
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowLocationModal(false)}
-            >
-              <Text style={styles.closeButtonText}>Kapat</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onSelect={handleSelectLocation}
+        onClose={() => setShowLocationModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -464,23 +272,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#0F0F0F",
-  },
-  backButton: {
-    padding: 4,
   },
   form: {
     padding: 20,
@@ -503,218 +294,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: "#1F2937",
   },
-  input: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: "#1F2937",
-  },
-  textArea: {
-    height: 120,
-    textAlignVertical: "top",
-  },
-  inputWithIcon: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  iconInput: {
-    flex: 1,
-    padding: 16,
-    fontSize: 16,
-    color: "#1F2937",
-  },
-  buttonGroup: {
-    marginTop: 32,
-    gap: 12,
-  },
-  saveButton: {
-    backgroundColor: "#4F46E5",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    shadowColor: "#4F46E5",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  saveButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  cancelButton: {
-    backgroundColor: "#F3F4F6",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-  },
-  cancelButtonText: {
-    color: "#4B5563",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    backgroundColor: "#FFFFFF",
-    padding: 24,
-    borderRadius: 16,
-    width: "90%",
-    maxHeight: "80%",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 20,
-    color: "#1F2937",
-    textAlign: "center",
-  },
-  categoriesList: {
-    marginBottom: 20,
-    gap: 12,
-  },
-  categoryItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    backgroundColor: "#F9FAFB",
-  },
-  selectedCategoryItem: {
-    borderColor: "#4F46E5",
-    backgroundColor: "#EEF2FF",
-  },
-  categoryIcon: {
-    marginRight: 16,
-    fontSize: 24,
-  },
-  categoryItemText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#1F2937",
-  },
-  closeButton: {
-    backgroundColor: "#4F46E5",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  closeButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 16,
-    color: "#1F2937",
-  },
-  locationList: {
-    maxHeight: 300,
-    marginBottom: 16,
-  },
-  locationItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    marginBottom: 12,
-    backgroundColor: "#F9FAFB",
-  },
-  locationItemInfo: {
-    marginLeft: 16,
-    flex: 1,
-  },
-  locationItemTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1F2937",
-  },
-  locationItemSubtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 2,
-  },
-  mapPreviewContainer: {
-    height: 180,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    overflow: "hidden",
-    marginTop: 12,
-  },
-  mapPreview: {
-    flex: 1,
-  },
-  mapMarker: {
-    position: "absolute",
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 3,
-    borderColor: "#4F46E5",
-    top: "50%",
-    left: "50%",
-    transform: [{ translateX: -10 }, { translateY: -10 }],
-  },
-  categorySelector: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    padding: 16,
-  },
-  categoryContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  categoryText: {
-    fontSize: 16,
-    color: "#1F2937",
-  },
-  placeholderText: {
-    color: "#9CA3AF",
-  },
   toggleContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -729,46 +308,40 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
     gap: 16,
   },
-  formSubGroup: {
-    gap: 8,
-  },
-  subLabel: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#4B5563",
-  },
-  imageUploadButton: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    padding: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 12,
-  },
-  imageUploadText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#4B5563",
-  },
-  locationSelector: {
+  buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginTop: 20,
+    marginBottom: 40,
+    gap: 12,
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
     alignItems: "center",
-    backgroundColor: "#F9FAFB",
+    justifyContent: "center",
+  },
+  saveButton: {
+    backgroundColor: "#4F46E5",
+  },
+  cancelButton: {
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    padding: 16,
+    borderColor: "#D1D5DB",
   },
-  locationContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  locationText: {
+  saveButtonText: {
+    color: "#FFFFFF",
     fontSize: 16,
-    color: "#1F2937",
+    fontWeight: "600",
+  },
+  cancelButtonText: {
+    color: "#374151",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  disabledButton: {
+    backgroundColor: "#A5B4FC",
+    opacity: 0.7,
   },
 });
