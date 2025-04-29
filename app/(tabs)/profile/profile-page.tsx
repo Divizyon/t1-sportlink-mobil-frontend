@@ -51,6 +51,7 @@ import {
 } from "lucide-react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import { useAuth } from "@/src/store";
 
 // Menü öğesi tipi tanımlama
 interface MenuItem {
@@ -314,6 +315,7 @@ const defaultNotificationCategories: NotificationCategory[] = [
 ];
 
 export default function ProfileScreen() {
+  const { signOut } = useAuth();
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
     useState(false);
@@ -394,7 +396,12 @@ export default function ProfileScreen() {
     });
   };
 
-  const handleMenuItemPress = (itemId: string) => {
+  const handleLogout = async () => {
+    await signOut();
+    router.replace("/signin");
+  };
+
+  const handleMenuItemPress =  (itemId: string) => {
     console.log(`Menü öğesi tıklandı: ${itemId}`);
     setIsSettingsVisible(false);
 
@@ -404,6 +411,8 @@ export default function ProfileScreen() {
       setIsPrivacyModalVisible(true);
       // Check permissions when privacy menu is opened
       checkPermissions();
+    } else if (itemId === "logout") {
+       handleLogout();
     }
   };
 

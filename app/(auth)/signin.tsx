@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   View,
@@ -7,6 +7,7 @@ import {
   Platform,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Button, ButtonText } from "../../components/ui/button";
 import {
@@ -38,17 +39,40 @@ import {
   Chrome,
   Apple,
 } from "lucide-react-native";
+import { useAuth } from "@/src/store/authContext";
 
 export default function SignInPage() {
+  const { authState, signIn, clearError } = useAuth();
+  const { isLoading, error, isAuthenticated } = authState;
+  
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
-  const [errors, setErrors] = useState({
+  const [validationErrors, setValidationErrors] = useState({
     email: "",
     password: "",
   });
+
+  // Eğer kullanıcı zaten giriş yapmışsa, dashboard'a yönlendir
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/(tabs)/dashboard");
+    }
+  }, [isAuthenticated]);
+
+  // Auth context'teki hata değiştiğinde temizle
+  useEffect(() => {
+    if (error) {
+      // 5 saniye sonra hatayı temizle
+      const timer = setTimeout(() => {
+        clearError();
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearError]);
 
   const togglePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);
@@ -59,9 +83,9 @@ export default function SignInPage() {
       ...form,
       [field]: value,
     });
-    if (errors[field as keyof typeof errors]) {
-      setErrors({
-        ...errors,
+    if (validationErrors[field as keyof typeof validationErrors]) {
+      setValidationErrors({
+        ...validationErrors,
         [field]: "",
       });
     }
@@ -69,7 +93,7 @@ export default function SignInPage() {
 
   const validateForm = () => {
     let isValid = true;
-    const newErrors = { ...errors };
+    const newErrors = { ...validationErrors };
 
     // E-posta kontrolü
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -84,15 +108,16 @@ export default function SignInPage() {
       isValid = false;
     }
 
-    setErrors(newErrors);
+    setValidationErrors(newErrors);
     return isValid;
   };
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     if (validateForm()) {
-      console.log("Giriş formu:", form);
-      // @ts-ignore
-      router.navigate("/(tabs)/dashboard");
+      await signIn({
+        email: form.email,
+        password: form.password,
+      });
     }
   };
 
@@ -145,9 +170,16 @@ export default function SignInPage() {
             </Text>
           </Center>
 
+          {/* Hata mesajı */}
+          {error && (
+            <Box className="bg-red-100 p-3 rounded-lg mb-2">
+              <Text className="text-red-600 text-center">{error}</Text>
+            </Box>
+          )}
+
           <Box style={{ marginTop: 24 }}>
             <FormControl
-              isInvalid={!!errors.email}
+              isInvalid={!!validationErrors.email}
               style={{ marginBottom: 16 }}
             >
               <FormControlLabel>
@@ -170,16 +202,16 @@ export default function SignInPage() {
                   autoCapitalize="none"
                 />
               </Input>
-              {errors.email ? (
+              {validationErrors.email ? (
                 <FormControlError>
-                  <FormControlErrorText>{errors.email}</FormControlErrorText>
+                  <FormControlErrorText>{validationErrors.email}</FormControlErrorText>
                 </FormControlError>
               ) : null}
             </FormControl>
 
             <FormControl
               style={{ marginBottom: 8 }}
-              isInvalid={!!errors.password}
+              isInvalid={!!validationErrors.password}
             >
               <FormControlLabel>
                 <FormControlLabelText className="text-emerald-700">
@@ -209,9 +241,9 @@ export default function SignInPage() {
                   />
                 </InputSlot>
               </Input>
-              {errors.password ? (
+              {validationErrors.password ? (
                 <FormControlError>
-                  <FormControlErrorText>{errors.password}</FormControlErrorText>
+                  <FormControlErrorText>{validationErrors.password}</FormControlErrorText>
                 </FormControlError>
               ) : null}
             </FormControl>
@@ -252,60 +284,80 @@ export default function SignInPage() {
             </FormControl>
 
             <Button
-              className="bg-emerald-600 rounded-lg"
               size="lg"
+              variant="solid"
+              className="bg-emerald-600 mt-6 rounded-lg"
               onPress={handleSignIn}
-              style={{ marginTop: 24 }}
+              disabled={isLoading}
             >
-              <ButtonText style={{ fontWeight: "bold" }}>Giriş Yap</ButtonText>
+              {isLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <>
+                  <ButtonText className="text-white">Giriş Yap</ButtonText>
+                  <Box style={{ marginLeft: 8 }}>
+                    <LogIn color="white" size={20} />
+                  </Box>
+                </>
+              )}
             </Button>
 
-            <Center style={{ marginTop: 24, marginBottom: 24 }}>
-              <Text size="sm" className="text-emerald-700">
-                veya şununla devam et
+            <Box style={{ marginTop: 24 }}>
+              <Text
+                className="text-gray-400 text-center"
+                style={{ marginBottom: 16 }}
+              >
+                veya bunlarla devam et
               </Text>
-            </Center>
+
+              <Box
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  gap: 16,
+                }}
+              >
+                <TouchableOpacity
+                  style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: 25,
+                    backgroundColor: "#f1f5f9",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                  onPress={handleGoogleSignIn}
+                >
+                  <Chrome color="#047857" size={24} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: 25,
+                    backgroundColor: "#f1f5f9",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                  onPress={handleAppleSignIn}
+                >
+                  <Apple color="#047857" size={24} />
+                </TouchableOpacity>
+              </Box>
+            </Box>
 
             <Box
               style={{
+                marginTop: 24,
                 flexDirection: "row",
                 justifyContent: "center",
-                gap: 16,
               }}
             >
-              <TouchableOpacity
-                onPress={handleGoogleSignIn}
-                style={styles.socialButton}
-              >
-                <Chrome size={24} color="#047857" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={handleAppleSignIn}
-                style={styles.socialButton}
-              >
-                <Apple size={24} color="#047857" />
-              </TouchableOpacity>
+              <Text className="text-gray-500">Hesabınız yok mu? </Text>
+              <Link href="/(auth)/signup">
+                <LinkText className="text-emerald-600">Kayıt Ol</LinkText>
+              </Link>
             </Box>
-
-            <Center style={{ marginTop: 32 }}>
-              <Box style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text size="sm" className="text-emerald-700">
-                  Hesabınız yok mu?
-                </Text>
-                <Link
-                  onPress={() => router.navigate("/(auth)/signup")}
-                  style={{ marginLeft: 4 }}
-                >
-                  <LinkText
-                    className="text-emerald-600"
-                    style={{ fontWeight: "600" }}
-                  >
-                    Kayıt Ol
-                  </LinkText>
-                </Link>
-              </Box>
-            </Center>
           </Box>
         </VStack>
       </KeyboardAvoidingView>

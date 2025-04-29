@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   View,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { Button, ButtonText } from "../../components/ui/button";
 import {
@@ -39,6 +40,7 @@ import {
   Apple,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useAuth } from "@/src/store/authContext";
 
 interface FormData {
   username: string;
@@ -55,6 +57,9 @@ interface FormErrors {
 }
 
 export default function SignUpPage() {
+  const { authState, signUp, clearError } = useAuth();
+  const { isLoading, error, isAuthenticated } = authState;
+
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
     useState(false);
@@ -64,12 +69,31 @@ export default function SignUpPage() {
     password: "",
     confirmPassword: "",
   });
-  const [errors, setErrors] = useState<FormErrors>({
+  const [validationErrors, setValidationErrors] = useState<FormErrors>({
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
+
+  // Eğer kullanıcı zaten giriş yapmışsa, dashboard'a yönlendir
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/(tabs)/dashboard");
+    }
+  }, [isAuthenticated]);
+
+  // Auth context'teki hata değiştiğinde temizle
+  useEffect(() => {
+    if (error) {
+      // 5 saniye sonra hatayı temizle
+      const timer = setTimeout(() => {
+        clearError();
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearError]);
 
   const togglePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);
@@ -85,9 +109,9 @@ export default function SignUpPage() {
       [field]: value,
     });
     // Girdi değiştiğinde hatayı temizle
-    if (errors[field]) {
-      setErrors({
-        ...errors,
+    if (validationErrors[field]) {
+      setValidationErrors({
+        ...validationErrors,
         [field]: "",
       });
     }
@@ -95,7 +119,7 @@ export default function SignUpPage() {
 
   const validateForm = () => {
     let isValid = true;
-    const newErrors = { ...errors };
+    const newErrors = { ...validationErrors };
 
     // Kullanıcı adı kontrolü
     if (!form.username.trim()) {
@@ -122,14 +146,17 @@ export default function SignUpPage() {
       isValid = false;
     }
 
-    setErrors(newErrors);
+    setValidationErrors(newErrors);
     return isValid;
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (validateForm()) {
-      console.log("Kayıt formu:", form);
-      router.navigate("/(auth)/signin");
+      await signUp({
+        username: form.username,
+        email: form.email,
+        password: form.password,
+      });
     }
   };
 
@@ -178,9 +205,16 @@ export default function SignUpPage() {
               </Text>
             </Center>
 
+            {/* Hata mesajı */}
+            {error && (
+              <Box className="bg-red-100 p-3 rounded-lg mb-2">
+                <Text className="text-red-600 text-center">{error}</Text>
+              </Box>
+            )}
+
             <Box style={{ marginTop: 24 }}>
               <FormControl
-                isInvalid={!!errors.username}
+                isInvalid={!!validationErrors.username}
                 style={{ marginBottom: 16 }}
               >
                 <FormControlLabel>
@@ -201,17 +235,17 @@ export default function SignUpPage() {
                     onChangeText={(text) => handleInputChange("username", text)}
                   />
                 </Input>
-                {errors.username ? (
+                {validationErrors.username ? (
                   <FormControlError>
                     <FormControlErrorText>
-                      {errors.username}
+                      {validationErrors.username}
                     </FormControlErrorText>
                   </FormControlError>
                 ) : null}
               </FormControl>
 
               <FormControl
-                isInvalid={!!errors.email}
+                isInvalid={!!validationErrors.email}
                 style={{ marginBottom: 16 }}
               >
                 <FormControlLabel>
@@ -234,15 +268,17 @@ export default function SignUpPage() {
                     autoCapitalize="none"
                   />
                 </Input>
-                {errors.email ? (
+                {validationErrors.email ? (
                   <FormControlError>
-                    <FormControlErrorText>{errors.email}</FormControlErrorText>
+                    <FormControlErrorText>
+                      {validationErrors.email}
+                    </FormControlErrorText>
                   </FormControlError>
                 ) : null}
               </FormControl>
 
               <FormControl
-                isInvalid={!!errors.password}
+                isInvalid={!!validationErrors.password}
                 style={{ marginBottom: 16 }}
               >
                 <FormControlLabel>
@@ -273,22 +309,22 @@ export default function SignUpPage() {
                     />
                   </InputSlot>
                 </Input>
-                {errors.password ? (
+                {validationErrors.password ? (
                   <FormControlError>
                     <FormControlErrorText>
-                      {errors.password}
+                      {validationErrors.password}
                     </FormControlErrorText>
                   </FormControlError>
                 ) : null}
               </FormControl>
 
               <FormControl
-                isInvalid={!!errors.confirmPassword}
-                style={{ marginBottom: 24 }}
+                isInvalid={!!validationErrors.confirmPassword}
+                style={{ marginBottom: 16 }}
               >
                 <FormControlLabel>
                   <FormControlLabelText className="text-emerald-700">
-                    Şifre Tekrar
+                    Şifre Tekrarı
                   </FormControlLabelText>
                 </FormControlLabel>
                 <Input
@@ -316,81 +352,85 @@ export default function SignUpPage() {
                     />
                   </InputSlot>
                 </Input>
-                {errors.confirmPassword ? (
+                {validationErrors.confirmPassword ? (
                   <FormControlError>
                     <FormControlErrorText>
-                      {errors.confirmPassword}
+                      {validationErrors.confirmPassword}
                     </FormControlErrorText>
                   </FormControlError>
                 ) : null}
               </FormControl>
 
-              <Box style={{ marginBottom: 8 }}>
-                <Text
-                  className="text-emerald-700 text-sm"
-                  style={{ marginBottom: 4 }}
-                >
-                  Kaydolarak şunları kabul etmiş olursunuz:
-                </Text>
-                <Text className="text-emerald-600 text-xs">
-                  Hizmet Koşulları ve Gizlilik Politikası
-                </Text>
-              </Box>
-
               <Button
-                className="bg-emerald-600 rounded-lg"
                 size="lg"
+                variant="solid"
+                className="bg-emerald-600 mt-4 rounded-lg"
                 onPress={handleSignUp}
+                disabled={isLoading}
               >
-                <ButtonText style={{ fontWeight: "bold" }}>Kayıt Ol</ButtonText>
+                {isLoading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <ButtonText className="text-white">Kayıt Ol</ButtonText>
+                )}
               </Button>
 
-              <Center style={{ marginTop: 24, marginBottom: 24 }}>
-                <Text size="sm" className="text-emerald-700">
-                  veya şununla devam et
+              <Box style={{ marginTop: 24 }}>
+                <Text
+                  className="text-gray-400 text-center"
+                  style={{ marginBottom: 16 }}
+                >
+                  veya bunlarla devam et
                 </Text>
-              </Center>
+
+                <Box
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    gap: 16,
+                  }}
+                >
+                  <TouchableOpacity
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: "#f1f5f9",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                    onPress={handleGoogleSignUp}
+                  >
+                    <Chrome color="#047857" size={24} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: "#f1f5f9",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                    onPress={handleAppleSignUp}
+                  >
+                    <Apple color="#047857" size={24} />
+                  </TouchableOpacity>
+                </Box>
+              </Box>
 
               <Box
                 style={{
+                  marginTop: 24,
                   flexDirection: "row",
                   justifyContent: "center",
-                  gap: 16,
                 }}
               >
-                <TouchableOpacity
-                  onPress={handleGoogleSignUp}
-                  style={styles.socialButton}
-                >
-                  <Chrome size={24} color="#047857" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={handleAppleSignUp}
-                  style={styles.socialButton}
-                >
-                  <Apple size={24} color="#047857" />
-                </TouchableOpacity>
+                <Text className="text-gray-500">Zaten hesabınız var mı? </Text>
+                <Link href="/(auth)/signin">
+                  <LinkText className="text-emerald-600">Giriş Yap</LinkText>
+                </Link>
               </Box>
-
-              <Center style={{ marginTop: 32 }}>
-                <Box style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text size="sm" className="text-emerald-700">
-                    Zaten hesabınız var mı?
-                  </Text>
-                  <Link
-                    onPress={() => router.navigate("/(auth)/signin")}
-                    style={{ marginLeft: 4 }}
-                  >
-                    <LinkText
-                      className="text-emerald-600"
-                      style={{ fontWeight: "600" }}
-                    >
-                      Giriş Yap
-                    </LinkText>
-                  </Link>
-                </Box>
-              </Center>
             </Box>
           </VStack>
         </ScrollView>

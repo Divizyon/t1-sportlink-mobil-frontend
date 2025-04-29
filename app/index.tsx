@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   ImageBackground,
@@ -6,6 +6,7 @@ import {
   StatusBar,
   Dimensions,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -13,10 +14,31 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { VStack } from "@/components/ui/vstack";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { useAuth } from "@/src/store/authContext";
 
 const { width } = Dimensions.get("window");
 
 export default function Index() {
+  const { authState } = useAuth();
+  const { isLoading, isAuthenticated } = authState;
+
+  // Eğer kullanıcı giriş yapmışsa, direkt dashboard'a yönlendir
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/(tabs)/dashboard");
+    }
+  }, [isAuthenticated]);
+
+  // Yükleme durumunda loading göster
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#10b981" />
+        <Text style={styles.loadingText}>Yükleniyor...</Text>
+      </View>
+    );
+  }
+
   return (
     <ImageBackground
       source={require("../assets/images/ilksayfa.jpg")}
@@ -198,15 +220,21 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   primaryButtonText: {
+    color: "white",
     fontWeight: "bold",
     fontSize: 16,
   },
   secondaryButton: {
     backgroundColor: "rgba(255, 255, 255, 0.15)",
     borderWidth: 1,
-    borderColor: "#10b981",
+    borderColor: "rgba(255, 255, 255, 0.3)",
     borderRadius: 12,
     height: 55,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   secondaryButtonText: {
     color: "white",
@@ -214,15 +242,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   demoButton: {
-    backgroundColor: "rgba(16, 185, 129, 0.2)",
-    borderWidth: 1,
-    borderColor: "#10b981",
+    backgroundColor: "transparent",
     borderRadius: 12,
     height: 55,
   },
   demoButtonText: {
-    color: "white",
-    fontWeight: "bold",
+    color: "rgba(255, 255, 255, 0.8)",
+    fontWeight: "500",
     fontSize: 16,
+    textDecorationLine: "underline",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#10b981",
   },
 });

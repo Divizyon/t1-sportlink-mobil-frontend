@@ -28,7 +28,9 @@ import {
   Clock,
   Calendar,
   CheckCircle,
+  LogOut,
 } from "lucide-react-native";
+import { useAuth } from "@/src/store/authContext";
 
 // Renk teması - fotoğraftaki açık yeşil
 const theme = {
@@ -491,6 +493,8 @@ const sportCategories = [
 const daysOfWeek = ["Pzr", "Pzt", "Sal", "Çrş", "Per", "Cum", "Cmt"];
 
 export default function DashboardScreen() {
+  const { signOut, authState } = useAuth();
+  const { user } = authState;
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [filteredEvents, setFilteredEvents] = useState<Event[]>(eventData);
   const [selectedCategory, setSelectedCategory] = useState("Tümü");
@@ -722,148 +726,205 @@ export default function DashboardScreen() {
     });
   };
 
+  // Çıkış yapma fonksiyonu
+  const handleSignOut = async () => {
+    Alert.alert(
+      "Çıkış Yap",
+      "Hesabınızdan çıkış yapmak istediğinize emin misiniz?",
+      [
+        {
+          text: "İptal",
+          style: "cancel",
+        },
+        {
+          text: "Çıkış Yap",
+          style: "destructive",
+          onPress: async () => {
+            await signOut();
+            router.replace("/(auth)/signin");
+          },
+        },
+      ]
+    );
+  };
+
+  // Header bileşeni için profil butonuna çıkış butonu ekleme
+  const renderHeader = () => {
+    return (
+      <View style={styles.headerContainer}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerTitle}>SportLink</Text>
+        </View>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={handleSignOut}
+          >
+            <LogOut size={24} color={theme.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.avatarContainer}
+            onPress={() => router.navigate("/(tabs)/profile")}
+          >
+            <Image
+              source={{ uri: userData.avatarUrl }}
+              style={styles.avatar}
+              resizeMode="cover"
+            />
+            {userData.unreadMessages > 0 && (
+              <View style={styles.badgeContainer}>
+                <Text style={styles.badgeText}>{userData.unreadMessages}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      {renderHeader()}
       <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[0]}
-        contentContainerStyle={styles.contentContainer}
       >
-        {/* Header */}
-        <View style={styles.headerWrapper}>
-          <Header
-            userName={userData.name}
-            userAvatar={userData.avatarUrl}
-            isPro={userData.isPro}
-            unreadMessages={userData.unreadMessages}
+        <View style={styles.content}>
+          <View style={styles.welcomeSection}>
+            <Text style={styles.welcomeText}>
+              Merhaba, {user?.username || userData.name}
+            </Text>
+            <Text style={styles.subtitleText}>
+              Bugün hangi sporu yapmak istersin?
+            </Text>
+          </View>
+
+          {/* Calendar Section */}
+          <DateSelector
+            currentDay={currentDay}
+            currentMonth={currentMonth}
+            days={days}
+            onPrevWeek={handlePrevWeek}
+            onNextWeek={handleNextWeek}
+            onDateSelect={handleDateSelect}
           />
-        </View>
 
-        {/* Calendar Section */}
-        <DateSelector
-          currentDay={currentDay}
-          currentMonth={currentMonth}
-          days={days}
-          onPrevWeek={handlePrevWeek}
-          onNextWeek={handleNextWeek}
-          onDateSelect={handleDateSelect}
-        />
+          {/* Sport Categories */}
+          <CategorySelector
+            categories={sportCategories}
+            selectedCategory={selectedCategory}
+            onSelectCategory={handleCategorySelect}
+          />
 
-        {/* Sport Categories */}
-        <CategorySelector
-          categories={sportCategories}
-          selectedCategory={selectedCategory}
-          onSelectCategory={handleCategorySelect}
-        />
+          {/* Distance Filter */}
+          <DistanceFilter
+            distance={distanceFilter}
+            onDistanceChange={handleDistanceFilterChange}
+          />
 
-        {/* Distance Filter */}
-        <DistanceFilter
-          distance={distanceFilter}
-          onDistanceChange={handleDistanceFilterChange}
-        />
+          {/* Tabs */}
+          <TabSelector activeTab={activeTab} onTabChange={handleTabChange} />
 
-        {/* Tabs */}
-        <TabSelector activeTab={activeTab} onTabChange={handleTabChange} />
-
-        {/* Events */}
-        <View style={styles.eventsSection}>
-          {isLocationLoading ? (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Etkinlikler yükleniyor...</Text>
-            </View>
-          ) : filteredEvents.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                Bu kriterlere uygun etkinlik bulunamadı.
-              </Text>
-            </View>
-          ) : (
-            filteredEvents.map((event) => (
-              <TouchableOpacity
-                key={event.id}
-                style={styles.eventCard}
-                onPress={() => handleEventPress(event.id)}
-              >
-                <View style={styles.dateBox}>
-                  <Text style={styles.dayNumber}>
-                    {event.date.split(" ")[0]}
-                  </Text>
-                  <Text style={styles.monthName}>Eki</Text>
-                </View>
-
-                <View style={styles.eventDetails}>
-                  <View style={styles.eventTimeContainer}>
-                    <Text style={styles.eventTime}>{event.time}</Text>
-                    <View style={styles.organizerBadge}>
-                      <Text style={styles.organizerBadgeText}>
-                        {event.organizer.name}
-                      </Text>
-                      {event.organizer.isVerified && (
-                        <CheckCircle
-                          size={12}
-                          color={theme.primary}
-                          style={{ marginLeft: 4 }}
-                        />
-                      )}
-                    </View>
-                  </View>
-
-                  <Text style={styles.eventTitle}>{event.title}</Text>
-
-                  <Text style={styles.eventDescription} numberOfLines={1}>
-                    {event.description}
-                  </Text>
-
-                  <View style={styles.tagContainer}>
-                    <View style={styles.typeTag}>
-                      <Text style={styles.typeTagText}>{event.type}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.eventLocation}>
-                    <MapPin
-                      size={14}
-                      color={theme.textSecondary}
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text style={styles.locationText}>
-                      {event.location} ({event.distance})
+          {/* Events */}
+          <View style={styles.eventsSection}>
+            {isLocationLoading ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Etkinlikler yükleniyor...</Text>
+              </View>
+            ) : filteredEvents.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  Bu kriterlere uygun etkinlik bulunamadı.
+                </Text>
+              </View>
+            ) : (
+              filteredEvents.map((event) => (
+                <TouchableOpacity
+                  key={event.id}
+                  style={styles.eventCard}
+                  onPress={() => handleEventPress(event.id)}
+                >
+                  <View style={styles.dateBox}>
+                    <Text style={styles.dayNumber}>
+                      {event.date.split(" ")[0]}
                     </Text>
+                    <Text style={styles.monthName}>Eki</Text>
                   </View>
 
-                  <View style={styles.eventFooter}>
-                    <View style={styles.participantsInfo}>
-                      <Users
+                  <View style={styles.eventDetails}>
+                    <View style={styles.eventTimeContainer}>
+                      <Text style={styles.eventTime}>{event.time}</Text>
+                      <View style={styles.organizerBadge}>
+                        <Text style={styles.organizerBadgeText}>
+                          {event.organizer.name}
+                        </Text>
+                        {event.organizer.isVerified && (
+                          <CheckCircle
+                            size={12}
+                            color={theme.primary}
+                            style={{ marginLeft: 4 }}
+                          />
+                        )}
+                      </View>
+                    </View>
+
+                    <Text style={styles.eventTitle}>{event.title}</Text>
+
+                    <Text style={styles.eventDescription} numberOfLines={1}>
+                      {event.description}
+                    </Text>
+
+                    <View style={styles.tagContainer}>
+                      <View style={styles.typeTag}>
+                        <Text style={styles.typeTagText}>{event.type}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.eventLocation}>
+                      <MapPin
                         size={14}
                         color={theme.textSecondary}
                         style={{ marginRight: 4 }}
                       />
-                      <Text style={styles.participantsText}>
-                        {event.participantCount}/{event.maxParticipants}{" "}
-                        katılımcı
+                      <Text style={styles.locationText}>
+                        {event.location} ({event.distance})
                       </Text>
                     </View>
 
-                    <View style={styles.ratingContainer}>
-                      {event.rating > 0 && (
-                        <>
-                          <Star
-                            size={14}
-                            color={theme.secondary}
-                            fill={theme.secondary}
-                            style={{ marginRight: 2 }}
-                          />
-                          <Text style={styles.ratingValue}>
-                            {event.rating.toFixed(1)}
-                          </Text>
-                        </>
-                      )}
+                    <View style={styles.eventFooter}>
+                      <View style={styles.participantsInfo}>
+                        <Users
+                          size={14}
+                          color={theme.textSecondary}
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text style={styles.participantsText}>
+                          {event.participantCount}/{event.maxParticipants}{" "}
+                          katılımcı
+                        </Text>
+                      </View>
+
+                      <View style={styles.ratingContainer}>
+                        {event.rating > 0 && (
+                          <>
+                            <Star
+                              size={14}
+                              color={theme.secondary}
+                              fill={theme.secondary}
+                              style={{ marginRight: 2 }}
+                            />
+                            <Text style={styles.ratingValue}>
+                              {event.rating.toFixed(1)}
+                            </Text>
+                          </>
+                        )}
+                      </View>
                     </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))
-          )}
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
         </View>
       </ScrollView>
 
@@ -1062,5 +1123,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.textSecondary,
     textAlign: "center",
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: theme.text,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconButton: {
+    padding: 5,
+  },
+  avatarContainer: {
+    padding: 5,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  badgeContainer: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    backgroundColor: theme.primary,
+    borderRadius: 10,
+    padding: 2,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "white",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+  },
+  welcomeSection: {
+    marginBottom: 20,
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: theme.text,
+    marginBottom: 10,
+  },
+  subtitleText: {
+    fontSize: 16,
+    color: theme.textSecondary,
   },
 });
