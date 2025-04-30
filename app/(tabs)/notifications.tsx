@@ -201,13 +201,6 @@ export default function NotificationsScreen() {
     );
   };
 
-  const handleDeleteNotification = (id: string) => {
-    // Bildirimi sil
-    setNotifications((prevNotifications) =>
-      prevNotifications.filter((item) => item.id !== id)
-    );
-  };
-
   const getFilteredNotifications = () => {
     return activeTab === "all"
       ? notifications
@@ -258,13 +251,6 @@ export default function NotificationsScreen() {
 
           <Text style={styles.message}>{item.message}</Text>
         </View>
-
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => handleDeleteNotification(item.id)}
-        >
-          <TrashIcon size={18} color="#95a5a6" />
-        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -433,10 +419,6 @@ const styles = StyleSheet.create({
     color: "#555",
     lineHeight: 20,
     marginTop: 4,
-  },
-  deleteButton: {
-    padding: 8,
-    marginLeft: 8,
   },
   clearAllButton: {
     paddingVertical: 6,
