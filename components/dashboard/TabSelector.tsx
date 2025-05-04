@@ -3,7 +3,7 @@ import { StyleSheet, TouchableOpacity } from "react-native";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
-import { MapPin, UserCheck } from "lucide-react-native";
+import { MapPin, UserCheck, Navigation } from "lucide-react-native";
 
 // Tema renkleri - daha koyu yeşil
 const theme = {
@@ -24,11 +24,43 @@ const TabSelector: React.FC<TabSelectorProps> = ({
   activeTab,
   onTabChange,
 }) => {
+  // Tab değişikliğini yönetmek için wrapper fonksiyon
+  const handleTabChange = (tab: string) => {
+    console.log(`TabSelector: Tab değişikliği talebi - "${activeTab}" -> "${tab}"`);
+    
+    // Eğer zaten aktif tab'a tıklanırsa tekrar render etme
+    if (tab === activeTab) {
+      console.log("TabSelector: Zaten aktif tab'a tıklandı, işlem yapılmadı");
+      return;
+    }
+    
+    // Tab değişikliğini üst komponente ilet
+    onTabChange(tab);
+  };
+  
   return (
     <HStack style={styles.tabContainer}>
       <TouchableOpacity
+        style={[styles.tabButton, activeTab === "nearest" && styles.activeTab]}
+        onPress={() => handleTabChange("nearest")}
+      >
+        <Navigation
+          size={18}
+          color={activeTab === "nearest" ? theme.primary : theme.textSecondary}
+        />
+        <Text
+          style={[
+            styles.tabText,
+            activeTab === "nearest" && styles.activeTabText,
+          ]}
+        >
+          Bana En Yakın
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={[styles.tabButton, activeTab === "nearby" && styles.activeTab]}
-        onPress={() => onTabChange("nearby")}
+        onPress={() => handleTabChange("nearby")}
       >
         <MapPin
           size={18}
@@ -46,7 +78,7 @@ const TabSelector: React.FC<TabSelectorProps> = ({
 
       <TouchableOpacity
         style={[styles.tabButton, activeTab === "joined" && styles.activeTab]}
-        onPress={() => onTabChange("joined")}
+        onPress={() => handleTabChange("joined")}
       >
         <UserCheck
           size={18}
@@ -91,7 +123,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     marginLeft: 6,
-    fontSize: 14,
+    fontSize: 13, // Küçülttüm font boyutunu çünkü 3 düğmeye yer açmak için
     color: theme.textSecondary,
   },
   activeTabText: {

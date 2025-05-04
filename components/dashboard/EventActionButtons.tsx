@@ -1,109 +1,80 @@
 import React from "react";
-import { StyleSheet } from "react-native";
-import { Box } from "@/components/ui/box";
-import { Button, ButtonText } from "@/components/ui/button";
-import { HStack } from "@/components/ui/hstack";
-import {
-  UserCheck,
-  Star,
-  MessageSquare,
-  Share2,
-  Users,
-} from "lucide-react-native";
+import { StyleSheet, View } from "react-native";
+import { Button, ButtonText, ButtonIcon } from "@/components/ui/button";
+import { MessageSquare, Share } from "lucide-react-native";
 
 interface EventActionButtonsProps {
   isJoined: boolean;
   onToggleJoin: () => void;
-  onRate: () => void;
-  onContact?: () => void;
-  onShare?: () => void;
+  onContact: () => void;
+  onShare: () => void;
 }
 
 const EventActionButtons: React.FC<EventActionButtonsProps> = ({
   isJoined,
   onToggleJoin,
-  onRate,
   onContact,
   onShare,
 }) => {
   return (
-    <Box style={styles.actionContainer}>
-      <Button
-        size="lg"
-        variant={isJoined ? "outline" : "solid"}
-        style={[styles.mainButton, isJoined && styles.joinedButton]}
-        onPress={onToggleJoin}
-      >
-        {isJoined ? (
-          <UserCheck size={20} color="#10B981" />
-        ) : (
-          <Users size={20} color="white" />
-        )}
-        <ButtonText style={isJoined ? styles.joinedText : {}}>
-          {isJoined ? "Katıldın" : "Katıl"}
-        </ButtonText>
-      </Button>
-
-      <HStack style={styles.secondaryActions}>
+    <View style={styles.container}>
+      <View style={styles.row}>
         <Button
-          size="md"
-          variant="outline"
-          style={styles.secondaryButton}
-          onPress={onRate}
+          variant={isJoined ? "outline" : "solid"}
+          style={[
+            styles.joinButton,
+            isJoined ? styles.leaveButton : styles.joinButton,
+          ]}
+          onPress={onToggleJoin}
         >
-          <Star size={18} color="#64748B" />
+          <ButtonText style={isJoined ? styles.leaveButtonText : {}}>
+            {isJoined ? "Ayrıl" : "Katıl"}
+          </ButtonText>
         </Button>
 
-        {onContact && (
-          <Button
-            size="md"
-            variant="outline"
-            style={styles.secondaryButton}
-            onPress={onContact}
-          >
-            <MessageSquare size={18} color="#64748B" />
-          </Button>
-        )}
+        <Button variant="outline" style={styles.iconButton} onPress={onContact}>
+          <ButtonIcon as={MessageSquare} />
+        </Button>
 
-        {onShare && (
-          <Button
-            size="md"
-            variant="outline"
-            style={styles.secondaryButton}
-            onPress={onShare}
-          >
-            <Share2 size={18} color="#64748B" />
-          </Button>
-        )}
-      </HStack>
-    </Box>
+        <Button variant="outline" style={styles.iconButton} onPress={onShare}>
+          <ButtonIcon as={Share} />
+        </Button>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  actionContainer: {
+  container: {
     padding: 16,
+    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
     borderTopColor: "#F1F5F9",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  mainButton: {
-    width: "100%",
-    marginBottom: 12,
-  },
-  joinedButton: {
-    backgroundColor: "transparent",
-    borderColor: "#10B981",
-  },
-  joinedText: {
-    color: "#10B981",
-  },
-  secondaryActions: {
+  row: {
+    flexDirection: "row",
     justifyContent: "space-between",
   },
-  secondaryButton: {
+  joinButton: {
     flex: 1,
-    justifyContent: "center",
-    marginHorizontal: 4,
+    marginRight: 8,
+    backgroundColor: "#10B981",
+  },
+  leaveButton: {
+    borderColor: "#EF4444",
+  },
+  leaveButtonText: {
+    color: "#EF4444",
+  },
+  iconButton: {
+    width: 48,
+    height: 48,
+    marginLeft: 8,
     borderColor: "#E2E8F0",
   },
 });

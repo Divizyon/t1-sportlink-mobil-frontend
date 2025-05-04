@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   SafeAreaView,
@@ -9,8 +9,10 @@ import {
   Text,
   TouchableOpacity,
   Image,
+  Linking,
 } from "react-native";
 import { router } from "expo-router";
+import * as Location from 'expo-location';
 import {
   Header,
   DateSelector,
@@ -18,12 +20,11 @@ import {
   DistanceFilter,
   TabSelector,
   EventCard,
-  RatingModal,
+  EventMap,
 } from "@/components/dashboard";
 import {
   Plus,
   MapPin,
-  Star,
   Users,
   Clock,
   Calendar,
@@ -42,6 +43,18 @@ const theme = {
   text: "#0F172A", // Ana metin rengi
   textSecondary: "#64748B", // İkincil metin rengi
   border: "#E2E8F0", // Sınır rengi
+  categoryColors: {
+    Basketbol: "#F97316", // Turuncu
+    Futbol: "#22C55E", // Yeşil
+    Yüzme: "#3B82F6", // Mavi
+    Tenis: "#EAB308", // Sarı
+    Voleybol: "#EC4899", // Pembe
+    Koşu: "#8B5CF6", // Mor
+    Yoga: "#14B8A6", // Turkuaz
+    Bisiklet: "#EF4444", // Kırmızı
+    Okçuluk: "#6366F1", // İndigo
+    "Akıl Oyunları": "#8B5CF6", // Mor
+  }
 };
 
 // Geçici kullanıcı verileri
@@ -54,25 +67,20 @@ const userData = {
 
 // Kullanıcının mevcut konumu
 const userLocation = {
-  latitude: 37.8679,
-  longitude: 32.4849,
+  latitude: 37.8717,
+  longitude: 32.4930, // Konya Alaaddin Tepesi
 };
 
 // Konya'daki farklı lokasyonlar için etkinlikler
 const nearbyLocations = [
-  { name: "Meram", latitude: 37.859, longitude: 32.452, distance: 1.2 },
-  { name: "Selçuklu", latitude: 37.875, longitude: 32.485, distance: 2.5 },
-  { name: "Karatay", latitude: 37.872, longitude: 32.508, distance: 3.7 },
-  { name: "Real", latitude: 37.883, longitude: 32.51, distance: 4.1 },
-  { name: "Bosna Hersek", latitude: 37.893, longitude: 32.473, distance: 5.8 },
-  {
-    name: "Alaaddin Tepesi",
-    latitude: 37.871,
-    longitude: 32.493,
-    distance: 0.8,
-  },
-  { name: "Kule Site", latitude: 37.873, longitude: 32.498, distance: 1.5 },
-  { name: "Zafer", latitude: 37.863, longitude: 32.482, distance: 0.9 },
+  { name: "Meram", latitude: 37.850, longitude: 32.452, distance: 2.8 },
+  { name: "Selçuklu", latitude: 37.875, longitude: 32.485, distance: 1.5 },
+  { name: "Karatay", latitude: 37.872, longitude: 32.508, distance: 2.2 },
+  { name: "Real", latitude: 37.883, longitude: 32.510, distance: 3.4 },
+  { name: "Bosna Hersek", latitude: 37.893, longitude: 32.473, distance: 4.2 },
+  { name: "Kültürpark", latitude: 37.875, longitude: 32.492, distance: 0.7 },
+  { name: "Kule Site", latitude: 37.873, longitude: 32.498, distance: 1.0 },
+  { name: "Zafer", latitude: 37.863, longitude: 32.482, distance: 1.8 },
 ];
 
 // Mesafe hesaplama fonksiyonu (Haversine formülü) - km cinsinden mesafe döndürür
@@ -112,13 +120,6 @@ interface Event {
   participants: string[];
   participantCount: number;
   maxParticipants: number;
-  rating: number;
-  reviews: {
-    id: number;
-    userName: string;
-    rating: number;
-    comment: string;
-  }[];
   isJoined: boolean;
   organizer: {
     id: number;
@@ -132,7 +133,7 @@ interface Event {
 }
 
 // Geçici etkinlik verileri
-const eventData = [
+const initialEventData = [
   {
     id: 1,
     title: "Basketbol Maçı",
@@ -152,21 +153,6 @@ const eventData = [
     ],
     participantCount: 10,
     maxParticipants: 12,
-    rating: 4.5,
-    reviews: [
-      {
-        id: 1,
-        userName: "Ahmet K.",
-        rating: 5,
-        comment: "Harika bir etkinlikti!",
-      },
-      {
-        id: 2,
-        userName: "Zeynep T.",
-        rating: 4,
-        comment: "Eğlenceliydi ama biraz kalabalıktı.",
-      },
-    ],
     isJoined: false,
     organizer: {
       id: 1,
@@ -177,97 +163,6 @@ const eventData = [
     description:
       "Basketbol severler için haftalık dostluk maçı. Her seviyeden oyuncular katılabilir.",
     requirements: "Spor ayakkabı ve rahat kıyafet getirmeniz yeterli.",
-  },
-  {
-    id: 2,
-    title: "Futbol Turnuvası",
-    type: "Buluşma",
-    category: "Futbol",
-    date: "23 Ekim",
-    time: "14:00-17:00",
-    location: "Meram Futbol Sahası",
-    coordinates: {
-      latitude: 37.8599,
-      longitude: 32.4522,
-    },
-    distance: "2.5 km",
-    participants: [
-      "https://randomuser.me/api/portraits/women/65.jpg",
-      "https://randomuser.me/api/portraits/men/22.jpg",
-    ],
-    participantCount: 18,
-    maxParticipants: 22,
-    rating: 4.8,
-    reviews: [
-      {
-        id: 1,
-        userName: "Mehmet A.",
-        rating: 5,
-        comment: "Çok profesyonelce organize edilmiş.",
-      },
-      {
-        id: 2,
-        userName: "Ali B.",
-        rating: 4,
-        comment: "Keyifliydi, tekrar katılacağım.",
-      },
-    ],
-    isJoined: true,
-    organizer: {
-      id: 2,
-      name: "Meram Spor Akademisi",
-      isVerified: true,
-      logoUrl: "https://randomuser.me/api/portraits/men/45.jpg",
-    },
-    description:
-      "5v5 halı saha futbol turnuvası. Kazanan takıma kupa verilecektir.",
-    requirements: "Takım olarak katılım veya bireysel kayıt mümkündür.",
-  },
-  {
-    id: 3,
-    title: "Yüzme Etkinliği",
-    type: "Spor",
-    category: "Yüzme",
-    date: "24 Ekim",
-    time: "10:00-11:30",
-    location: "Olimpik Yüzme Havuzu",
-    coordinates: {
-      latitude: 37.851,
-      longitude: 32.4726,
-    },
-    distance: "3.7 km",
-    participants: [
-      "https://randomuser.me/api/portraits/women/33.jpg",
-      "https://randomuser.me/api/portraits/men/45.jpg",
-    ],
-    participantCount: 8,
-    maxParticipants: 15,
-    rating: 4.2,
-    reviews: [
-      {
-        id: 1,
-        userName: "Deniz Y.",
-        rating: 4,
-        comment: "Su sıcaklığı idealdi, eğitmenler yardımcıydı.",
-      },
-      {
-        id: 2,
-        userName: "Canan M.",
-        rating: 5,
-        comment: "Yeni teknikler öğrendim, teşekkürler!",
-      },
-    ],
-    isJoined: true,
-    organizer: {
-      id: 3,
-      name: "Konya Yüzme Kulübü",
-      isVerified: false,
-      logoUrl: "https://randomuser.me/api/portraits/women/28.jpg",
-    },
-    description:
-      "Tüm seviyelere uygun yüzme etkinliği. Profesyonel eğitmenler eşliğinde stil geliştirme.",
-    requirements:
-      "Mayo, bone ve gözlük getirmeniz gerekiyor. Duş malzemelerinizi de unutmayın.",
   },
   {
     id: 4,
@@ -288,21 +183,6 @@ const eventData = [
     ],
     participantCount: 6,
     maxParticipants: 8,
-    rating: 4.9,
-    reviews: [
-      {
-        id: 1,
-        userName: "Berk T.",
-        rating: 5,
-        comment: "Eğitmen çok iyiydi, çok şey öğrendim.",
-      },
-      {
-        id: 2,
-        userName: "Selin Ç.",
-        rating: 5,
-        comment: "Küçük gruplar halinde öğrenmek çok etkili.",
-      },
-    ],
     isJoined: false,
     organizer: {
       id: 4,
@@ -335,15 +215,6 @@ const eventData = [
     ],
     participantCount: 7,
     maxParticipants: 15,
-    rating: 4.7,
-    reviews: [
-      {
-        id: 1,
-        userName: "Murat L.",
-        rating: 5,
-        comment: "Muhteşem bir başlangıç! Güne enerjik başlamak için ideal.",
-      },
-    ],
     isJoined: false,
     organizer: {
       id: 6,
@@ -375,15 +246,6 @@ const eventData = [
     ],
     participantCount: 12,
     maxParticipants: 15,
-    rating: 4.8,
-    reviews: [
-      {
-        id: 1,
-        userName: "Ayşe M.",
-        rating: 5,
-        comment: "Çok huzurlu bir deneyimdi, kesinlikle tekrarlayacağım.",
-      },
-    ],
     isJoined: false,
     organizer: {
       id: 7,
@@ -414,15 +276,6 @@ const eventData = [
     ],
     participantCount: 9,
     maxParticipants: 12,
-    rating: 4.6,
-    reviews: [
-      {
-        id: 1,
-        userName: "Kerem D.",
-        rating: 5,
-        comment: "Grup lideri çok profesyoneldi, rota mükemmeldi.",
-      },
-    ],
     isJoined: false,
     organizer: {
       id: 8,
@@ -454,15 +307,6 @@ const eventData = [
     ],
     participantCount: 5,
     maxParticipants: 8,
-    rating: 4.3,
-    reviews: [
-      {
-        id: 1,
-        userName: "Burak Y.",
-        rating: 4,
-        comment: "Zorlu ama öğreticiydi. Güvenlik önlemleri iyiydi.",
-      },
-    ],
     isJoined: false,
     organizer: {
       id: 9,
@@ -475,6 +319,247 @@ const eventData = [
     requirements:
       "Dağ bisikleti ve kask zorunludur. Dizlik ve dirseklik önerilir.",
   },
+  // Yeni eklenen 8 örnek etkinlik
+  {
+    id: 10,
+    title: "Voleybol Turnuvası",
+    type: "Spor",
+    category: "Voleybol",
+    date: "26 Ekim",
+    time: "14:00-18:00",
+    location: "Selçuklu Spor Salonu",
+    coordinates: {
+      latitude: 37.885,
+      longitude: 32.482,
+    },
+    distance: "3.2 km",
+    participants: [
+      "https://randomuser.me/api/portraits/women/18.jpg",
+      "https://randomuser.me/api/portraits/men/43.jpg",
+    ],
+    participantCount: 24,
+    maxParticipants: 36,
+    isJoined: false,
+    organizer: {
+      id: 10,
+      name: "Selçuklu Belediyesi Spor",
+      isVerified: true,
+      logoUrl: "https://randomuser.me/api/portraits/men/18.jpg",
+    },
+    description:
+      "6 takımlı voleybol turnuvası. Her seviyeden oyuncular katılabilir. Birinci takıma kupa ve madalya verilecektir.",
+    requirements: "Spor ayakkabı ve forma gereklidir. Takım olarak başvuru yapmalısınız.",
+  },
+  {
+    id: 11,
+    title: "Yüzme Yarışı",
+    type: "Yarışma",
+    category: "Yüzme",
+    date: "27 Ekim",
+    time: "09:00-12:00",
+    location: "Selçuklu Olimpik Havuz",
+    coordinates: {
+      latitude: 37.878,
+      longitude: 32.492,
+    },
+    distance: "2.1 km",
+    participants: [
+      "https://randomuser.me/api/portraits/women/23.jpg",
+      "https://randomuser.me/api/portraits/men/67.jpg",
+    ],
+    participantCount: 18,
+    maxParticipants: 30,
+    isJoined: false,
+    organizer: {
+      id: 11,
+      name: "Konya Yüzme Federasyonu",
+      isVerified: true,
+      logoUrl: "https://randomuser.me/api/portraits/women/11.jpg",
+    },
+    description:
+      "Farklı kategorilerde yüzme yarışı. Serbest, kurbağalama ve kelebek stilleri için ayrı yarışmalar olacaktır.",
+    requirements: "Profesyonel mayo, bone ve gözlük zorunludur. Önceden kayıt yaptırılmalıdır.",
+  },
+  {
+    id: 12,
+    title: "Pilates Kursu",
+    type: "Kurs",
+    category: "Yoga",
+    date: "28 Ekim",
+    time: "17:30-18:30",
+    location: "Meram Spor Merkezi",
+    coordinates: {
+      latitude: 37.855,
+      longitude: 32.465,
+    },
+    distance: "1.8 km",
+    participants: [
+      "https://randomuser.me/api/portraits/women/21.jpg",
+      "https://randomuser.me/api/portraits/women/34.jpg",
+    ],
+    participantCount: 10,
+    maxParticipants: 15,
+    isJoined: false,
+    organizer: {
+      id: 12,
+      name: "Meram Fitness",
+      isVerified: true,
+      logoUrl: "https://randomuser.me/api/portraits/women/56.jpg",
+    },
+    description:
+      "Başlangıç seviyesi pilates kursu. Doğru duruş ve nefes teknikleri üzerine odaklanılacaktır.",
+    requirements: "Mat ve rahat kıyafetler getirilmelidir. Havlu ve su tavsiye edilir.",
+  },
+  {
+    id: 13,
+    title: "Halı Saha Maçı",
+    type: "Spor",
+    category: "Futbol",
+    date: "29 Ekim",
+    time: "20:00-22:00",
+    location: "Bosna Hersek Halı Saha",
+    coordinates: {
+      latitude: 37.893,
+      longitude: 32.473,
+    },
+    distance: "5.8 km",
+    participants: [
+      "https://randomuser.me/api/portraits/men/12.jpg",
+      "https://randomuser.me/api/portraits/men/15.jpg",
+    ],
+    participantCount: 12,
+    maxParticipants: 14,
+    isJoined: false,
+    organizer: {
+      id: 13,
+      name: "Konya Futbol Grubu",
+      isVerified: false,
+      logoUrl: "https://randomuser.me/api/portraits/men/33.jpg",
+    },
+    description:
+      "Haftalık halı saha maçı. Her seviyeden oyuncu katılabilir. Kaleci aranıyor!",
+    requirements: "Halı saha ayakkabısı ve forma getirmeniz gerekiyor. Saha ücreti kişi başı bölüşülecektir.",
+  },
+  {
+    id: 14,
+    title: "Tenis Turnuvası",
+    type: "Yarışma",
+    category: "Tenis",
+    date: "30 Ekim",
+    time: "12:00-18:00",
+    location: "Meram Tenis Kulübü",
+    coordinates: {
+      latitude: 37.848,
+      longitude: 32.457,
+    },
+    distance: "4.2 km",
+    participants: [
+      "https://randomuser.me/api/portraits/men/37.jpg",
+      "https://randomuser.me/api/portraits/women/37.jpg",
+    ],
+    participantCount: 16,
+    maxParticipants: 16,
+    isJoined: false,
+    organizer: {
+      id: 14,
+      name: "Meram Tenis Akademisi",
+      isVerified: true,
+      logoUrl: "https://randomuser.me/api/portraits/men/78.jpg",
+    },
+    description:
+      "Tenis turnuvası. Tek erkekler, tek kadınlar ve çiftler kategorilerinde yarışmalar olacaktır.",
+    requirements: "Tenis raketi, uygun ayakkabı ve kıyafet zorunludur. Turnuva katılım ücreti vardır.",
+  },
+  {
+    id: 15,
+    title: "Dağ Yürüyüşü",
+    type: "Tur",
+    category: "Koşu",
+    date: "31 Ekim",
+    time: "08:00-14:00",
+    location: "Aladağ Yolu",
+    coordinates: {
+      latitude: 37.842,
+      longitude: 32.402,
+    },
+    distance: "8.7 km",
+    participants: [
+      "https://randomuser.me/api/portraits/men/52.jpg",
+      "https://randomuser.me/api/portraits/women/52.jpg",
+    ],
+    participantCount: 15,
+    maxParticipants: 25,
+    isJoined: false,
+    organizer: {
+      id: 15,
+      name: "Konya Doğa Sporları",
+      isVerified: true,
+      logoUrl: "https://randomuser.me/api/portraits/men/92.jpg",
+    },
+    description:
+      "Aladağ'da orta zorlukta doğa yürüyüşü. Toplamda 12 km'lik parkur, muhteşem manzara eşliğinde tamamlanacak.",
+    requirements: "Trekking ayakkabısı, sırt çantası, yeterli su ve atıştırmalık getirmeniz gerekiyor. Şapka ve güneş kremi önerilir.",
+  },
+  {
+    id: 16,
+    title: "Açık Hava Satranç Turnuvası",
+    type: "Yarışma",
+    category: "Akıl Oyunları",
+    date: "1 Kasım",
+    time: "10:00-16:00",
+    location: "Kültür Park",
+    coordinates: {
+      latitude: 37.866,
+      longitude: 32.482,
+    },
+    distance: "0.7 km",
+    participants: [
+      "https://randomuser.me/api/portraits/men/72.jpg",
+      "https://randomuser.me/api/portraits/women/72.jpg",
+    ],
+    participantCount: 22,
+    maxParticipants: 32,
+    isJoined: false,
+    organizer: {
+      id: 16,
+      name: "Konya Satranç Kulübü",
+      isVerified: true,
+      logoUrl: "https://randomuser.me/api/portraits/men/65.jpg",
+    },
+    description:
+      "Açık hava satranç turnuvası. İsviçre sistemi ile 5 tur oynanacaktır. Dereceye girenlere ödül verilecektir.",
+    requirements: "Önceden kayıt yaptırmanız gerekmektedir. Katılım ücretsizdir.",
+  },
+  {
+    id: 17,
+    title: "Okçuluk Eğitimi",
+    type: "Kurs",
+    category: "Okçuluk",
+    date: "2 Kasım",
+    time: "15:00-17:00",
+    location: "Selçuklu Okçuluk Tesisi",
+    coordinates: {
+      latitude: 37.881,
+      longitude: 32.466,
+    },
+    distance: "3.5 km",
+    participants: [
+      "https://randomuser.me/api/portraits/men/82.jpg",
+      "https://randomuser.me/api/portraits/women/82.jpg",
+    ],
+    participantCount: 8,
+    maxParticipants: 12,
+    isJoined: false,
+    organizer: {
+      id: 17,
+      name: "Selçuklu Okçuluk",
+      isVerified: true,
+      logoUrl: "https://randomuser.me/api/portraits/men/85.jpg",
+    },
+    description:
+      "Geleneksel Türk okçuluğu eğitimi. Başlangıç seviyesinden ileri seviyeye kadar herkes katılabilir.",
+    requirements: "Tüm ekipmanlar tesis tarafından sağlanacaktır. Rahat kıyafetler giymeniz önerilir.",
+  }
 ];
 
 // Spor kategorileri
@@ -485,6 +570,11 @@ const sportCategories = [
   { id: 4, name: "Yüzme", icon: "🏊" },
   { id: 5, name: "Tenis", icon: "🎾" },
   { id: 6, name: "Voleybol", icon: "🏐" },
+  { id: 7, name: "Koşu", icon: "🏃" },
+  { id: 8, name: "Yoga", icon: "🧘" },
+  { id: 9, name: "Bisiklet", icon: "🚴" },
+  { id: 10, name: "Okçuluk", icon: "🏹" },
+  { id: 11, name: "Akıl Oyunları", icon: "♟️" },
 ];
 
 // Haftanın günleri
@@ -492,52 +582,57 @@ const daysOfWeek = ["Pzr", "Pzt", "Sal", "Çrş", "Per", "Cum", "Cmt"];
 
 export default function DashboardScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>(eventData);
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const [eventData, setEventData] = useState<Event[]>(initialEventData);
   const [selectedCategory, setSelectedCategory] = useState("Tümü");
-  const [distanceFilter, setDistanceFilter] = useState(10); // km cinsinden
-  const [activeTab, setActiveTab] = useState("nearby"); // "nearby" veya "joined"
-  const [showRatingModal, setShowRatingModal] = useState(false);
-  const [eventToRate, setEventToRate] = useState<Event | null>(null);
-  const [rating, setRating] = useState(0);
-  const [reviewComment, setReviewComment] = useState("");
+  const [distanceFilter, setDistanceFilter] = useState(3); // Varsayılan olarak 3km'ye düşürdük
+  const [activeTab, setActiveTab] = useState("nearby"); // "nearby", "nearest" veya "joined"
   const [userCoordinates, setUserCoordinates] = useState(userLocation);
-  const [eventsWithDistance, setEventsWithDistance] = useState<Event[]>([]);
   const [isLocationLoading, setIsLocationLoading] = useState(true);
+  const [showPOI, setShowPOI] = useState(true); // POI'leri göster/gizle state'i
 
   // Kullanıcının konumunu alma
   useEffect(() => {
-    // Bu normalde Expo'nun Location API'ını kullanacak, ancak şimdilik sabit konum kullanıyoruz
-    setUserCoordinates(userLocation);
-    setIsLocationLoading(false);
+    // Expo Location API'ını kullanarak gerçek konumu al
+    (async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Konum izni verilmedi, Alaaddin Tepesi kullanılıyor');
+          setUserCoordinates(userLocation); // Konya Alaaddin Tepesi
+          setIsLocationLoading(false);
+          return;
+        }
+
+        // Gerçek uygulamada burası kullanılacak, şimdilik test için Alaaddin Tepesi'ni kullan
+        // let location = await Location.getCurrentPositionAsync({});
+        // setUserCoordinates({
+        //   latitude: location.coords.latitude,
+        //   longitude: location.coords.longitude
+        // });
+        
+        // Test için Alaaddin Tepesi'ni kullan
+        setUserCoordinates({
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude
+        });
+        
+        setIsLocationLoading(false);
+      } catch (error) {
+        console.log('Konum alınamadı:', error);
+        // Hata durumunda Alaaddin Tepesi'ni kullan
+        setUserCoordinates(userLocation);
+        setIsLocationLoading(false);
+      }
+    })();
   }, []);
 
-  // Mesafe hesapla ve olayları güncelle
+  // Uygulama başladığında tüm etkinlikleri göster
   useEffect(() => {
-    if (!isLocationLoading) {
-      const eventsWithCalculatedDistance = eventData.map((event) => {
-        const distance = calculateDistance(
-          userCoordinates.latitude,
-          userCoordinates.longitude,
-          event.coordinates.latitude,
-          event.coordinates.longitude
-        );
-        return {
-          ...event,
-          calculatedDistance: distance,
-          distance: `${distance.toFixed(1)} km`,
-        };
-      });
-      setEventsWithDistance(eventsWithCalculatedDistance);
-      filterEvents(selectedDate, selectedCategory, distanceFilter, activeTab);
-    }
-  }, [
-    userCoordinates,
-    isLocationLoading,
-    selectedDate,
-    selectedCategory,
-    distanceFilter,
-    activeTab,
-  ]);
+    console.log("Uygulama başlatıldı, tüm etkinlikler yükleniyor");
+    // Tüm etkinlikleri yükle, bunu yaparken isLocationLoading'e bağlı kalmayalım
+    setFilteredEvents(eventData);
+  }, []);
 
   // Ay ve gün için geçici hesaplamalar
   const currentMonth = new Intl.DateTimeFormat("tr-TR", {
@@ -587,127 +682,225 @@ export default function DashboardScreen() {
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
-    filterEvents(date, selectedCategory, distanceFilter, activeTab);
+    // useEffect applyActiveFilters'ı otomatik olarak tetikleyecek
   };
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
-    filterEvents(selectedDate, category, distanceFilter, activeTab);
+    // useEffect applyActiveFilters'ı otomatik olarak tetikleyecek
   };
 
   const handleDistanceFilterChange = (distance: number) => {
     setDistanceFilter(distance);
-    filterEvents(selectedDate, selectedCategory, distance, activeTab);
+    // useEffect applyActiveFilters'ı otomatik olarak tetikleyecek
   };
 
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (tab === "nearby") {
-      handleNearbyPress();
-    } else {
-      filterEvents(selectedDate, selectedCategory, distanceFilter, tab);
+    console.log(`Tab değişimi: ${activeTab} -> ${tab}`);
+
+    if (tab === activeTab) {
+      console.log("Aynı tab tekrar seçildi - etkinlikler yeniden yükleniyor");
     }
+
+    setActiveTab(tab);
+    
+    try {
+      // Tab değişikliği sonrası filtreleri tekrar uygula
+      console.log(`${tab} tabı için filtreler yeniden uygulanıyor`);
+      applyActiveFilters();
+    } catch (error) {
+      console.error("Tab değişimi sonrası filtreleme hatası:", error);
+    }
+  };
+  
+  const handleNearbyPress = () => {
+    // Sadece tab değişikliğini tetikle
+    setActiveTab("nearby");
+    // useEffect otomatik olarak çalışacak ve filtrelemeyi gerçekleştirecek
   };
 
   const handleJoinEvent = (eventId: number) => {
-    // Gerçek uygulamada, burada API çağrısı yapılır
-    // Örnek için, durumu hemen güncelliyoruz
-    const updatedEvents = eventData.map((event) => {
+    // Update main event data
+    const updatedEventData = eventData.map((event) => {
       if (event.id === eventId) {
         return { ...event, isJoined: !event.isJoined };
       }
       return event;
     });
 
-    // Gerçek uygulamada state yönetimi için Redux vb. kullanılmalı
-    // Bu basit örnek için doğrudan filtreli olayları güncelliyoruz
-    setFilteredEvents(
-      updatedEvents.filter((event) => {
-        if (activeTab === "joined") return event.isJoined;
-
-        const matchesDate = event.date === `${selectedDate.getDate()} Ekim`;
-        const matchesCategory =
-          selectedCategory === "Tümü" || event.category === selectedCategory;
-        const matchesDistance = parseFloat(event.distance) <= distanceFilter;
-
-        return matchesDate && matchesCategory && matchesDistance;
-      })
-    );
-
-    Alert.alert("Başarılı", "Etkinlik durumu güncellendi.", [
-      { text: "Tamam", onPress: () => console.log("OK") },
-    ]);
-  };
-
-  const handleRateEvent = (eventId: number) => {
-    // Derecelendirme başlatma
-    const eventToRate = eventData.find((event) => event.id === eventId);
-    if (eventToRate) {
-      setEventToRate(eventToRate);
-      setShowRatingModal(true);
-    }
-  };
-
-  const submitRating = () => {
-    // Gerçek uygulamada, burada API çağrısı yapılır
-    console.log(
-      `Event ${eventToRate?.id} rated: ${rating}, comment: ${reviewComment}`
-    );
-    setShowRatingModal(false);
-    setRating(0);
-    setReviewComment("");
-    setEventToRate(null);
+    // Update eventData
+    setEventData(updatedEventData);
+    
+    // Re-filter the events based on the current filters and active tab
+    applyActiveFilters();
 
     Alert.alert(
-      "Değerlendirme Gönderildi",
-      "Geri bildiriminiz için teşekkür ederiz!",
+      "Başarılı", 
+      `Etkinliğe ${updatedEventData.find(e => e.id === eventId)?.isJoined ? 'katıldınız' : 'katılımınız iptal edildi'}.`, 
       [{ text: "Tamam", onPress: () => console.log("OK") }]
     );
   };
 
-  const filterEvents = (
-    date: Date,
-    category: string,
-    maxDistance: number,
-    tab: string
-  ) => {
-    const dateStr = `${date.getDate()} Ekim`; // Basitleştirilmiş tarih kontrolü, gerçek uygulamada doğru tarih formatı kullanılmalı
+  useEffect(() => {
+    // Konum yüklendikten sonra başlangıç filtrelemesini yap
+    if (!isLocationLoading) {
+      applyActiveFilters();
+    }
+  }, [isLocationLoading]);
 
-    let filtered =
-      eventsWithDistance.length > 0
-        ? eventsWithDistance.filter((event) => {
-            // Eğer "katıldığım" sekmesindeyse, sadece katılınan etkinlikleri göster
-            if (tab === "joined") return event.isJoined;
+  // Ekstra debug fonksiyonu ekle
+  const logAllCategories = () => {
+    // Veri tutarlılığını kontrol et - etkinlikler vs kategori listesi
+    const eventCategories = [...new Set(eventData.map(e => e.category))];
+    const sportCategoryNames = sportCategories.map(c => c.name);
+    
+    console.log("Tüm etkinlik kategorileri:", eventCategories);
+    console.log("Sport kategorileri:", sportCategoryNames);
+    
+    // Eşleşmeyen kategorileri bul
+    const mismatchedCategories = eventCategories.filter(c => !sportCategoryNames.includes(c));
+    if (mismatchedCategories.length > 0) {
+      console.log("UYARI: Eşleşmeyen kategoriler:", mismatchedCategories);
+    }
+  };
+  
+  // Tab değişikliği, filtre değişikliği ve konum değişikliği için
+  useEffect(() => {
+    logAllCategories(); // Önce kategori tutarlılığını kontrol et
+    
+    if (!isLocationLoading) {
+      // Debug için filtreleme bilgilerini göster
+      console.log(`>> FİLTRELEME: Tab=${activeTab}, Kategori=${selectedCategory}, Mesafe=${distanceFilter}km`);
+      
+      // Filtreleme uygula
+      applyActiveFilters();
+    }
+  }, [activeTab, selectedCategory, distanceFilter, userCoordinates, eventData, isLocationLoading]);
 
-            const matchesDate = event.date === dateStr;
-            const matchesCategory =
-              category === "Tümü" || event.category === category;
-            const matchesDistance = event.calculatedDistance
-              ? event.calculatedDistance <= maxDistance
-              : false;
+  // Tab değişiminde event'lerin görüntülenmesi için ek bir güvenlik önlemi
+  useEffect(() => {
+    if ((activeTab === "nearby" || activeTab === "nearest") && filteredEvents.length === 0 && !isLocationLoading) {
+      console.log(`${activeTab === "nearby" ? "Yakındakiler" : "Bana En Yakın"} sekmesinde etkinlik bulunamadı - Tüm etkinlikler yükleniyor`);
+      
+      if (activeTab === "nearest") {
+        // En yakın etkinliği göster
+        const eventsWithDistance = eventData.map(event => {
+          const calculatedDistance = calculateDistance(
+            userCoordinates.latitude,
+            userCoordinates.longitude,
+            event.coordinates.latitude,
+            event.coordinates.longitude
+          );
+          
+          return {
+            ...event,
+            calculatedDistance,
+            distance: `${calculatedDistance.toFixed(1)} km`
+          };
+        });
+        
+        // Mesafeye göre sırala
+        const sorted = [...eventsWithDistance].sort((a, b) => 
+          a.calculatedDistance - b.calculatedDistance
+        );
+        
+        // En yakın etkinliği göster
+        if (sorted.length > 0) {
+          setFilteredEvents([sorted[0]]);
+        } else {
+          setFilteredEvents([]);
+        }
+      } else {
+        // Yakındakiler için - Mesafeye bakılmaksızın tüm etkinlikleri göster
+        setFilteredEvents(eventData);
+      }
+    }
+  }, [activeTab, filteredEvents.length, isLocationLoading]);
 
-            return matchesDate && matchesCategory && matchesDistance;
-          })
-        : [];
-
-    // Yakındaki etkinlik sekmesinde mesafeye göre sırala
-    if (tab === "nearby") {
-      filtered = filtered.sort((a, b) => {
-        // Null kontrolleri ekle
-        const distanceA = a.calculatedDistance || Number.MAX_VALUE;
-        const distanceB = b.calculatedDistance || Number.MAX_VALUE;
-        return distanceA - distanceB;
-      });
+  // Aktif filtreleri uygula
+  const applyActiveFilters = useCallback(() => {
+    console.log(`Filtreler uygulanıyor: Tab=${activeTab}, Mesafe=${distanceFilter}, Kategori=${selectedCategory}`);
+    
+    if (eventData.length === 0) {
+      console.log("Henüz etkinlik verisi yok - Filtreler uygulanamıyor");
+      return;
     }
 
-    setFilteredEvents(filtered);
-  };
+    if (!userCoordinates) {
+      console.log("Konum bilgisi yok - Mesafe hesaplanamıyor");
+      return;
+    }
 
-  const handleNearbyPress = () => {
-    setActiveTab("nearby");
-    // Mesafe filtrelemesi ile yakındaki etkinlikleri getir
-    filterEvents(selectedDate, selectedCategory, distanceFilter, "nearby");
-  };
+    // Önce tüm event'leri kopyala ve mesafe hesapla
+    let eventsWithDistance = eventData.map(event => {
+      const calculatedDistance = calculateDistance(
+        userCoordinates.latitude,
+        userCoordinates.longitude,
+        event.coordinates.latitude,
+        event.coordinates.longitude
+      );
+      
+      return {
+        ...event,
+        calculatedDistance,
+        distance: `${calculatedDistance.toFixed(1)} km`
+      };
+    });
+
+    console.log(`Toplam ${eventsWithDistance.length} etkinlik için mesafe hesaplandı`);
+
+    // Katıldıklarım filtrelemesi
+    if (activeTab === "joined") {
+      eventsWithDistance = eventsWithDistance.filter(event => {
+        const isJoined = event.isJoined;
+        console.log(`Etkinlik: ${event.title}, Katılım Durumu: ${isJoined ? "Evet" : "Hayır"}`);
+        return isJoined;
+      });
+      console.log(`Filtreleme sonrası ${eventsWithDistance.length} etkinlik (sadece katılınanlar)`);
+    } 
+    // Bana En Yakın filtrelemesi
+    else if (activeTab === "nearest") {
+      // Önce mesafeye göre sırala
+      eventsWithDistance = [...eventsWithDistance].sort((a, b) => 
+        a.calculatedDistance - b.calculatedDistance
+      );
+      
+      // Sadece en yakın etkinliği al
+      if (eventsWithDistance.length > 0) {
+        const nearestEvent = eventsWithDistance[0];
+        console.log(`En yakın etkinlik: ${nearestEvent.title}, Mesafe: ${nearestEvent.distance}`);
+        eventsWithDistance = [nearestEvent];
+      } else {
+        console.log("Hiç etkinlik bulunamadı");
+        eventsWithDistance = [];
+      }
+    }
+    // Yakındakiler filtrelemesi
+    else {
+      // Mesafe filtrelemesi
+      if (distanceFilter !== null) {
+        eventsWithDistance = eventsWithDistance.filter(event => {
+          const matchesDistance = event.calculatedDistance <= distanceFilter;
+          console.log(`Etkinlik: ${event.title}, Mesafe: ${event.calculatedDistance.toFixed(1)} km, Filtre: ${distanceFilter} km, Eşleşme: ${matchesDistance ? "Evet" : "Hayır"}`);
+          return matchesDistance;
+        });
+        console.log(`Filtreleme sonrası ${eventsWithDistance.length} etkinlik (mesafe filtresi)`);
+      }
+
+      // Kategori filtrelemesi
+      if (selectedCategory !== null) {
+        eventsWithDistance = eventsWithDistance.filter(event => {
+          const matchesCategory = event.category === selectedCategory;
+          console.log(`Etkinlik: ${event.title}, Kategori: ${event.category}, Filtre: ${selectedCategory}, Eşleşme: ${matchesCategory ? "Evet" : "Hayır"}`);
+          return matchesCategory;
+        });
+        console.log(`Filtreleme sonrası ${eventsWithDistance.length} etkinlik (kategori filtresi)`);
+      }
+    }
+
+    setFilteredEvents(eventsWithDistance);
+    console.log(`Toplam ${eventsWithDistance.length} etkinlik filtreleme sonrası görüntüleniyor`);
+  }, [activeTab, selectedCategory, distanceFilter, eventData, userCoordinates]);
 
   const handleCreateEvent = () => {
     // @ts-ignore
@@ -720,6 +913,28 @@ export default function DashboardScreen() {
       pathname: "/(tabs)/dashboard/event-details",
       params: { id: eventId },
     });
+  };
+
+  const handleMapFilterChange = (newCategory: string, newDistance: number) => {
+    console.log(`Harita üzerinden filtre değişti: Kategori="${newCategory}", Mesafe=${newDistance}km`);
+    
+    // Kategori bilgisini kontrol et ve doğrula
+    const validCategory = sportCategories.find(c => c.name === newCategory)?.name || "Tümü";
+    if (validCategory !== newCategory) {
+      console.log(`Geçersiz kategori: "${newCategory}", geçerli kategori "${validCategory}" kullanılıyor`);
+    }
+    
+    // State'leri güncelle
+    setDistanceFilter(newDistance);
+    setSelectedCategory(validCategory);
+    
+    // Filtreleme yapılacak (filtreleme değerleri değiştiğinde useEffect tarafından tetiklenir)
+    console.log(`Filtreleme değerleri güncellendi: kategori=${validCategory}, mesafe=${newDistance}km`);
+  };
+
+  // Spor tesisleri görünümünü değiştirmek için yeni fonksiyon
+  const togglePOI = () => {
+    setShowPOI(prev => !prev);
   };
 
   return (
@@ -750,17 +965,32 @@ export default function DashboardScreen() {
         />
 
         {/* Sport Categories */}
-        <CategorySelector
-          categories={sportCategories}
-          selectedCategory={selectedCategory}
-          onSelectCategory={handleCategorySelect}
-        />
+        {activeTab === "nearby" && (
+          <CategorySelector
+            categories={sportCategories}
+            selectedCategory={selectedCategory}
+            onSelectCategory={handleCategorySelect}
+          />
+        )}
 
-        {/* Distance Filter */}
-        <DistanceFilter
-          distance={distanceFilter}
-          onDistanceChange={handleDistanceFilterChange}
-        />
+        {/* Map View */}
+        <View style={styles.mapContainer}>
+          <EventMap 
+            userLocation={isLocationLoading ? userLocation : userCoordinates}
+            events={filteredEvents.map(event => ({
+              id: event.id,
+              title: event.title,
+              coordinates: event.coordinates,
+              category: event.category
+            }))}
+            onMarkerPress={handleEventPress}
+            activeTab={activeTab}
+            onFilterChange={handleMapFilterChange}
+            selectedCategory={selectedCategory}
+            distanceFilter={distanceFilter}
+            showPOI={showPOI}
+          />
+        </View>
 
         {/* Tabs */}
         <TabSelector activeTab={activeTab} onTabChange={handleTabChange} />
@@ -778,106 +1008,118 @@ export default function DashboardScreen() {
               </Text>
             </View>
           ) : (
-            filteredEvents.map((event) => (
-              <TouchableOpacity
-                key={event.id}
-                style={styles.eventCard}
-                onPress={() => handleEventPress(event.id)}
-              >
-                <View style={styles.dateBox}>
-                  <Text style={styles.dayNumber}>
-                    {event.date.split(" ")[0]}
-                  </Text>
-                  <Text style={styles.monthName}>Eki</Text>
-                </View>
-
-                <View style={styles.eventDetails}>
-                  <View style={styles.eventTimeContainer}>
-                    <Text style={styles.eventTime}>{event.time}</Text>
-                    <View style={styles.organizerBadge}>
-                      <Text style={styles.organizerBadgeText}>
-                        {event.organizer.name}
-                      </Text>
-                      {event.organizer.isVerified && (
-                        <CheckCircle
-                          size={12}
-                          color={theme.primary}
-                          style={{ marginLeft: 4 }}
-                        />
-                      )}
-                    </View>
-                  </View>
-
-                  <Text style={styles.eventTitle}>{event.title}</Text>
-
-                  <Text style={styles.eventDescription} numberOfLines={1}>
-                    {event.description}
-                  </Text>
-
-                  <View style={styles.tagContainer}>
-                    <View style={styles.typeTag}>
-                      <Text style={styles.typeTagText}>{event.type}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.eventLocation}>
-                    <MapPin
-                      size={14}
-                      color={theme.textSecondary}
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text style={styles.locationText}>
-                      {event.location} ({event.distance})
+            filteredEvents.map((event) => {
+              // Kategori rengini belirle
+              const categoryColor = theme.categoryColors[event.category] || theme.primaryDark;
+              
+              return (
+                <TouchableOpacity
+                  key={event.id}
+                  style={styles.eventCard}
+                  onPress={() => handleEventPress(event.id)}
+                >
+                  {/* Renk göstergesi */}
+                  <View style={[styles.eventIndicator, { backgroundColor: categoryColor }]} />
+                  
+                  <View style={[styles.dateBox, { backgroundColor: categoryColor }]}>
+                    <Text style={styles.dayNumber}>
+                      {event.date.split(" ")[0]}
                     </Text>
+                    <Text style={styles.monthName}>Eki</Text>
                   </View>
 
-                  <View style={styles.eventFooter}>
-                    <View style={styles.participantsInfo}>
-                      <Users
+                  <View style={styles.eventDetails}>
+                    <View style={styles.eventTimeContainer}>
+                      <Text style={styles.eventTime}>{event.time}</Text>
+                      <View style={[styles.organizerBadge, { backgroundColor: `${categoryColor}20` }]}>
+                        <Text style={[styles.organizerBadgeText, { color: categoryColor }]}>
+                          {event.organizer.name}
+                        </Text>
+                        {event.organizer.isVerified && (
+                          <CheckCircle
+                            size={12}
+                            color={categoryColor}
+                            style={{ marginLeft: 4 }}
+                          />
+                        )}
+                      </View>
+                    </View>
+
+                    <Text style={styles.eventTitle}>{event.title}</Text>
+
+                    <Text style={styles.eventDescription} numberOfLines={1}>
+                      {event.description}
+                    </Text>
+
+                    <View style={styles.tagContainer}>
+                      <View style={styles.typeTag}>
+                        <Text style={styles.typeTagText}>{event.type}</Text>
+                      </View>
+                      {/* Kategori etiketi ekle */}
+                      <View style={[styles.typeTag, { backgroundColor: `${categoryColor}20` }]}>
+                        <Text style={[styles.typeTagText, { color: categoryColor }]}>{event.category}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.eventLocation}>
+                      <MapPin
                         size={14}
                         color={theme.textSecondary}
                         style={{ marginRight: 4 }}
                       />
-                      <Text style={styles.participantsText}>
-                        {event.participantCount}/{event.maxParticipants}{" "}
-                        katılımcı
+                      <Text style={styles.locationText}>
+                        {event.location} ({event.distance})
                       </Text>
                     </View>
 
-                    <View style={styles.ratingContainer}>
-                      {event.rating > 0 && (
-                        <>
-                          <Star
-                            size={14}
-                            color={theme.secondary}
-                            fill={theme.secondary}
-                            style={{ marginRight: 2 }}
+                    <View style={styles.eventFooter}>
+                      <View style={styles.participantsInfo}>
+                        <Users
+                          size={14}
+                          color={theme.textSecondary}
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text style={styles.participantsText}>
+                          {event.participantCount}/{event.maxParticipants}{" "}
+                          katılımcı
+                        </Text>
+                      </View>
+                      
+                      {/* Katılımcı avatarlarını göster */}
+                      <View style={styles.participantAvatars}>
+                        {event.participants.slice(0, 2).map((avatar, idx) => (
+                          <Image 
+                            key={idx} 
+                            source={{ uri: avatar }} 
+                            style={[
+                              styles.participantAvatar, 
+                              { marginLeft: idx > 0 ? -8 : 0 }
+                            ]} 
                           />
-                          <Text style={styles.ratingValue}>
-                            {event.rating.toFixed(1)}
-                          </Text>
-                        </>
-                      )}
+                        ))}
+                        {event.participantCount > 2 && (
+                          <View style={[styles.moreParticipants, { backgroundColor: `${categoryColor}20`, borderColor: `${categoryColor}40` }]}>
+                            <Text style={[styles.moreParticipantsText, { color: categoryColor }]}>
+                              +{event.participantCount - 2}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
+                    
+                    {/* Eğer etkinliğe katılındıysa işaret göster */}
+                    {event.isJoined && (
+                      <View style={[styles.joinedIndicator, { backgroundColor: categoryColor }]}>
+                        <CheckCircle size={14} color="#fff" />
+                      </View>
+                    )}
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))
+                </TouchableOpacity>
+              );
+            })
           )}
         </View>
       </ScrollView>
-
-      {/* Rating Modal */}
-      <RatingModal
-        visible={showRatingModal}
-        eventTitle={eventToRate?.title}
-        rating={rating}
-        comment={reviewComment}
-        onChangeRating={setRating}
-        onChangeComment={setReviewComment}
-        onSubmit={submitRating}
-        onClose={() => setShowRatingModal(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -923,18 +1165,30 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(226, 232, 240, 0.6)",
+    position: "relative",
   },
   dateBox: {
-    width: 60,
+    width: 65,
     backgroundColor: "#1E1E1E",
     alignItems: "center",
     justifyContent: "center",
     padding: 10,
+    borderRadius: 10,
+    marginRight: -5,
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+    borderWidth: 2,
+    borderColor: "white",
   },
   dayNumber: {
     fontSize: 22,
@@ -944,104 +1198,158 @@ const styles = StyleSheet.create({
   monthName: {
     fontSize: 14,
     color: "white",
+    opacity: 0.9,
   },
   eventDetails: {
     flex: 1,
-    padding: 12,
+    padding: 14,
+    paddingLeft: 18,
   },
   eventTimeContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 8,
   },
   eventTime: {
     fontSize: 14,
     color: theme.textSecondary,
+    fontWeight: "500",
+    backgroundColor: "rgba(241, 245, 249, 0.5)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   organizerBadge: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: theme.primaryLight,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 8,
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   organizerBadgeText: {
     fontSize: 12,
-    color: theme.primary,
+    color: theme.primaryDark,
+    fontWeight: "600",
   },
   eventTitle: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 17,
+    fontWeight: "700",
     color: theme.text,
     marginBottom: 4,
   },
   eventDescription: {
     fontSize: 14,
     color: theme.textSecondary,
-    marginBottom: 6,
+    marginBottom: 8,
+    lineHeight: 18,
   },
   tagContainer: {
     flexDirection: "row",
     marginBottom: 8,
+    gap: 8,
   },
   typeTag: {
     backgroundColor: theme.primaryPale,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
     borderRadius: 8,
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  categoryTag: {
+    backgroundColor: "rgba(255, 247, 237, 0.8)",
   },
   typeTagText: {
     fontSize: 12,
-    color: theme.primary,
+    color: theme.primaryDark,
+    fontWeight: "600",
   },
   eventLocation: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
+    backgroundColor: "rgba(241, 245, 249, 0.5)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: "flex-start",
   },
   locationText: {
     fontSize: 12,
     color: theme.textSecondary,
+    fontWeight: "500",
   },
   eventFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginTop: 4,
+    backgroundColor: "rgba(249, 250, 251, 0.7)",
+    padding: 6,
+    borderRadius: 8,
   },
   participantsInfo: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 6,
   },
   participantsText: {
     fontSize: 12,
     color: theme.textSecondary,
+    fontWeight: "500",
   },
-  ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  participantAvatars: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  ratingValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: theme.secondary,
+  participantAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'white',
   },
-  fab: {
-    position: "absolute",
-    right: 16,
-    bottom: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 4,
+  moreParticipants: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -8,
+    borderWidth: 1,
+    borderColor: 'white',
+  },
+  moreParticipantsText: {
+    fontSize: 10,
+    color: theme.primaryDark,
+    fontWeight: '700',
+  },
+  joinedIndicator: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: theme.primaryDark,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 3,
+    shadowRadius: 2,
+    elevation: 2,
   },
   loadingContainer: {
     padding: 32,
@@ -1062,5 +1370,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.textSecondary,
     textAlign: "center",
+  },
+  mapContainer: {
+    marginVertical: 10,
+  },
+  poiToggleWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 8,
+    paddingHorizontal: 16,
+  },
+  poiToggleButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  poiToggleActive: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#34D399',
+  },
+  poiToggleText: {
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  poiToggleTextActive: {
+    color: '#10B981',
+  },
+  eventIndicator: {
+    position: "absolute",
+    top: 0,
+    left: 60,
+    width: 4,
+    height: "100%",
+    backgroundColor: theme.primaryDark,
   },
 });
