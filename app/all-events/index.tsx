@@ -1,57 +1,62 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  SafeAreaView,
-  Image,
-  ScrollView,
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { router } from "expo-router";
 import { Text } from "@/components/ui/text";
-import { 
-  ChevronLeft, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Users, 
-  Filter,
-  Search
-} from "lucide-react-native";
 import { ALL_EVENTS, EVENT_CATEGORIES } from "@/mocks/events";
 import { Event } from "@/types/app";
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import {
+  Calendar,
+  ChevronLeft,
+  Clock,
+  Filter,
+  MapPin,
+  Users,
+} from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import {
+  FlatList,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function AllEventsScreen() {
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'date' | 'popularity'>('date');
+  const [sortBy, setSortBy] = useState<"date" | "popularity">("date");
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     // Etkinlikleri tarih sırasına göre sırala (en yakın en üstte)
-    const sortedEvents = [...ALL_EVENTS].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const sortedEvents = [...ALL_EVENTS].sort(
+      (a, b) => a.date.getTime() - b.date.getTime()
+    );
     setEvents(sortedEvents);
     setFilteredEvents(sortedEvents);
   }, []);
 
   useEffect(() => {
     let result = [...events];
-    
+
     // Kategori filtrelemesi
     if (selectedCategory) {
-      result = result.filter(event => event.category === selectedCategory);
+      result = result.filter((event) => event.category === selectedCategory);
     }
-    
+
     // Sıralama
-    if (sortBy === 'date') {
+    if (sortBy === "date") {
       result.sort((a, b) => a.date.getTime() - b.date.getTime());
-    } else if (sortBy === 'popularity') {
-      result.sort((a, b) => (b.participants / b.maxParticipants) - (a.participants / a.maxParticipants));
+    } else if (sortBy === "popularity") {
+      result.sort(
+        (a, b) =>
+          b.participants / b.maxParticipants -
+          a.participants / a.maxParticipants
+      );
     }
-    
+
     setFilteredEvents(result);
   }, [selectedCategory, sortBy, events]);
 
@@ -62,18 +67,20 @@ export default function AllEventsScreen() {
   const handleEventPress = (eventId: number) => {
     router.push({
       pathname: "/event-detail/[id]",
-      params: { id: eventId }
+      params: { id: eventId },
     });
   };
 
   const handleCategoryPress = (category: string) => {
-    setSelectedCategory(currentCategory => 
+    setSelectedCategory((currentCategory) =>
       currentCategory === category ? null : category
     );
   };
 
   const toggleSortBy = () => {
-    setSortBy(currentSort => currentSort === 'date' ? 'popularity' : 'date');
+    setSortBy((currentSort) =>
+      currentSort === "date" ? "popularity" : "date"
+    );
   };
 
   const toggleFilters = () => {
@@ -81,18 +88,22 @@ export default function AllEventsScreen() {
   };
 
   const formatDate = (date: Date) => {
-    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
-    return date.toLocaleDateString('tr-TR', options);
+    const options: Intl.DateTimeFormatOptions = {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    };
+    return date.toLocaleDateString("tr-TR", options);
   };
 
   const renderEventItem = ({ item }: { item: Event }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.eventItem}
       onPress={() => handleEventPress(item.id)}
     >
       <View style={styles.eventImageContainer}>
-        <Image 
-          source={item.image} 
+        <Image
+          source={item.image}
           style={styles.eventImage}
           resizeMode="cover"
         />
@@ -100,41 +111,53 @@ export default function AllEventsScreen() {
           <Text style={styles.categoryText}>{item.category}</Text>
         </View>
       </View>
-      
+
       <View style={styles.eventContent}>
         <Text style={styles.eventTitle}>{item.title}</Text>
-        
+
         <View style={styles.infoContainer}>
           <View style={styles.infoRow}>
             <Calendar size={16} color="#3498db" />
             <Text style={styles.eventInfo}>{formatDate(item.date)}</Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Clock size={16} color="#3498db" />
-            <Text style={styles.eventInfo}>{item.time} - {item.endTime}</Text>
+            <Text style={styles.eventInfo}>
+              {item.time} - {item.endTime}
+            </Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <MapPin size={16} color="#3498db" />
             <Text style={styles.eventInfo}>{item.location}</Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Users size={16} color="#3498db" />
-            <Text style={styles.eventInfo}>{item.participants}/{item.maxParticipants} Katılımcı</Text>
+            <Text style={styles.eventInfo}>
+              {item.participants}/{item.maxParticipants} Katılımcı
+            </Text>
           </View>
         </View>
-        
+
         <View style={styles.statusContainer}>
-          <View style={[
-            styles.statusBadge, 
-            item.status === 'approved' ? styles.approvedBadge : 
-            item.status === 'completed' ? styles.completedBadge : styles.pendingBadge
-          ]}>
+          <View
+            style={[
+              styles.statusBadge,
+              item.status === "approved"
+                ? styles.approvedBadge
+                : item.status === "completed"
+                ? styles.completedBadge
+                : styles.pendingBadge,
+            ]}
+          >
             <Text style={styles.statusText}>
-              {item.status === 'approved' ? 'Onaylandı' : 
-               item.status === 'completed' ? 'Tamamlandı' : 'Beklemede'}
+              {item.status === "approved"
+                ? "Onaylandı"
+                : item.status === "completed"
+                ? "Tamamlandı"
+                : "Beklemede"}
             </Text>
           </View>
         </View>
@@ -145,7 +168,7 @@ export default function AllEventsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      
+
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <ChevronLeft size={24} color="#333" />
@@ -155,77 +178,87 @@ export default function AllEventsScreen() {
           <Filter size={20} color="#333" />
         </TouchableOpacity>
       </View>
-      
+
       {showFilters && (
         <View style={styles.filtersContainer}>
           <View style={styles.filterSectionHeader}>
             <Text style={styles.filterTitle}>Kategori</Text>
           </View>
-          
-          <ScrollView 
-            horizontal 
+
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoriesContainer}
           >
-            {EVENT_CATEGORIES.map(category => (
-              <TouchableOpacity 
+            {EVENT_CATEGORIES.map((category) => (
+              <TouchableOpacity
                 key={category}
                 style={[
                   styles.categoryChip,
-                  selectedCategory === category && styles.selectedCategoryChip
+                  selectedCategory === category && styles.selectedCategoryChip,
                 ]}
                 onPress={() => handleCategoryPress(category)}
               >
-                <Text style={[
-                  styles.categoryChipText,
-                  selectedCategory === category && styles.selectedCategoryChipText
-                ]}>
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    selectedCategory === category &&
+                      styles.selectedCategoryChipText,
+                  ]}
+                >
                   {category}
                 </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
-          
+
           <View style={styles.filterSectionHeader}>
             <Text style={styles.filterTitle}>Sıralama</Text>
           </View>
-          
+
           <View style={styles.sortButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.sortButton,
-                sortBy === 'date' && styles.selectedSortButton
+                sortBy === "date" && styles.selectedSortButton,
               ]}
-              onPress={() => setSortBy('date')}
+              onPress={() => setSortBy("date")}
             >
-              <Calendar size={16} color={sortBy === 'date' ? "#fff" : "#666"} />
-              <Text style={[
-                styles.sortButtonText,
-                sortBy === 'date' && styles.selectedSortButtonText
-              ]}>
+              <Calendar size={16} color={sortBy === "date" ? "#fff" : "#666"} />
+              <Text
+                style={[
+                  styles.sortButtonText,
+                  sortBy === "date" && styles.selectedSortButtonText,
+                ]}
+              >
                 Tarihe Göre
               </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[
                 styles.sortButton,
-                sortBy === 'popularity' && styles.selectedSortButton
+                sortBy === "popularity" && styles.selectedSortButton,
               ]}
-              onPress={() => setSortBy('popularity')}
+              onPress={() => setSortBy("popularity")}
             >
-              <Users size={16} color={sortBy === 'popularity' ? "#fff" : "#666"} />
-              <Text style={[
-                styles.sortButtonText,
-                sortBy === 'popularity' && styles.selectedSortButtonText
-              ]}>
+              <Users
+                size={16}
+                color={sortBy === "popularity" ? "#fff" : "#666"}
+              />
+              <Text
+                style={[
+                  styles.sortButtonText,
+                  sortBy === "popularity" && styles.selectedSortButtonText,
+                ]}
+              >
                 Popülerliğe Göre
               </Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
-      
+
       {filteredEvents.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Calendar size={64} color="#d5d5d5" />
@@ -432,4 +465,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     marginTop: 8,
   },
-}); 
+});

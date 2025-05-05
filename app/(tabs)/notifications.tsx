@@ -1,29 +1,23 @@
+import { Text } from "@/components/ui/text";
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import {
+  Bell,
+  Calendar,
+  Clock,
+  Info,
+  MessageCircle,
+  ThumbsUp,
+  User,
+} from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  View,
-  StyleSheet,
   FlatList,
-  TouchableOpacity,
   SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { Text } from "@/components/ui/text";
-import { Box } from "@/components/ui/box";
-import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
-import {
-  Calendar,
-  MessageCircle,
-  Bell,
-  User,
-  Users,
-  ThumbsUp,
-  Clock,
-  TrashIcon,
-  Info,
-} from "lucide-react-native";
-import { router } from "expo-router";
-import { Link } from "expo-router";
 
 // Bildirim tipi tanımlama
 interface Notification {
@@ -349,6 +343,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   screenTitle: {
+    lineHeight: 0,
     fontSize: 24,
     fontWeight: "bold",
   },

@@ -1,56 +1,47 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  StyleSheet,
-  SafeAreaView,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  Modal,
-  Pressable,
-  TextInput,
-  Alert,
-  Switch,
-  ActionSheetIOS,
-  Platform,
-  Linking,
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
 import { Text } from "@/components/ui/text";
-import {
-  Settings,
-  User,
-  LogOut,
-  ChevronRight,
-  Heart,
-  Shield,
-  Bell,
-  HelpCircle,
-  Award,
-  Edit3,
-  MapPin,
-  Calendar,
-  Clock,
-  CheckCircle,
-  Star,
-  UserCheck,
-  MoreVertical,
-  Building,
-  X,
-  Users,
-  Cake,
-  FileText,
-  Camera,
-  Image as ImageIcon,
-  Upload,
-  ArrowLeft,
-  Mic,
-  Map,
-  BookOpen,
-  Check,
-} from "lucide-react-native";
-import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import {
+  ArrowLeft,
+  Bell,
+  BookOpen,
+  Cake,
+  Calendar,
+  Camera,
+  Check,
+  ChevronRight,
+  Clock,
+  Edit3,
+  HelpCircle,
+  Image as ImageIcon,
+  LogOut,
+  Map,
+  MapPin,
+  Mic,
+  MoreVertical,
+  Settings,
+  Shield,
+  Star,
+  Users,
+  X,
+} from "lucide-react-native";
+import React, { useState } from "react";
+import {
+  ActionSheetIOS,
+  Alert,
+  Image,
+  Linking,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 // Menü öğesi tipi tanımlama
 interface MenuItem {
@@ -1532,6 +1523,7 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   headerTitle: {
+    lineHeight: 0,
     fontSize: 24,
     fontWeight: "bold",
     color: "#333",

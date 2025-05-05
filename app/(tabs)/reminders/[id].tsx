@@ -1,28 +1,28 @@
+import { Button } from "@/components/ui/button";
+import { Text } from "@/components/ui/text";
+import { router, useLocalSearchParams } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import {
+  AlertCircle,
+  Bell,
+  Calendar,
+  ChevronLeft,
+  Clock,
+  Info,
+  MapPin,
+  Share2,
+  Users,
+} from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  StyleSheet,
+  ActivityIndicator,
+  Image,
   SafeAreaView,
   ScrollView,
-  Image,
+  StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
+  View,
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { useLocalSearchParams, router } from "expo-router";
-import { Text } from "@/components/ui/text";
-import { Button } from "@/components/ui/button";
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Users, 
-  AlertCircle,
-  ChevronLeft,
-  Bell,
-  Share2,
-  Info,
-} from "lucide-react-native";
 
 // Example event type
 interface Event {
@@ -43,11 +43,13 @@ const mockEventData: Record<string, Event> = {
   "1": {
     id: 1,
     title: "Basketbol Maçı",
-    description: "Haftalık basketbol maçı etkinliği. Herkesin katılımını bekliyoruz!",
+    description:
+      "Haftalık basketbol maçı etkinliği. Herkesin katılımını bekliyoruz!",
     location: "Ankara Spor Salonu",
     date: "12 Ağustos 2023",
     time: "15:00 - 17:00",
-    image: "https://images.unsplash.com/photo-1546519638-68e109acd27d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1780&q=80",
+    image:
+      "https://images.unsplash.com/photo-1546519638-68e109acd27d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1780&q=80",
     participants: 12,
     organizerName: "Mehmet Aydın",
     status: "active",
@@ -55,11 +57,13 @@ const mockEventData: Record<string, Event> = {
   "2": {
     id: 2,
     title: "Futbol Turnuvası",
-    description: "Arkadaşlar arasında futbol turnuvası. Takımlar önceden belirlenecek.",
+    description:
+      "Arkadaşlar arasında futbol turnuvası. Takımlar önceden belirlenecek.",
     location: "İstanbul Park Sahası",
     date: "15 Ağustos 2023",
     time: "10:00 - 13:00",
-    image: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+    image:
+      "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
     participants: 22,
     organizerName: "Ali Yılmaz",
     status: "active",
@@ -67,15 +71,17 @@ const mockEventData: Record<string, Event> = {
   "3": {
     id: 3,
     title: "Yüzme Etkinliği",
-    description: "Havuz başında eğlenceli bir gün geçirmek için organize edilen yüzme etkinliği.",
+    description:
+      "Havuz başında eğlenceli bir gün geçirmek için organize edilen yüzme etkinliği.",
     location: "İzmir Olimpik Havuz",
     date: "20 Ağustos 2023",
     time: "14:00 - 16:00",
-    image: "https://images.unsplash.com/photo-1560090995-01632a28895b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1469&q=80",
+    image:
+      "https://images.unsplash.com/photo-1560090995-01632a28895b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1469&q=80",
     participants: 8,
     organizerName: "Zeynep Kaya",
     status: "active",
-  }
+  },
 };
 
 export default function EventReminderScreen() {
@@ -96,7 +102,7 @@ export default function EventReminderScreen() {
   }, [id]);
 
   const handleToggleReminder = () => {
-    setReminderSet(prev => !prev);
+    setReminderSet((prev) => !prev);
     // Gerçek uygulamada, burada hatırlatıcı ayarı için API çağrısı yapılır
   };
 
@@ -116,10 +122,7 @@ export default function EventReminderScreen() {
         <StatusBar style="dark" />
         <AlertCircle size={60} color="#e74c3c" />
         <Text style={styles.errorText}>Etkinlik bulunamadı</Text>
-        <Button 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
+        <Button style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Geri Dön</Text>
         </Button>
       </SafeAreaView>
@@ -129,13 +132,10 @@ export default function EventReminderScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backIcon}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
           <ChevronLeft size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Etkinlik Hatırlatıcı</Text>
@@ -148,9 +148,9 @@ export default function EventReminderScreen() {
         {/* Etkinlik Görseli */}
         {event.image && (
           <View style={styles.imageContainer}>
-            <Image 
-              source={{ uri: event.image }} 
-              style={styles.eventImage} 
+            <Image
+              source={{ uri: event.image }}
+              style={styles.eventImage}
               resizeMode="cover"
             />
             <View style={styles.imageOverlay} />
@@ -166,13 +166,13 @@ export default function EventReminderScreen() {
         {/* Etkinlik Bilgileri */}
         <View style={styles.contentContainer}>
           <Text style={styles.eventTitle}>{event.title}</Text>
-          
+
           <View style={styles.infoSection}>
             <View style={styles.infoItem}>
               <Calendar size={20} color="#3498db" />
               <Text style={styles.infoText}>{event.date}</Text>
             </View>
-            
+
             <View style={styles.infoItem}>
               <Clock size={20} color="#3498db" />
               <Text style={styles.infoText}>{event.time}</Text>
@@ -185,15 +185,17 @@ export default function EventReminderScreen() {
 
             <View style={styles.infoItem}>
               <Users size={20} color="#3498db" />
-              <Text style={styles.infoText}>{event.participants} Katılımcı</Text>
+              <Text style={styles.infoText}>
+                {event.participants} Katılımcı
+              </Text>
             </View>
           </View>
-          
+
           <View style={styles.descriptionContainer}>
             <Text style={styles.sectionTitle}>Etkinlik Açıklaması</Text>
             <Text style={styles.descriptionText}>{event.description}</Text>
           </View>
-          
+
           <View style={styles.organizerContainer}>
             <Text style={styles.sectionTitle}>Organizatör</Text>
             <View style={styles.organizerInfo}>
@@ -211,7 +213,7 @@ export default function EventReminderScreen() {
             <View style={styles.reminderInfo}>
               <Info size={18} color="#666" />
               <Text style={styles.reminderInfoText}>
-                Bu etkinlik için bir hatırlatıcı 
+                Bu etkinlik için bir hatırlatıcı
                 {reminderSet ? " ayarlanmış" : " ayarlanmamış"}.
               </Text>
             </View>
@@ -221,19 +223,25 @@ export default function EventReminderScreen() {
 
       {/* Alt Butonlar */}
       <View style={styles.footer}>
-        <Button 
+        <Button
           style={[
-            styles.reminderButton, 
-            reminderSet ? styles.reminderActiveButton : styles.reminderInactiveButton,
-            { width: '100%' } // Buton genişliğini %100 yapıyorum
-          ]} 
+            styles.reminderButton,
+            reminderSet
+              ? styles.reminderActiveButton
+              : styles.reminderInactiveButton,
+            { width: "100%" }, // Buton genişliğini %100 yapıyorum
+          ]}
           onPress={handleToggleReminder}
         >
           <Bell size={16} color={reminderSet ? "#fff" : "#333"} />
-          <Text style={[
-            styles.reminderButtonText,
-            reminderSet ? styles.reminderActiveText : styles.reminderInactiveText
-          ]}>
+          <Text
+            style={[
+              styles.reminderButtonText,
+              reminderSet
+                ? styles.reminderActiveText
+                : styles.reminderInactiveText,
+            ]}
+          >
             {reminderSet ? "Hatırlatıcıyı Kapat" : "Hatırlatıcı Ayarla"}
           </Text>
         </Button>
@@ -443,4 +451,4 @@ const styles = StyleSheet.create({
   reminderInactiveText: {
     color: "#333",
   },
-}); 
+});

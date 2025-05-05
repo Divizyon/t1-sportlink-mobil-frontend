@@ -1,11 +1,7 @@
-import React from "react";
-import { Tabs, usePathname } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  useColorScheme,
-  StyleSheet,
-} from "react-native";
-import { router } from "expo-router";
+import { Tabs } from "expo-router";
+import React from "react";
+import { StyleSheet, useColorScheme } from "react-native";
 
 export default function TabsLayout() {
   const colorScheme = useColorScheme();
@@ -24,7 +20,7 @@ export default function TabsLayout() {
             backgroundColor: bgColor,
             borderTopWidth: 0,
             elevation: 0,
-            height: 60,
+            height: 90,
             paddingBottom: 10,
             paddingTop: 10,
             shadowOpacity: 0,

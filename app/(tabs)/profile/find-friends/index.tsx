@@ -1,30 +1,29 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  TextInput,
-  ScrollView,
-  SafeAreaView,
-  Modal,
-} from "react-native";
-import Slider from '@react-native-community/slider';
-import { StatusBar } from "expo-status-bar";
 import { Text } from "@/components/ui/text";
+import Slider from "@react-native-community/slider";
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import {
+  ArrowLeft,
+  Calendar,
+  Filter,
   MapPin,
   MessageCircle,
   Search,
-  ArrowLeft,
   UserPlus,
-  CheckCircle,
   X,
-  Filter,
-  Calendar,
 } from "lucide-react-native";
-import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  FlatList,
+  Image,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 // Kullanıcı tipi tanımlama
 interface User {
@@ -112,7 +111,7 @@ export default function FindFriendsScreen() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>(usersData);
   const [pendingRequests, setPendingRequests] = useState<number[]>([]);
-  
+
   // Age filter states
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [ageRange, setAgeRange] = useState<[number, number]>([18, 60]);
@@ -187,15 +186,13 @@ export default function FindFriendsScreen() {
           <Text style={styles.userName}>{item.name}</Text>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <MapPin size={14} color="#888" />
-            <Text style={styles.userLocation}>
-              {item.location}
-            </Text>
+            <Text style={styles.userLocation}>{item.location}</Text>
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+          <View
+            style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}
+          >
             <Calendar size={14} color="#888" />
-            <Text style={styles.userLocation}>
-              {item.age} yaşında
-            </Text>
+            <Text style={styles.userLocation}>{item.age} yaşında</Text>
           </View>
         </View>
       </View>
@@ -225,12 +222,12 @@ export default function FindFriendsScreen() {
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
-            styles.friendRequestButton, 
-            pendingRequests.includes(item.id) && styles.requestSentButton
+            styles.friendRequestButton,
+            pendingRequests.includes(item.id) && styles.requestSentButton,
           ]}
-          onPress={() => 
+          onPress={() =>
             pendingRequests.includes(item.id)
               ? handleCancelRequest(item.id)
               : handleFriendRequest(item.id)
@@ -239,7 +236,9 @@ export default function FindFriendsScreen() {
           {pendingRequests.includes(item.id) ? (
             <>
               <X size={16} color="#fff" />
-              <Text style={styles.friendRequestButtonText}>İsteği İptal Et</Text>
+              <Text style={styles.friendRequestButtonText}>
+                İsteği İptal Et
+              </Text>
             </>
           ) : (
             <>
@@ -248,8 +247,8 @@ export default function FindFriendsScreen() {
             </>
           )}
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.messageButton}
           onPress={() => handleSendMessage(item.id)}
         >
@@ -283,13 +282,13 @@ export default function FindFriendsScreen() {
   // Add these functions to handle button presses
   const handleFriendRequest = (userId: number) => {
     console.log(`Arkadaşlık isteği gönderildi: ${userId}`);
-    setPendingRequests(prev => [...prev, userId]);
+    setPendingRequests((prev) => [...prev, userId]);
     // Friend request logic will be implemented here
   };
 
   const handleCancelRequest = (userId: number) => {
     console.log(`Arkadaşlık isteği iptal edildi: ${userId}`);
-    setPendingRequests(prev => prev.filter(id => id !== userId));
+    setPendingRequests((prev) => prev.filter((id) => id !== userId));
     // Request cancellation logic will be implemented here
   };
 
@@ -317,49 +316,57 @@ export default function FindFriendsScreen() {
                 <X size={24} color="#333" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modalBody}>
               <View style={styles.ageRangeContainer}>
                 <Text style={styles.ageRangeText}>
                   {tempAgeRange[0]} - {tempAgeRange[1]} yaş aralığı
                 </Text>
               </View>
-              
-              <Text style={styles.sliderLabel}>Minimum Yaş: {tempAgeRange[0]}</Text>
+
+              <Text style={styles.sliderLabel}>
+                Minimum Yaş: {tempAgeRange[0]}
+              </Text>
               <Slider
                 style={styles.slider}
                 minimumValue={18}
                 maximumValue={60}
                 step={1}
                 value={tempAgeRange[0]}
-                onValueChange={(value: number) => setTempAgeRange([value, tempAgeRange[1]])}
+                onValueChange={(value: number) =>
+                  setTempAgeRange([value, tempAgeRange[1]])
+                }
                 minimumTrackTintColor="#3498db"
                 maximumTrackTintColor="#d3d3d3"
                 thumbTintColor="#3498db"
               />
-              
-              <Text style={styles.sliderLabel}>Maksimum Yaş: {tempAgeRange[1]}</Text>
+
+              <Text style={styles.sliderLabel}>
+                Maksimum Yaş: {tempAgeRange[1]}
+              </Text>
               <Slider
                 style={styles.slider}
                 minimumValue={18}
                 maximumValue={60}
                 step={1}
                 value={tempAgeRange[1]}
-                onValueChange={(value: number) => setTempAgeRange([tempAgeRange[0], value])}
+                onValueChange={(value: number) =>
+                  setTempAgeRange([tempAgeRange[0], value])
+                }
                 minimumTrackTintColor="#3498db"
                 maximumTrackTintColor="#d3d3d3"
                 thumbTintColor="#3498db"
               />
-              
+
               <View style={styles.filterActionButtons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.resetButton}
                   onPress={resetFilters}
                 >
                   <Text style={styles.resetButtonText}>Filtreleri Sıfırla</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.applyButton}
                   onPress={applyAgeFilter}
                 >
@@ -373,8 +380,8 @@ export default function FindFriendsScreen() {
 
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity 
-            style={styles.backButton} 
+          <TouchableOpacity
+            style={styles.backButton}
             onPress={() => router.back()}
           >
             <ArrowLeft size={24} color="#333" />
@@ -393,10 +400,10 @@ export default function FindFriendsScreen() {
             onChangeText={setSearchQuery}
           />
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.filterButton,
-            isAgeFilterActive && styles.filterButtonActive
+            isAgeFilterActive && styles.filterButtonActive,
           ]}
           onPress={() => setIsFilterModalVisible(true)}
         >
@@ -408,7 +415,9 @@ export default function FindFriendsScreen() {
       {isAgeFilterActive && (
         <View style={styles.activeFiltersContainer}>
           <View style={styles.activeFilterBadge}>
-            <Text style={styles.activeFilterText}>Yaş: {ageRange[0]}-{ageRange[1]}</Text>
+            <Text style={styles.activeFilterText}>
+              Yaş: {ageRange[0]}-{ageRange[1]}
+            </Text>
             <TouchableOpacity
               onPress={() => {
                 setIsAgeFilterActive(false);
@@ -489,6 +498,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   screenTitle: {
+    lineHeight: 0,
     fontSize: 24,
     fontWeight: "bold",
     color: "#333",
@@ -655,8 +665,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     gap: 10,
   },
   messageButton: {
@@ -800,4 +810,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginRight: 8,
   },
-}); 
+});

@@ -1,29 +1,39 @@
-import React from "react";
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  SafeAreaView,
-  Image,
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { router } from "expo-router";
 import { Text } from "@/components/ui/text";
-import { Calendar, Clock, MapPin, Users, ChevronLeft } from "lucide-react-native";
 import { UPCOMING_EVENTS } from "@/mocks/events";
 import { Event } from "@/types/app";
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import {
+  Calendar,
+  ChevronLeft,
+  Clock,
+  MapPin,
+  Users,
+} from "lucide-react-native";
+import React from "react";
+import {
+  FlatList,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function UpcomingEventsScreen() {
   const formatDate = (date: Date) => {
-    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
-    return date.toLocaleDateString('tr-TR', options);
+    const options: Intl.DateTimeFormatOptions = {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    };
+    return date.toLocaleDateString("tr-TR", options);
   };
 
   const handleEventPress = (eventId: number) => {
     router.push({
       pathname: "/event-detail/[id]",
-      params: { id: eventId }
+      params: { id: eventId },
     });
   };
 
@@ -32,42 +42,46 @@ export default function UpcomingEventsScreen() {
   };
 
   const renderEventItem = ({ item }: { item: Event }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.eventItem}
       onPress={() => handleEventPress(item.id)}
     >
       <View style={styles.eventImageContainer}>
-        <Image 
-          source={item.image} 
+        <Image
+          source={item.image}
           style={styles.eventImage}
           resizeMode="cover"
         />
       </View>
       <View style={styles.eventContent}>
         <Text style={styles.eventTitle}>{item.title}</Text>
-        
+
         <View style={styles.infoContainer}>
           <View style={styles.infoRow}>
             <Calendar size={16} color="#3498db" />
             <Text style={styles.eventInfo}>{formatDate(item.date)}</Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Clock size={16} color="#3498db" />
-            <Text style={styles.eventInfo}>{item.time} - {item.endTime}</Text>
+            <Text style={styles.eventInfo}>
+              {item.time} - {item.endTime}
+            </Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <MapPin size={16} color="#3498db" />
             <Text style={styles.eventInfo}>{item.location}</Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Users size={16} color="#3498db" />
-            <Text style={styles.eventInfo}>{item.participants}/{item.maxParticipants} Katılımcı</Text>
+            <Text style={styles.eventInfo}>
+              {item.participants}/{item.maxParticipants} Katılımcı
+            </Text>
           </View>
         </View>
-        
+
         <View style={styles.categoryBadge}>
           <Text style={styles.categoryText}>{item.category}</Text>
         </View>
@@ -78,14 +92,14 @@ export default function UpcomingEventsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      
+
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <ChevronLeft size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Yaklaşan Etkinlikler</Text>
       </View>
-      
+
       <FlatList
         data={UPCOMING_EVENTS}
         renderItem={renderEventItem}
@@ -174,4 +188,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-}); 
+});

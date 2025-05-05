@@ -1,35 +1,25 @@
-import React, { useState, useEffect, useCallback } from "react";
 import {
-  View,
-  SafeAreaView,
-  StyleSheet,
-  ScrollView,
+  CategorySelector,
+  DateSelector,
+  EventMap,
+  Header,
+  TabSelector,
+} from "@/components/dashboard";
+import * as Location from "expo-location";
+import { router } from "expo-router";
+import { CheckCircle, MapPin, Users } from "lucide-react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import {
   Alert,
+  Image,
   Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  Image,
-  Linking,
+  View,
 } from "react-native";
-import { router } from "expo-router";
-import * as Location from 'expo-location';
-import {
-  Header,
-  DateSelector,
-  CategorySelector,
-  DistanceFilter,
-  TabSelector,
-  EventCard,
-  EventMap,
-} from "@/components/dashboard";
-import {
-  Plus,
-  MapPin,
-  Users,
-  Clock,
-  Calendar,
-  CheckCircle,
-} from "lucide-react-native";
 
 // Renk teması - fotoğraftaki açık yeşil
 const theme = {
@@ -54,7 +44,7 @@ const theme = {
     Bisiklet: "#EF4444", // Kırmızı
     Okçuluk: "#6366F1", // İndigo
     "Akıl Oyunları": "#8B5CF6", // Mor
-  }
+  },
 };
 
 // Geçici kullanıcı verileri
@@ -68,15 +58,15 @@ const userData = {
 // Kullanıcının mevcut konumu
 const userLocation = {
   latitude: 37.8717,
-  longitude: 32.4930, // Konya Alaaddin Tepesi
+  longitude: 32.493, // Konya Alaaddin Tepesi
 };
 
 // Konya'daki farklı lokasyonlar için etkinlikler
 const nearbyLocations = [
-  { name: "Meram", latitude: 37.850, longitude: 32.452, distance: 2.8 },
+  { name: "Meram", latitude: 37.85, longitude: 32.452, distance: 2.8 },
   { name: "Selçuklu", latitude: 37.875, longitude: 32.485, distance: 1.5 },
   { name: "Karatay", latitude: 37.872, longitude: 32.508, distance: 2.2 },
-  { name: "Real", latitude: 37.883, longitude: 32.510, distance: 3.4 },
+  { name: "Real", latitude: 37.883, longitude: 32.51, distance: 3.4 },
   { name: "Bosna Hersek", latitude: 37.893, longitude: 32.473, distance: 4.2 },
   { name: "Kültürpark", latitude: 37.875, longitude: 32.492, distance: 0.7 },
   { name: "Kule Site", latitude: 37.873, longitude: 32.498, distance: 1.0 },
@@ -348,7 +338,8 @@ const initialEventData = [
     },
     description:
       "6 takımlı voleybol turnuvası. Her seviyeden oyuncular katılabilir. Birinci takıma kupa ve madalya verilecektir.",
-    requirements: "Spor ayakkabı ve forma gereklidir. Takım olarak başvuru yapmalısınız.",
+    requirements:
+      "Spor ayakkabı ve forma gereklidir. Takım olarak başvuru yapmalısınız.",
   },
   {
     id: 11,
@@ -378,7 +369,8 @@ const initialEventData = [
     },
     description:
       "Farklı kategorilerde yüzme yarışı. Serbest, kurbağalama ve kelebek stilleri için ayrı yarışmalar olacaktır.",
-    requirements: "Profesyonel mayo, bone ve gözlük zorunludur. Önceden kayıt yaptırılmalıdır.",
+    requirements:
+      "Profesyonel mayo, bone ve gözlük zorunludur. Önceden kayıt yaptırılmalıdır.",
   },
   {
     id: 12,
@@ -408,7 +400,8 @@ const initialEventData = [
     },
     description:
       "Başlangıç seviyesi pilates kursu. Doğru duruş ve nefes teknikleri üzerine odaklanılacaktır.",
-    requirements: "Mat ve rahat kıyafetler getirilmelidir. Havlu ve su tavsiye edilir.",
+    requirements:
+      "Mat ve rahat kıyafetler getirilmelidir. Havlu ve su tavsiye edilir.",
   },
   {
     id: 13,
@@ -438,7 +431,8 @@ const initialEventData = [
     },
     description:
       "Haftalık halı saha maçı. Her seviyeden oyuncu katılabilir. Kaleci aranıyor!",
-    requirements: "Halı saha ayakkabısı ve forma getirmeniz gerekiyor. Saha ücreti kişi başı bölüşülecektir.",
+    requirements:
+      "Halı saha ayakkabısı ve forma getirmeniz gerekiyor. Saha ücreti kişi başı bölüşülecektir.",
   },
   {
     id: 14,
@@ -468,7 +462,8 @@ const initialEventData = [
     },
     description:
       "Tenis turnuvası. Tek erkekler, tek kadınlar ve çiftler kategorilerinde yarışmalar olacaktır.",
-    requirements: "Tenis raketi, uygun ayakkabı ve kıyafet zorunludur. Turnuva katılım ücreti vardır.",
+    requirements:
+      "Tenis raketi, uygun ayakkabı ve kıyafet zorunludur. Turnuva katılım ücreti vardır.",
   },
   {
     id: 15,
@@ -498,7 +493,8 @@ const initialEventData = [
     },
     description:
       "Aladağ'da orta zorlukta doğa yürüyüşü. Toplamda 12 km'lik parkur, muhteşem manzara eşliğinde tamamlanacak.",
-    requirements: "Trekking ayakkabısı, sırt çantası, yeterli su ve atıştırmalık getirmeniz gerekiyor. Şapka ve güneş kremi önerilir.",
+    requirements:
+      "Trekking ayakkabısı, sırt çantası, yeterli su ve atıştırmalık getirmeniz gerekiyor. Şapka ve güneş kremi önerilir.",
   },
   {
     id: 16,
@@ -528,7 +524,8 @@ const initialEventData = [
     },
     description:
       "Açık hava satranç turnuvası. İsviçre sistemi ile 5 tur oynanacaktır. Dereceye girenlere ödül verilecektir.",
-    requirements: "Önceden kayıt yaptırmanız gerekmektedir. Katılım ücretsizdir.",
+    requirements:
+      "Önceden kayıt yaptırmanız gerekmektedir. Katılım ücretsizdir.",
   },
   {
     id: 17,
@@ -558,8 +555,9 @@ const initialEventData = [
     },
     description:
       "Geleneksel Türk okçuluğu eğitimi. Başlangıç seviyesinden ileri seviyeye kadar herkes katılabilir.",
-    requirements: "Tüm ekipmanlar tesis tarafından sağlanacaktır. Rahat kıyafetler giymeniz önerilir.",
-  }
+    requirements:
+      "Tüm ekipmanlar tesis tarafından sağlanacaktır. Rahat kıyafetler giymeniz önerilir.",
+  },
 ];
 
 // Spor kategorileri
@@ -597,8 +595,8 @@ export default function DashboardScreen() {
     (async () => {
       try {
         let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          console.log('Konum izni verilmedi, Alaaddin Tepesi kullanılıyor');
+        if (status !== "granted") {
+          console.log("Konum izni verilmedi, Alaaddin Tepesi kullanılıyor");
           setUserCoordinates(userLocation); // Konya Alaaddin Tepesi
           setIsLocationLoading(false);
           return;
@@ -610,16 +608,16 @@ export default function DashboardScreen() {
         //   latitude: location.coords.latitude,
         //   longitude: location.coords.longitude
         // });
-        
+
         // Test için Alaaddin Tepesi'ni kullan
         setUserCoordinates({
           latitude: userLocation.latitude,
-          longitude: userLocation.longitude
+          longitude: userLocation.longitude,
         });
-        
+
         setIsLocationLoading(false);
       } catch (error) {
-        console.log('Konum alınamadı:', error);
+        console.log("Konum alınamadı:", error);
         // Hata durumunda Alaaddin Tepesi'ni kullan
         setUserCoordinates(userLocation);
         setIsLocationLoading(false);
@@ -703,7 +701,7 @@ export default function DashboardScreen() {
     }
 
     setActiveTab(tab);
-    
+
     try {
       // Tab değişikliği sonrası filtreleri tekrar uygula
       console.log(`${tab} tabı için filtreler yeniden uygulanıyor`);
@@ -712,7 +710,7 @@ export default function DashboardScreen() {
       console.error("Tab değişimi sonrası filtreleme hatası:", error);
     }
   };
-  
+
   const handleNearbyPress = () => {
     // Sadece tab değişikliğini tetikle
     setActiveTab("nearby");
@@ -730,13 +728,17 @@ export default function DashboardScreen() {
 
     // Update eventData
     setEventData(updatedEventData);
-    
+
     // Re-filter the events based on the current filters and active tab
     applyActiveFilters();
 
     Alert.alert(
-      "Başarılı", 
-      `Etkinliğe ${updatedEventData.find(e => e.id === eventId)?.isJoined ? 'katıldınız' : 'katılımınız iptal edildi'}.`, 
+      "Başarılı",
+      `Etkinliğe ${
+        updatedEventData.find((e) => e.id === eventId)?.isJoined
+          ? "katıldınız"
+          : "katılımınız iptal edildi"
+      }.`,
       [{ text: "Tamam", onPress: () => console.log("OK") }]
     );
   };
@@ -751,59 +753,78 @@ export default function DashboardScreen() {
   // Ekstra debug fonksiyonu ekle
   const logAllCategories = () => {
     // Veri tutarlılığını kontrol et - etkinlikler vs kategori listesi
-    const eventCategories = [...new Set(eventData.map(e => e.category))];
-    const sportCategoryNames = sportCategories.map(c => c.name);
-    
+    const eventCategories = [...new Set(eventData.map((e) => e.category))];
+    const sportCategoryNames = sportCategories.map((c) => c.name);
+
     console.log("Tüm etkinlik kategorileri:", eventCategories);
     console.log("Sport kategorileri:", sportCategoryNames);
-    
+
     // Eşleşmeyen kategorileri bul
-    const mismatchedCategories = eventCategories.filter(c => !sportCategoryNames.includes(c));
+    const mismatchedCategories = eventCategories.filter(
+      (c) => !sportCategoryNames.includes(c)
+    );
     if (mismatchedCategories.length > 0) {
       console.log("UYARI: Eşleşmeyen kategoriler:", mismatchedCategories);
     }
   };
-  
+
   // Tab değişikliği, filtre değişikliği ve konum değişikliği için
   useEffect(() => {
     logAllCategories(); // Önce kategori tutarlılığını kontrol et
-    
+
     if (!isLocationLoading) {
       // Debug için filtreleme bilgilerini göster
-      console.log(`>> FİLTRELEME: Tab=${activeTab}, Kategori=${selectedCategory}, Mesafe=${distanceFilter}km`);
-      
+      console.log(
+        `>> FİLTRELEME: Tab=${activeTab}, Kategori=${selectedCategory}, Mesafe=${distanceFilter}km`
+      );
+
       // Filtreleme uygula
       applyActiveFilters();
     }
-  }, [activeTab, selectedCategory, distanceFilter, userCoordinates, eventData, isLocationLoading]);
+  }, [
+    activeTab,
+    selectedCategory,
+    distanceFilter,
+    userCoordinates,
+    eventData,
+    isLocationLoading,
+  ]);
 
   // Tab değişiminde event'lerin görüntülenmesi için ek bir güvenlik önlemi
   useEffect(() => {
-    if ((activeTab === "nearby" || activeTab === "nearest") && filteredEvents.length === 0 && !isLocationLoading) {
-      console.log(`${activeTab === "nearby" ? "Yakındakiler" : "Bana En Yakın"} sekmesinde etkinlik bulunamadı - Tüm etkinlikler yükleniyor`);
-      
+    if (
+      (activeTab === "nearby" || activeTab === "nearest") &&
+      filteredEvents.length === 0 &&
+      !isLocationLoading
+    ) {
+      console.log(
+        `${
+          activeTab === "nearby" ? "Yakındakiler" : "Bana En Yakın"
+        } sekmesinde etkinlik bulunamadı - Tüm etkinlikler yükleniyor`
+      );
+
       if (activeTab === "nearest") {
         // En yakın etkinliği göster
-        const eventsWithDistance = eventData.map(event => {
+        const eventsWithDistance = eventData.map((event) => {
           const calculatedDistance = calculateDistance(
             userCoordinates.latitude,
             userCoordinates.longitude,
             event.coordinates.latitude,
             event.coordinates.longitude
           );
-          
+
           return {
             ...event,
             calculatedDistance,
-            distance: `${calculatedDistance.toFixed(1)} km`
+            distance: `${calculatedDistance.toFixed(1)} km`,
           };
         });
-        
+
         // Mesafeye göre sırala
-        const sorted = [...eventsWithDistance].sort((a, b) => 
-          a.calculatedDistance - b.calculatedDistance
+        const sorted = [...eventsWithDistance].sort(
+          (a, b) => a.calculatedDistance - b.calculatedDistance
         );
-        
+
         // En yakın etkinliği göster
         if (sorted.length > 0) {
           setFilteredEvents([sorted[0]]);
@@ -819,8 +840,10 @@ export default function DashboardScreen() {
 
   // Aktif filtreleri uygula
   const applyActiveFilters = useCallback(() => {
-    console.log(`Filtreler uygulanıyor: Tab=${activeTab}, Mesafe=${distanceFilter}, Kategori=${selectedCategory}`);
-    
+    console.log(
+      `Filtreler uygulanıyor: Tab=${activeTab}, Mesafe=${distanceFilter}, Kategori=${selectedCategory}`
+    );
+
     if (eventData.length === 0) {
       console.log("Henüz etkinlik verisi yok - Filtreler uygulanamıyor");
       return;
@@ -832,43 +855,53 @@ export default function DashboardScreen() {
     }
 
     // Önce tüm event'leri kopyala ve mesafe hesapla
-    let eventsWithDistance = eventData.map(event => {
+    let eventsWithDistance = eventData.map((event) => {
       const calculatedDistance = calculateDistance(
         userCoordinates.latitude,
         userCoordinates.longitude,
         event.coordinates.latitude,
         event.coordinates.longitude
       );
-      
+
       return {
         ...event,
         calculatedDistance,
-        distance: `${calculatedDistance.toFixed(1)} km`
+        distance: `${calculatedDistance.toFixed(1)} km`,
       };
     });
 
-    console.log(`Toplam ${eventsWithDistance.length} etkinlik için mesafe hesaplandı`);
+    console.log(
+      `Toplam ${eventsWithDistance.length} etkinlik için mesafe hesaplandı`
+    );
 
     // Katıldıklarım filtrelemesi
     if (activeTab === "joined") {
-      eventsWithDistance = eventsWithDistance.filter(event => {
+      eventsWithDistance = eventsWithDistance.filter((event) => {
         const isJoined = event.isJoined;
-        console.log(`Etkinlik: ${event.title}, Katılım Durumu: ${isJoined ? "Evet" : "Hayır"}`);
+        console.log(
+          `Etkinlik: ${event.title}, Katılım Durumu: ${
+            isJoined ? "Evet" : "Hayır"
+          }`
+        );
         return isJoined;
       });
-      console.log(`Filtreleme sonrası ${eventsWithDistance.length} etkinlik (sadece katılınanlar)`);
-    } 
+      console.log(
+        `Filtreleme sonrası ${eventsWithDistance.length} etkinlik (sadece katılınanlar)`
+      );
+    }
     // Bana En Yakın filtrelemesi
     else if (activeTab === "nearest") {
       // Önce mesafeye göre sırala
-      eventsWithDistance = [...eventsWithDistance].sort((a, b) => 
-        a.calculatedDistance - b.calculatedDistance
+      eventsWithDistance = [...eventsWithDistance].sort(
+        (a, b) => a.calculatedDistance - b.calculatedDistance
       );
-      
+
       // Sadece en yakın etkinliği al
       if (eventsWithDistance.length > 0) {
         const nearestEvent = eventsWithDistance[0];
-        console.log(`En yakın etkinlik: ${nearestEvent.title}, Mesafe: ${nearestEvent.distance}`);
+        console.log(
+          `En yakın etkinlik: ${nearestEvent.title}, Mesafe: ${nearestEvent.distance}`
+        );
         eventsWithDistance = [nearestEvent];
       } else {
         console.log("Hiç etkinlik bulunamadı");
@@ -879,27 +912,47 @@ export default function DashboardScreen() {
     else {
       // Mesafe filtrelemesi
       if (distanceFilter !== null) {
-        eventsWithDistance = eventsWithDistance.filter(event => {
+        eventsWithDistance = eventsWithDistance.filter((event) => {
           const matchesDistance = event.calculatedDistance <= distanceFilter;
-          console.log(`Etkinlik: ${event.title}, Mesafe: ${event.calculatedDistance.toFixed(1)} km, Filtre: ${distanceFilter} km, Eşleşme: ${matchesDistance ? "Evet" : "Hayır"}`);
+          console.log(
+            `Etkinlik: ${
+              event.title
+            }, Mesafe: ${event.calculatedDistance.toFixed(
+              1
+            )} km, Filtre: ${distanceFilter} km, Eşleşme: ${
+              matchesDistance ? "Evet" : "Hayır"
+            }`
+          );
           return matchesDistance;
         });
-        console.log(`Filtreleme sonrası ${eventsWithDistance.length} etkinlik (mesafe filtresi)`);
+        console.log(
+          `Filtreleme sonrası ${eventsWithDistance.length} etkinlik (mesafe filtresi)`
+        );
       }
 
       // Kategori filtrelemesi
       if (selectedCategory !== null) {
-        eventsWithDistance = eventsWithDistance.filter(event => {
+        eventsWithDistance = eventsWithDistance.filter((event) => {
           const matchesCategory = event.category === selectedCategory;
-          console.log(`Etkinlik: ${event.title}, Kategori: ${event.category}, Filtre: ${selectedCategory}, Eşleşme: ${matchesCategory ? "Evet" : "Hayır"}`);
+          console.log(
+            `Etkinlik: ${event.title}, Kategori: ${
+              event.category
+            }, Filtre: ${selectedCategory}, Eşleşme: ${
+              matchesCategory ? "Evet" : "Hayır"
+            }`
+          );
           return matchesCategory;
         });
-        console.log(`Filtreleme sonrası ${eventsWithDistance.length} etkinlik (kategori filtresi)`);
+        console.log(
+          `Filtreleme sonrası ${eventsWithDistance.length} etkinlik (kategori filtresi)`
+        );
       }
     }
 
     setFilteredEvents(eventsWithDistance);
-    console.log(`Toplam ${eventsWithDistance.length} etkinlik filtreleme sonrası görüntüleniyor`);
+    console.log(
+      `Toplam ${eventsWithDistance.length} etkinlik filtreleme sonrası görüntüleniyor`
+    );
   }, [activeTab, selectedCategory, distanceFilter, eventData, userCoordinates]);
 
   const handleCreateEvent = () => {
@@ -916,25 +969,32 @@ export default function DashboardScreen() {
   };
 
   const handleMapFilterChange = (newCategory: string, newDistance: number) => {
-    console.log(`Harita üzerinden filtre değişti: Kategori="${newCategory}", Mesafe=${newDistance}km`);
-    
+    console.log(
+      `Harita üzerinden filtre değişti: Kategori="${newCategory}", Mesafe=${newDistance}km`
+    );
+
     // Kategori bilgisini kontrol et ve doğrula
-    const validCategory = sportCategories.find(c => c.name === newCategory)?.name || "Tümü";
+    const validCategory =
+      sportCategories.find((c) => c.name === newCategory)?.name || "Tümü";
     if (validCategory !== newCategory) {
-      console.log(`Geçersiz kategori: "${newCategory}", geçerli kategori "${validCategory}" kullanılıyor`);
+      console.log(
+        `Geçersiz kategori: "${newCategory}", geçerli kategori "${validCategory}" kullanılıyor`
+      );
     }
-    
+
     // State'leri güncelle
     setDistanceFilter(newDistance);
     setSelectedCategory(validCategory);
-    
+
     // Filtreleme yapılacak (filtreleme değerleri değiştiğinde useEffect tarafından tetiklenir)
-    console.log(`Filtreleme değerleri güncellendi: kategori=${validCategory}, mesafe=${newDistance}km`);
+    console.log(
+      `Filtreleme değerleri güncellendi: kategori=${validCategory}, mesafe=${newDistance}km`
+    );
   };
 
   // Spor tesisleri görünümünü değiştirmek için yeni fonksiyon
   const togglePOI = () => {
-    setShowPOI(prev => !prev);
+    setShowPOI((prev) => !prev);
   };
 
   return (
@@ -975,13 +1035,13 @@ export default function DashboardScreen() {
 
         {/* Map View */}
         <View style={styles.mapContainer}>
-          <EventMap 
+          <EventMap
             userLocation={isLocationLoading ? userLocation : userCoordinates}
-            events={filteredEvents.map(event => ({
+            events={filteredEvents.map((event) => ({
               id: event.id,
               title: event.title,
               coordinates: event.coordinates,
-              category: event.category
+              category: event.category,
             }))}
             onMarkerPress={handleEventPress}
             activeTab={activeTab}
@@ -1010,8 +1070,11 @@ export default function DashboardScreen() {
           ) : (
             filteredEvents.map((event) => {
               // Kategori rengini belirle
-              const categoryColor = theme.categoryColors[event.category] || theme.primaryDark;
-              
+              const categoryColor =
+                theme.categoryColors[
+                  event.category as keyof typeof theme.categoryColors
+                ] || theme.primaryDark;
+
               return (
                 <TouchableOpacity
                   key={event.id}
@@ -1019,9 +1082,16 @@ export default function DashboardScreen() {
                   onPress={() => handleEventPress(event.id)}
                 >
                   {/* Renk göstergesi */}
-                  <View style={[styles.eventIndicator, { backgroundColor: categoryColor }]} />
-                  
-                  <View style={[styles.dateBox, { backgroundColor: categoryColor }]}>
+                  <View
+                    style={[
+                      styles.eventIndicator,
+                      { backgroundColor: categoryColor },
+                    ]}
+                  />
+
+                  <View
+                    style={[styles.dateBox, { backgroundColor: categoryColor }]}
+                  >
                     <Text style={styles.dayNumber}>
                       {event.date.split(" ")[0]}
                     </Text>
@@ -1031,8 +1101,18 @@ export default function DashboardScreen() {
                   <View style={styles.eventDetails}>
                     <View style={styles.eventTimeContainer}>
                       <Text style={styles.eventTime}>{event.time}</Text>
-                      <View style={[styles.organizerBadge, { backgroundColor: `${categoryColor}20` }]}>
-                        <Text style={[styles.organizerBadgeText, { color: categoryColor }]}>
+                      <View
+                        style={[
+                          styles.organizerBadge,
+                          { backgroundColor: `${categoryColor}20` },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.organizerBadgeText,
+                            { color: categoryColor },
+                          ]}
+                        >
                           {event.organizer.name}
                         </Text>
                         {event.organizer.isVerified && (
@@ -1056,8 +1136,17 @@ export default function DashboardScreen() {
                         <Text style={styles.typeTagText}>{event.type}</Text>
                       </View>
                       {/* Kategori etiketi ekle */}
-                      <View style={[styles.typeTag, { backgroundColor: `${categoryColor}20` }]}>
-                        <Text style={[styles.typeTagText, { color: categoryColor }]}>{event.category}</Text>
+                      <View
+                        style={[
+                          styles.typeTag,
+                          { backgroundColor: `${categoryColor}20` },
+                        ]}
+                      >
+                        <Text
+                          style={[styles.typeTagText, { color: categoryColor }]}
+                        >
+                          {event.category}
+                        </Text>
                       </View>
                     </View>
 
@@ -1084,32 +1173,50 @@ export default function DashboardScreen() {
                           katılımcı
                         </Text>
                       </View>
-                      
+
                       {/* Katılımcı avatarlarını göster */}
                       <View style={styles.participantAvatars}>
                         {event.participants.slice(0, 2).map((avatar, idx) => (
-                          <Image 
-                            key={idx} 
-                            source={{ uri: avatar }} 
+                          <Image
+                            key={idx}
+                            source={{ uri: avatar }}
                             style={[
-                              styles.participantAvatar, 
-                              { marginLeft: idx > 0 ? -8 : 0 }
-                            ]} 
+                              styles.participantAvatar,
+                              { marginLeft: idx > 0 ? -8 : 0 },
+                            ]}
                           />
                         ))}
                         {event.participantCount > 2 && (
-                          <View style={[styles.moreParticipants, { backgroundColor: `${categoryColor}20`, borderColor: `${categoryColor}40` }]}>
-                            <Text style={[styles.moreParticipantsText, { color: categoryColor }]}>
+                          <View
+                            style={[
+                              styles.moreParticipants,
+                              {
+                                backgroundColor: `${categoryColor}20`,
+                                borderColor: `${categoryColor}40`,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.moreParticipantsText,
+                                { color: categoryColor },
+                              ]}
+                            >
                               +{event.participantCount - 2}
                             </Text>
                           </View>
                         )}
                       </View>
                     </View>
-                    
+
                     {/* Eğer etkinliğe katılındıysa işaret göster */}
                     {event.isJoined && (
-                      <View style={[styles.joinedIndicator, { backgroundColor: categoryColor }]}>
+                      <View
+                        style={[
+                          styles.joinedIndicator,
+                          { backgroundColor: categoryColor },
+                        ]}
+                      >
                         <CheckCircle size={14} color="#fff" />
                       </View>
                     )}
@@ -1309,42 +1416,42 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   participantAvatars: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   participantAvatar: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'white',
+    borderColor: "white",
   },
   moreParticipants: {
     width: 24,
     height: 24,
     borderRadius: 12,
     backgroundColor: theme.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: -8,
     borderWidth: 1,
-    borderColor: 'white',
+    borderColor: "white",
   },
   moreParticipantsText: {
     fontSize: 10,
     color: theme.primaryDark,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   joinedIndicator: {
-    position: 'absolute',
+    position: "absolute",
     top: 10,
     right: 10,
     backgroundColor: theme.primaryDark,
     width: 22,
     height: 22,
     borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -1375,8 +1482,8 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   poiToggleWrapper: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginVertical: 8,
     paddingHorizontal: 16,
   },
@@ -1384,21 +1491,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
   },
   poiToggleActive: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#34D399',
+    backgroundColor: "#ECFDF5",
+    borderColor: "#34D399",
   },
   poiToggleText: {
     fontSize: 14,
-    color: '#64748B',
-    fontWeight: '500',
+    color: "#64748B",
+    fontWeight: "500",
   },
   poiToggleTextActive: {
-    color: '#10B981',
+    color: "#10B981",
   },
   eventIndicator: {
     position: "absolute",

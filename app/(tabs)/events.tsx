@@ -1,36 +1,33 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  SafeAreaView,
-  StyleSheet,
-  FlatList,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  Modal,
-  Platform,
-} from "react-native";
-import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
-import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
+import { Text } from "@/components/ui/text";
+import { VStack } from "@/components/ui/vstack";
 import { router } from "expo-router";
 import {
   Calendar,
-  MapPin,
-  Clock,
-  Users,
-  UserCheck,
   CheckCircle,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Clock,
+  Filter,
+  MapPin,
+  Search,
   Star,
   TrendingUp,
-  Filter,
-  Search,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
+  UserCheck,
+  Users,
 } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import {
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 // Event tipi tanımlama
 interface Event {
@@ -850,6 +847,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
+    lineHeight: 0,
     fontWeight: "bold",
     color: "#333",
   },
