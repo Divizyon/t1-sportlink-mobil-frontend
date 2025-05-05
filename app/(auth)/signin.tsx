@@ -7,6 +7,7 @@ import {
   Platform,
   Image,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { Button, ButtonText } from "../../components/ui/button";
 import {
@@ -38,9 +39,12 @@ import {
   Chrome,
   Apple,
 } from "lucide-react-native";
+import { useAuth } from "../../src/store/AuthContext";
 
 export default function SignInPage() {
+  const { login } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -88,11 +92,30 @@ export default function SignInPage() {
     return isValid;
   };
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     if (validateForm()) {
-      console.log("Giriş formu:", form);
-      // @ts-ignore
-      router.navigate("/(tabs)/dashboard");
+      setLoading(true);
+      try {
+        const user = await login(form.email, form.password);
+        console.log("Giriş başarılı:", user);
+
+        // Başarılı giriş sonrası ana sayfaya yönlendir
+        router.navigate("/(tabs)/dashboard");
+      } catch (error: any) {
+        console.error("Giriş hatası:", error);
+
+        // Kullanıcıya hata mesajı göster
+        if (error.response?.data?.message) {
+          Alert.alert("Giriş Hatası", error.response.data.message);
+        } else {
+          Alert.alert(
+            "Giriş Hatası",
+            "Giriş yapılırken bir hata oluştu. Lütfen tekrar deneyin."
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -252,12 +275,14 @@ export default function SignInPage() {
             </FormControl>
 
             <Button
-              className="bg-emerald-600 rounded-lg"
               size="lg"
+              className="bg-emerald-600 mt-6 rounded-lg"
               onPress={handleSignIn}
-              style={{ marginTop: 24 }}
+              disabled={loading}
             >
-              <ButtonText style={{ fontWeight: "bold" }}>Giriş Yap</ButtonText>
+              <ButtonText className="text-white">
+                {loading ? "Giriş Yapılıyor..." : "Giriş Yap"}
+              </ButtonText>
             </Button>
 
             <Center style={{ marginTop: 24, marginBottom: 24 }}>
