@@ -95,24 +95,16 @@ const sportsCategories = [
   "Voleybol",
   "Koşu",
   "Bisiklet",
-  "Fitness",
   "Yoga",
-  "Pilates",
-  "Dağ Yürüyüşü",
-  "Dans",
-  "Boks",
-  "Masa Tenisi",
-  "Golf",
+  "Yürüyüş",
 ];
 
 // Örnek kullanıcı bilgileri
 const userData = {
   name: "Özgür Eren",
   email: "ozgur.eren@example.com",
-  location: "Konya, Türkiye",
   memberSince: "Nisan 2023",
   profileImage: "https://randomuser.me/api/portraits/men/32.jpg",
-  isPro: true,
   age: 28,
   biography:
     "Spor tutkunu, aktif yaşam tarzını seven ve yeni insanlar tanımayı seven biriyim. Haftada en az 3 kez koşu ve fitness yapıyorum. Özellikle takım sporlarına ilgi duyuyorum.",
@@ -131,7 +123,6 @@ const eventData = [
   {
     id: 2,
     title: "Futbol Turnuvası",
-    type: "Buluşma",
     category: "Futbol",
     date: "23 Ekim",
     time: "14:00-17:00",
@@ -176,7 +167,6 @@ const eventData = [
   {
     id: 3,
     title: "Yüzme Etkinliği",
-    type: "Spor",
     category: "Yüzme",
     date: "24 Ekim",
     time: "10:00-11:30",
@@ -1345,15 +1335,7 @@ export default function ProfileScreen() {
             />
             <View style={styles.profileInfo}>
               <Text style={styles.userName}>{userData.name}</Text>
-              {userData.isPro && (
-                <View style={styles.proBadge}>
-                  <Text style={styles.proBadgeText}>PRO</Text>
-                </View>
-              )}
-              <View style={styles.locationContainer}>
-                <MapPin size={14} color="#7f8c8d" />
-                <Text style={styles.locationText}>{userData.location}</Text>
-              </View>
+
               <View style={styles.ageContainer}>
                 <Cake size={14} color="#7f8c8d" />
                 <Text style={styles.ageText}>{userData.age} Yaşında</Text>
@@ -1454,18 +1436,6 @@ export default function ProfileScreen() {
                         >
                           {event.location}
                         </Text>
-                      </View>
-
-                      <View style={styles.purposeContainer}>
-                        <View
-                          style={
-                            event.type === "Spor"
-                              ? styles.workTag
-                              : styles.meetingTag
-                          }
-                        >
-                          <Text style={styles.tagText}>{event.type}</Text>
-                        </View>
                       </View>
                     </View>
 

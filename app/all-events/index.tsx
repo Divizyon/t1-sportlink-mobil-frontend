@@ -21,6 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import CreateEventButton from "@/components/dashboard/CreateEventButton";
 
 export default function AllEventsScreen() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -94,6 +95,10 @@ export default function AllEventsScreen() {
       year: "numeric",
     };
     return date.toLocaleDateString("tr-TR", options);
+  };
+
+  const handleCreateEvent = () => {
+    router.push("/dashboard/create-event");
   };
 
   const renderEventItem = ({ item }: { item: Event }) => (
@@ -275,6 +280,8 @@ export default function AllEventsScreen() {
           contentContainerStyle={styles.listContent}
         />
       )}
+
+      <CreateEventButton onPress={handleCreateEvent} />
     </SafeAreaView>
   );
 }

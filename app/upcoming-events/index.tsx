@@ -19,6 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import CreateEventButton from "@/components/dashboard/CreateEventButton";
 
 export default function UpcomingEventsScreen() {
   const formatDate = (date: Date) => {
@@ -39,6 +40,10 @@ export default function UpcomingEventsScreen() {
 
   const handleBackPress = () => {
     router.back();
+  };
+
+  const handleCreateEvent = () => {
+    router.push("/dashboard/create-event");
   };
 
   const renderEventItem = ({ item }: { item: Event }) => (
@@ -106,6 +111,8 @@ export default function UpcomingEventsScreen() {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
       />
+
+      <CreateEventButton onPress={handleCreateEvent} />
     </SafeAreaView>
   );
 }

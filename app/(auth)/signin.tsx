@@ -152,7 +152,7 @@ export default function SignInPage() {
             >
               <FormControlLabel>
                 <FormControlLabelText className="text-emerald-700">
-                  E-posta veya kullanıcı adı
+                  E-posta
                 </FormControlLabelText>
               </FormControlLabel>
               <Input
@@ -226,30 +226,6 @@ export default function SignInPage() {
                 </LinkText>
               </Link>
             </Box>
-
-            <FormControl>
-              <Box
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginTop: 8,
-                }}
-              >
-                <Box
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderWidth: 2,
-                    borderColor: "#047857",
-                    borderRadius: 4,
-                    marginRight: 8,
-                  }}
-                />
-                <Text className="text-emerald-700" size="sm">
-                  Beni hatırla
-                </Text>
-              </Box>
-            </FormControl>
 
             <Button
               className="bg-emerald-600 rounded-lg"

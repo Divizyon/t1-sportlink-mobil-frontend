@@ -15,13 +15,26 @@ import {
   EventDetailHeader,
   EventInfo,
   EventParticipants,
+  EventReviews,
 } from "@/components/dashboard";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
-import { MapPin, Calendar, Clock, Users, ChevronRight, MessageSquare, Info, Map, Share2, Navigation } from "lucide-react-native";
-import MapView, { Marker } from 'react-native-maps';
+import {
+  MapPin,
+  Calendar,
+  Clock,
+  Users,
+  ChevronRight,
+  MessageSquare,
+  Info,
+  Map,
+  Share2,
+  Navigation,
+  MessageCircle,
+} from "lucide-react-native";
+import MapView, { Marker } from "react-native-maps";
 
 // Tema renkleri
 const theme = {
@@ -48,15 +61,54 @@ const theme = {
     Bisiklet: "#EF4444", // Kırmızı
     Okçuluk: "#6366F1", // İndigo
     "Akıl Oyunları": "#8B5CF6", // Mor
-  }
+  } as Record<string, string>,
 };
+
+// Etkinlik tipi tanımla
+interface Review {
+  id: number;
+  user: {
+    name: string;
+    avatar: string;
+  };
+  rating: number;
+  content: string;
+  date: string;
+}
+
+interface EventDetail {
+  id: number;
+  title: string;
+  category: string;
+  date: string;
+  time: string;
+  location: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  distance: string;
+  participantCount: number;
+  maxParticipants: number;
+  isJoined: boolean;
+  organizer: {
+    id: number;
+    name: string;
+    isVerified: boolean;
+    logoUrl: string;
+  };
+  description: string;
+  requirements: string;
+  notes: string;
+  imageUrl: string;
+  reviews?: Review[];
+}
 
 // Örnek etkinlik verileri
 const sampleEvents = [
   {
     id: 1,
     title: "Basketbol Maçı",
-    type: "Spor",
     category: "Basketbol",
     date: "23 Ekim",
     time: "11:00-13:00",
@@ -66,11 +118,6 @@ const sampleEvents = [
       longitude: 32.4932,
     },
     distance: "1.2 km",
-    participants: [
-      "https://randomuser.me/api/portraits/women/68.jpg",
-      "https://randomuser.me/api/portraits/men/75.jpg",
-      "https://randomuser.me/api/portraits/women/28.jpg",
-    ],
     participantCount: 10,
     maxParticipants: 12,
     isJoined: false,
@@ -83,14 +130,37 @@ const sampleEvents = [
     description:
       "Basketbol severler için haftalık dostluk maçı. Her seviyeden oyuncular katılabilir. Bu etkinlikte rekabetten çok eğlence ön plandadır ve yeni arkadaşlar edinebilirsiniz. Maç sonrası katılımcılarla sosyal etkinlik planlanmaktadır.",
     requirements: "Spor ayakkabı ve rahat kıyafet getirmeniz yeterli.",
-    tags: ["Spor", "Basketbol", "Takım Oyunu"],
     notes: "Maç bitiminde sosyal bir etkinlik düzenlenecektir.",
-    imageUrl: "https://images.unsplash.com/photo-1518063319789-7217e6706b04?q=80&w=2069&auto=format&fit=crop",
+    imageUrl:
+      "https://images.unsplash.com/photo-1518063319789-7217e6706b04?q=80&w=2069&auto=format&fit=crop",
+    reviews: [
+      {
+        id: 1,
+        user: {
+          name: "Ahmet Yılmaz",
+          avatar: "https://randomuser.me/api/portraits/men/75.jpg",
+        },
+        rating: 5,
+        content:
+          "Çok keyifli bir etkinlikti. Herkes çok samimiydi ve iyi vakit geçirdik. Kesinlikle tekrar katılacağım.",
+        date: "20 Ekim 2023",
+      },
+      {
+        id: 2,
+        user: {
+          name: "Zeynep Kaya",
+          avatar: "https://randomuser.me/api/portraits/women/62.jpg",
+        },
+        rating: 4,
+        content:
+          "Organizasyon gayet iyiydi. Tek eksik su ikramı olmamasıydı. Onun dışında her şey harikaydı.",
+        date: "18 Ekim 2023",
+      },
+    ],
   },
   {
     id: 2,
     title: "Futbol Turnuvası",
-    type: "Spor",
     category: "Futbol",
     date: "25 Ekim",
     time: "15:00-18:00",
@@ -100,11 +170,6 @@ const sampleEvents = [
       longitude: 32.4832,
     },
     distance: "2.5 km",
-    participants: [
-      "https://randomuser.me/api/portraits/men/32.jpg",
-      "https://randomuser.me/api/portraits/men/44.jpg",
-      "https://randomuser.me/api/portraits/women/65.jpg",
-    ],
     participantCount: 22,
     maxParticipants: 24,
     isJoined: false,
@@ -116,10 +181,46 @@ const sampleEvents = [
     },
     description:
       "Amatör futbol takımları arasında dostluk turnuvası. Toplam 8 takım ve yaklaşık 90 dakikalık bir etkinlik olacaktır. Maçlar 20'şer dakika olacak şekilde planlanmıştır. Tüm katılımcılara katılım sertifikası verilecektir.",
-    requirements: "Forma, futbol ayakkabıları ve tekmelik getirmeniz gerekmektedir.",
-    tags: ["Spor", "Futbol", "Turnuva"],
+    requirements:
+      "Forma, futbol ayakkabıları ve tekmelik getirmeniz gerekmektedir.",
     notes: "Turnuva sonunda ödül töreni yapılacaktır.",
-    imageUrl: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=2070&auto=format&fit=crop",
+    imageUrl:
+      "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=2070&auto=format&fit=crop",
+    reviews: [
+      {
+        id: 1,
+        user: {
+          name: "Mehmet Demir",
+          avatar: "https://randomuser.me/api/portraits/men/22.jpg",
+        },
+        rating: 5,
+        content:
+          "Mükemmel bir turnuvaydı! Hakem kararları adildi ve herkes centilmence oynadı. Organizasyon için teşekkürler.",
+        date: "15 Ekim 2023",
+      },
+      {
+        id: 2,
+        user: {
+          name: "Ali Yıldız",
+          avatar: "https://randomuser.me/api/portraits/men/36.jpg",
+        },
+        rating: 3,
+        content:
+          "Turnuva iyiydi ama saha zemini biraz kötüydü. Bir dahaki sefere daha iyi bir sahada olabilir.",
+        date: "14 Ekim 2023",
+      },
+      {
+        id: 3,
+        user: {
+          name: "Burak Özdemir",
+          avatar: "https://randomuser.me/api/portraits/men/54.jpg",
+        },
+        rating: 4,
+        content:
+          "Çok eğlendik, güzel bir rekabet ortamı vardı. Tekrar katılmak isterim.",
+        date: "13 Ekim 2023",
+      },
+    ],
   },
   {
     id: 3,
@@ -134,10 +235,6 @@ const sampleEvents = [
       longitude: 32.4632,
     },
     distance: "3.7 km",
-    participants: [
-      "https://randomuser.me/api/portraits/women/63.jpg",
-      "https://randomuser.me/api/portraits/women/44.jpg",
-    ],
     participantCount: 8,
     maxParticipants: 15,
     isJoined: true,
@@ -149,26 +246,73 @@ const sampleEvents = [
     },
     description:
       "Sabah yoga seansı ile güne enerjik başlayın. Tüm seviyelerden katılımcılar için uygundur. Seansımızda nefes egzersizleri, esneme ve meditasyon pratikleri yapılacaktır. Zihinsel ve fiziksel sağlığınız için harika bir fırsat.",
-    requirements: "Yoga matı (isterseniz merkezimizden de temin edebilirsiniz) ve rahat kıyafetler.",
-    tags: ["Sağlık", "Yoga", "Meditasyon"],
+    requirements:
+      "Yoga matı (isterseniz merkezimizden de temin edebilirsiniz) ve rahat kıyafetler.",
     notes: "Lütfen seanstan 15 dakika önce hazır olunuz.",
-    imageUrl: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=2070&auto=format&fit=crop",
-  }
+    imageUrl:
+      "https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=2070&auto=format&fit=crop",
+    reviews: [
+      {
+        id: 1,
+        user: {
+          name: "Ayşe Yalçın",
+          avatar: "https://randomuser.me/api/portraits/women/33.jpg",
+        },
+        rating: 5,
+        content:
+          "Harika bir deneyimdi! Eğitmen çok profesyonel ve anlayışlıydı. Kesinlikle tavsiye ederim.",
+        date: "22 Ekim 2023",
+      },
+      {
+        id: 2,
+        user: {
+          name: "Selin Aksoy",
+          avatar: "https://randomuser.me/api/portraits/women/49.jpg",
+        },
+        rating: 5,
+        content:
+          "Stresli bir haftanın ardından tam da ihtiyacım olan şeydi. Merkez çok ferah ve temizdi.",
+        date: "20 Ekim 2023",
+      },
+      {
+        id: 3,
+        user: {
+          name: "Can Öztürk",
+          avatar: "https://randomuser.me/api/portraits/men/41.jpg",
+        },
+        rating: 4,
+        content:
+          "İlk kez yoga denedim ve beklediğimden çok daha iyiydi. Eğitmen yeni başlayanlar için özel ilgi gösterdi.",
+        date: "19 Ekim 2023",
+      },
+      {
+        id: 4,
+        user: {
+          name: "Deniz Yılmaz",
+          avatar: "https://randomuser.me/api/portraits/women/17.jpg",
+        },
+        rating: 4,
+        content:
+          "Çok rahatlatıcı ve faydalı bir seanstı. Tek sorun park yeri bulmakta biraz zorlandım.",
+        date: "18 Ekim 2023",
+      },
+    ],
+  },
 ];
 
 export default function EventDetailsScreen() {
   const params = useLocalSearchParams();
   const eventId = Number(params.id);
-  const [eventDetail, setEventDetail] = useState(null);
-  const [activeTab, setActiveTab] = useState('info'); // 'info', 'participants', 'map'
+  const [eventDetail, setEventDetail] = useState<EventDetail | null>(null);
+  const [activeTab, setActiveTab] = useState("info"); // 'info', 'map', 'reviews'
   const [isJoined, setIsJoined] = useState(false);
 
   useEffect(() => {
     // Gerçek uygulamada burada API çağrısı yapılır
     console.log("Etkinlik ID:", eventId);
-    
+
     // ID'ye göre etkinliği bul
-    const event = sampleEvents.find(e => e.id === eventId);
+    const event = sampleEvents.find((e) => e.id === eventId);
     if (event) {
       setEventDetail(event);
       setIsJoined(event.isJoined);
@@ -176,7 +320,9 @@ export default function EventDetailsScreen() {
       // Etkinlik bulunamadıysa örnek veriyi göster
       setEventDetail(sampleEvents[0]);
       setIsJoined(sampleEvents[0].isJoined);
-      console.log("Belirtilen ID ile etkinlik bulunamadı, varsayılan etkinlik gösteriliyor.");
+      console.log(
+        "Belirtilen ID ile etkinlik bulunamadı, varsayılan etkinlik gösteriliyor."
+      );
     }
   }, [eventId]);
 
@@ -192,7 +338,8 @@ export default function EventDetailsScreen() {
   }
 
   // Kategori rengini belirle
-  const categoryColor = theme.categoryColors[eventDetail.category] || theme.primary;
+  const categoryColor =
+    theme.categoryColors[eventDetail.category] || theme.primary;
 
   const handleBack = () => {
     router.back();
@@ -213,9 +360,9 @@ export default function EventDetailsScreen() {
     const organizerId = eventDetail.organizer.id;
     router.navigate({
       pathname: "/messages/[id]",
-      params: { 
-        id: organizerId
-      }
+      params: {
+        id: organizerId,
+      },
     });
   };
 
@@ -230,53 +377,32 @@ export default function EventDetailsScreen() {
   // Tab içeriğini render et
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'info':
+      case "info":
         return (
           <Box style={styles.tabContent}>
             <VStack style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Etkinlik Açıklaması</Text>
               <Text style={styles.description}>{eventDetail.description}</Text>
             </VStack>
-            
+
             <VStack style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Gereksinimler</Text>
               <Text style={styles.description}>{eventDetail.requirements}</Text>
             </VStack>
-            
+
             {eventDetail.notes && (
               <VStack style={styles.infoSection}>
                 <Text style={styles.sectionTitle}>Notlar</Text>
                 <Text style={styles.description}>{eventDetail.notes}</Text>
               </VStack>
             )}
-            
-            <VStack style={styles.infoSection}>
-              <Text style={styles.sectionTitle}>Etiketler</Text>
-              <HStack style={styles.tagContainer}>
-                {eventDetail.tags.map((tag, index) => (
-                  <Box key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{tag}</Text>
-                  </Box>
-                ))}
-              </HStack>
-            </VStack>
           </Box>
         );
-      case 'participants':
-        return (
-          <Box style={styles.tabContent}>
-            <EventParticipants
-              participants={eventDetail.participants}
-              participantCount={eventDetail.participantCount}
-              maxParticipants={eventDetail.maxParticipants}
-            />
-          </Box>
-        );
-      case 'map':
+      case "map":
         return (
           <Box style={styles.tabContent}>
             <Box style={styles.mapContainer}>
-              <MapView 
+              <MapView
                 style={styles.map}
                 initialRegion={{
                   latitude: eventDetail.coordinates.latitude,
@@ -295,9 +421,12 @@ export default function EventDetailsScreen() {
                   pinColor="#10B981"
                 />
               </MapView>
-              
-              <TouchableOpacity 
-                style={[styles.getDirectionsButton, { backgroundColor: 'white' }]}
+
+              <TouchableOpacity
+                style={[
+                  styles.getDirectionsButton,
+                  { backgroundColor: "white" },
+                ]}
                 onPress={() => {
                   // Gerçek uygulamada haritalara yönlendirme için
                   Alert.alert(
@@ -309,10 +438,23 @@ export default function EventDetailsScreen() {
               >
                 <HStack style={styles.getDirectionsButtonInner}>
                   <Navigation size={16} color={categoryColor} />
-                  <Text style={[styles.getDirectionsText, { color: categoryColor }]}>Yol Tarifi Al</Text>
+                  <Text
+                    style={[styles.getDirectionsText, { color: categoryColor }]}
+                  >
+                    Yol Tarifi Al
+                  </Text>
                 </HStack>
               </TouchableOpacity>
             </Box>
+          </Box>
+        );
+      case "reviews":
+        return (
+          <Box style={styles.tabContent}>
+            <EventReviews
+              eventId={eventDetail.id}
+              reviews={eventDetail.reviews || []}
+            />
           </Box>
         );
       default:
@@ -322,24 +464,33 @@ export default function EventDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Etkinlik Resmi */}
         <View style={styles.imageContainer}>
-          <Image 
-            source={{ uri: eventDetail.imageUrl }} 
-            style={styles.eventImage} 
+          <Image
+            source={{ uri: eventDetail.imageUrl }}
+            style={styles.eventImage}
             resizeMode="cover"
           />
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Box style={styles.backButtonInner}>
-              <ChevronRight size={22} color="#0F172A" style={{ transform: [{ rotate: '180deg' }] }} />
+              <ChevronRight
+                size={22}
+                color="#0F172A"
+                style={{ transform: [{ rotate: "180deg" }] }}
+              />
             </Box>
           </TouchableOpacity>
-          
+
           <Box style={styles.categoryTag}>
-            <Text style={[styles.categoryText, { color: categoryColor }]}>{eventDetail.category}</Text>
+            <Text style={[styles.categoryText, { color: categoryColor }]}>
+              {eventDetail.category}
+            </Text>
           </Box>
-          
+
           {isJoined && (
             <Box style={styles.joinedBadge}>
               <Text style={styles.joinedText}>Katıldınız</Text>
@@ -350,13 +501,15 @@ export default function EventDetailsScreen() {
         {/* Etkinlik Başlığı ve Temel Bilgiler */}
         <Box style={styles.titleContainer}>
           <Text style={styles.title}>{eventDetail.title}</Text>
-          
+
           <HStack style={styles.organizer}>
-            <Image 
-              source={{ uri: eventDetail.organizer.logoUrl }} 
-              style={styles.organizerLogo} 
+            <Image
+              source={{ uri: eventDetail.organizer.logoUrl }}
+              style={styles.organizerLogo}
             />
-            <Text style={styles.organizerName}>{eventDetail.organizer.name}</Text>
+            <Text style={styles.organizerName}>
+              {eventDetail.organizer.name}
+            </Text>
           </HStack>
         </Box>
 
@@ -364,7 +517,12 @@ export default function EventDetailsScreen() {
         <Box style={styles.infoCards}>
           <HStack style={styles.infoRow}>
             <Box style={styles.infoCard}>
-              <Box style={[styles.infoIconWrapper, { backgroundColor: `${categoryColor}15` }]}>
+              <Box
+                style={[
+                  styles.infoIconWrapper,
+                  { backgroundColor: `${categoryColor}15` },
+                ]}
+              >
                 <Calendar size={18} color={categoryColor} />
               </Box>
               <VStack>
@@ -372,9 +530,14 @@ export default function EventDetailsScreen() {
                 <Text style={styles.infoValue}>{eventDetail.date}</Text>
               </VStack>
             </Box>
-            
+
             <Box style={styles.infoCard}>
-              <Box style={[styles.infoIconWrapper, { backgroundColor: `${categoryColor}15` }]}>
+              <Box
+                style={[
+                  styles.infoIconWrapper,
+                  { backgroundColor: `${categoryColor}15` },
+                ]}
+              >
                 <Clock size={18} color={categoryColor} />
               </Box>
               <VStack>
@@ -383,35 +546,53 @@ export default function EventDetailsScreen() {
               </VStack>
             </Box>
           </HStack>
-          
+
           <Box style={styles.locationCard}>
-            <Box style={[styles.infoIconWrapper, { backgroundColor: `${categoryColor}15` }]}>
+            <Box
+              style={[
+                styles.infoIconWrapper,
+                { backgroundColor: `${categoryColor}15` },
+              ]}
+            >
               <MapPin size={18} color={categoryColor} />
             </Box>
             <VStack style={{ flex: 1 }}>
               <Text style={styles.infoLabel}>Konum</Text>
               <Text style={styles.infoValue}>{eventDetail.location}</Text>
-              <Text style={styles.distanceText}>{eventDetail.distance} uzaklıkta</Text>
+              <Text style={styles.distanceText}>
+                {eventDetail.distance} uzaklıkta
+              </Text>
             </VStack>
           </Box>
-          
+
           <Box style={styles.participantsCard}>
-            <Box style={[styles.infoIconWrapper, { backgroundColor: `${categoryColor}15` }]}>
+            <Box
+              style={[
+                styles.infoIconWrapper,
+                { backgroundColor: `${categoryColor}15` },
+              ]}
+            >
               <Users size={18} color={categoryColor} />
             </Box>
             <VStack style={{ flex: 1 }}>
               <Text style={styles.infoLabel}>Katılımcılar</Text>
               <HStack style={styles.participantInfo}>
-                <Text style={styles.infoValue}>{eventDetail.participantCount}/{eventDetail.maxParticipants}</Text>
+                <Text style={styles.infoValue}>
+                  {eventDetail.participantCount}/{eventDetail.maxParticipants}
+                </Text>
                 <Box style={styles.progressBarContainer}>
-                  <Box 
+                  <Box
                     style={[
-                      styles.progressBar, 
-                      { 
-                        width: `${(eventDetail.participantCount / eventDetail.maxParticipants) * 100}%`,
-                        backgroundColor: categoryColor
-                      }
-                    ]} 
+                      styles.progressBar,
+                      {
+                        width: `${
+                          (eventDetail.participantCount /
+                            eventDetail.maxParticipants) *
+                          100
+                        }%`,
+                        backgroundColor: categoryColor,
+                      },
+                    ]}
                   />
                 </Box>
               </HStack>
@@ -421,60 +602,92 @@ export default function EventDetailsScreen() {
 
         {/* Tab Seçici */}
         <HStack style={styles.tabSelector}>
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'info' && styles.activeTab]} 
-            onPress={() => setActiveTab('info')}
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "info" && styles.activeTab]}
+            onPress={() => setActiveTab("info")}
           >
-            <Info size={18} color={activeTab === 'info' ? categoryColor : theme.textSecondary} />
-            <Text style={[styles.tabText, activeTab === 'info' && { color: categoryColor }]}>Bilgiler</Text>
+            <Info
+              size={18}
+              color={activeTab === "info" ? categoryColor : theme.textSecondary}
+            />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "info" && { color: categoryColor },
+              ]}
+            >
+              Bilgiler
+            </Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'participants' && styles.activeTab]} 
-            onPress={() => setActiveTab('participants')}
+
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "reviews" && styles.activeTab]}
+            onPress={() => setActiveTab("reviews")}
           >
-            <Users size={18} color={activeTab === 'participants' ? categoryColor : theme.textSecondary} />
-            <Text style={[styles.tabText, activeTab === 'participants' && { color: categoryColor }]}>Katılımcılar</Text>
+            <MessageCircle
+              size={18}
+              color={
+                activeTab === "reviews" ? categoryColor : theme.textSecondary
+              }
+            />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "reviews" && { color: categoryColor },
+              ]}
+            >
+              Yorumlar
+            </Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'map' && styles.activeTab]} 
-            onPress={() => setActiveTab('map')}
+
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "map" && styles.activeTab]}
+            onPress={() => setActiveTab("map")}
           >
-            <Map size={18} color={activeTab === 'map' ? categoryColor : theme.textSecondary} />
-            <Text style={[styles.tabText, activeTab === 'map' && { color: categoryColor }]}>Harita</Text>
+            <Map
+              size={18}
+              color={activeTab === "map" ? categoryColor : theme.textSecondary}
+            />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "map" && { color: categoryColor },
+              ]}
+            >
+              Harita
+            </Text>
           </TouchableOpacity>
         </HStack>
 
         {/* Tab İçeriği */}
         {renderTabContent()}
-
       </ScrollView>
 
       {/* Alt Butonlar */}
       <HStack style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={[styles.actionButton, { flex: 2 }, isJoined ? styles.leaveButton : styles.joinButton]} 
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            { flex: 2 },
+            isJoined ? styles.leaveButton : styles.joinButton,
+          ]}
           onPress={handleToggleJoin}
         >
-          <Text style={[styles.actionButtonText, isJoined && styles.leaveButtonText]}>
+          <Text
+            style={[
+              styles.actionButtonText,
+              isJoined && styles.leaveButtonText,
+            ]}
+          >
             {isJoined ? "Ayrıl" : "Katıl"}
           </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.actionIconButton} onPress={handleContact}>
-          <MessageSquare size={22} color={theme.textSecondary} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.actionIconButton} onPress={handleShare}>
-          <Share2 size={22} color={theme.textSecondary} />
         </TouchableOpacity>
       </HStack>
     </SafeAreaView>
   );
 }
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   container: {
@@ -487,8 +700,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   loadingText: {
@@ -496,22 +709,22 @@ const styles = StyleSheet.create({
     color: theme.textSecondary,
   },
   imageContainer: {
-    width: '100%',
+    width: "100%",
     height: 240,
-    position: 'relative',
+    position: "relative",
   },
   eventImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 50,
     left: 20,
     zIndex: 10,
   },
   backButtonInner: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderRadius: 20,
     padding: 8,
     shadowColor: "#000",
@@ -521,10 +734,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   categoryTag: {
-    position: 'absolute',
+    position: "absolute",
     top: 50,
     right: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -536,10 +749,10 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   joinedBadge: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     right: 20,
     backgroundColor: theme.primary,
@@ -554,8 +767,8 @@ const styles = StyleSheet.create({
   },
   joinedText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: 'white',
+    fontWeight: "600",
+    color: "white",
   },
   titleContainer: {
     padding: 20,
@@ -565,12 +778,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.text,
     marginBottom: 10,
   },
   organizer: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   organizerLogo: {
     width: 24,
@@ -581,7 +794,7 @@ const styles = StyleSheet.create({
   organizerName: {
     fontSize: 14,
     color: theme.textSecondary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   infoCards: {
     padding: 16,
@@ -593,8 +806,8 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.background,
     borderRadius: 12,
     padding: 12,
@@ -605,8 +818,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   locationCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.background,
     borderRadius: 12,
     padding: 12,
@@ -618,8 +831,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   participantsCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.background,
     borderRadius: 12,
     padding: 12,
@@ -633,8 +846,8 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   infoLabel: {
@@ -644,7 +857,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.text,
   },
   distanceText: {
@@ -653,18 +866,18 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   participantInfo: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 8,
   },
   progressBarContainer: {
     flex: 1,
     height: 6,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: "#E2E8F0",
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressBar: {
-    height: '100%',
+    height: "100%",
     borderRadius: 3,
   },
   tabSelector: {
@@ -676,9 +889,9 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 12,
     gap: 6,
   },
@@ -688,7 +901,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.textSecondary,
   },
   tabContent: {
@@ -700,7 +913,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.text,
     marginBottom: 8,
   },
@@ -710,7 +923,7 @@ const styles = StyleSheet.create({
     color: theme.textSecondary,
   },
   tagContainer: {
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
     gap: 8,
   },
   tag: {
@@ -722,25 +935,25 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 12,
     color: theme.primary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   mapContainer: {
     height: 300,
     borderRadius: 12,
-    overflow: 'hidden',
-    position: 'relative',
+    overflow: "hidden",
+    position: "relative",
     marginBottom: 16,
   },
   map: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   customMarker: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -748,10 +961,10 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   getDirectionsButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     right: 20,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 24,
@@ -762,13 +975,13 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   getDirectionsButtonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   getDirectionsText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   actionButtons: {
     padding: 16,
@@ -779,22 +992,22 @@ const styles = StyleSheet.create({
   actionButton: {
     height: 48,
     borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 10,
   },
   joinButton: {
     backgroundColor: theme.primary,
   },
   leaveButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderWidth: 1,
     borderColor: theme.error,
   },
   actionButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
+    fontWeight: "600",
+    color: "white",
   },
   leaveButtonText: {
     color: theme.error,
@@ -803,8 +1016,8 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: theme.background,
     marginLeft: 4,
     borderWidth: 1,

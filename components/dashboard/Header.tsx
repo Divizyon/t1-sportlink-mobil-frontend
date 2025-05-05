@@ -23,7 +23,6 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({
   userName,
   userAvatar,
-  isPro,
   unreadMessages = 0,
 }) => {
   const handleMessagesPress = () => {
@@ -36,11 +35,6 @@ const Header: React.FC<HeaderProps> = ({
         <Image source={{ uri: userAvatar }} style={styles.avatar} />
         <VStack style={{ marginLeft: 8 }}>
           <Text style={styles.userName}>{userName}</Text>
-          {isPro && (
-            <Box style={styles.proBadge}>
-              <Text style={styles.proText}>PRO</Text>
-            </Box>
-          )}
         </VStack>
       </HStack>
       <HStack>

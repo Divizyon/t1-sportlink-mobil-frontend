@@ -19,7 +19,10 @@ import {
   Text,
   TouchableOpacity,
   View,
+  StatusBar,
+  PermissionsAndroid,
 } from "react-native";
+import CreateEventButton from "@/components/dashboard/CreateEventButton";
 
 // Renk teması - fotoğraftaki açık yeşil
 const theme = {
@@ -571,8 +574,7 @@ const sportCategories = [
   { id: 7, name: "Koşu", icon: "🏃" },
   { id: 8, name: "Yoga", icon: "🧘" },
   { id: 9, name: "Bisiklet", icon: "🚴" },
-  { id: 10, name: "Okçuluk", icon: "🏹" },
-  { id: 11, name: "Akıl Oyunları", icon: "♟️" },
+  { id: 10, name: "Yürüyüş", icon: "🚶" },
 ];
 
 // Haftanın günleri
@@ -1227,6 +1229,8 @@ export default function DashboardScreen() {
           )}
         </View>
       </ScrollView>
+
+      <CreateEventButton onPress={handleCreateEvent} />
     </SafeAreaView>
   );
 }
