@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { authService, User } from "../api/authService";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { authService } from "../api/authService";
+import { User, LoginCredentials, RegisterData } from "../types";
 
-interface AuthContextType {
+type AuthContextType = {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -10,10 +11,10 @@ interface AuthContextType {
   register: (
     email: string,
     password: string,
-    firstName: string,
-    lastName: string
+    first_name: string,
+    last_name: string
   ) => Promise<User>;
-}
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -28,15 +29,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     // Check if user is already logged in on app start
     const loadUser = async () => {
       try {
+        setIsLoading(true);
+
+        // Önce oturum durumunu kontrol et
         const isAuth = await authService.isAuthenticated();
         setIsAuthenticated(isAuth);
 
         if (isAuth) {
+          // Kullanıcı oturum açmışsa, kullanıcı bilgilerini yükle
           const userData = await authService.getCurrentUser();
-          setUser(userData);
+          if (userData) {
+            setUser(userData);
+          } else {
+            // Kullanıcı verileri alınamazsa oturumu kapat
+            console.warn("Kullanıcı verileri alınamadı, oturum kapatılıyor");
+            await authService.logout();
+            setIsAuthenticated(false);
+          }
         }
       } catch (error) {
-        console.error("Error loading user:", error);
+        console.error("Kullanıcı yükleme hatası:", error);
+        // Hata durumunda oturumu kapat
+        setIsAuthenticated(false);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   ImageBackground,
@@ -13,10 +13,21 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { VStack } from "@/components/ui/vstack";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { useAuth } from "@/src/store/AuthContext";
 
 const { width } = Dimensions.get("window");
 
 export default function Index() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [isReady, setIsReady] = useState(false);
+
+  // Kullanıcı durumunun yüklenmesini bekleyin
+  useEffect(() => {
+    if (!isLoading) {
+      setIsReady(true);
+    }
+  }, [isLoading]);
+
   return (
     <ImageBackground
       source={require("../assets/images/ilksayfa.jpg")}
@@ -55,35 +66,51 @@ export default function Index() {
 
             {/* Butonlar */}
             <VStack space="md" style={styles.buttonContainer}>
-              <Button
-                size="lg"
-                style={styles.primaryButton}
-                onPress={() => router.navigate("/(auth)/signup")}
-              >
-                <ButtonText style={styles.primaryButtonText}>
-                  Kayıt Ol
-                </ButtonText>
-              </Button>
+              {isReady && isAuthenticated ? (
+                // Kullanıcı giriş yapmışsa
+                <Button
+                  size="lg"
+                  style={styles.primaryButton}
+                  onPress={() => router.navigate("/(tabs)/dashboard")}
+                >
+                  <ButtonText style={styles.primaryButtonText}>
+                    Etkinliklere Git
+                  </ButtonText>
+                </Button>
+              ) : (
+                // Kullanıcı giriş yapmamışsa
+                <>
+                  <Button
+                    size="lg"
+                    style={styles.primaryButton}
+                    onPress={() => router.navigate("/(auth)/signup")}
+                  >
+                    <ButtonText style={styles.primaryButtonText}>
+                      Kayıt Ol
+                    </ButtonText>
+                  </Button>
 
-              <Button
-                size="lg"
-                style={styles.secondaryButton}
-                onPress={() => router.navigate("/(auth)/signin")}
-              >
-                <ButtonText style={styles.secondaryButtonText}>
-                  Giriş Yap
-                </ButtonText>
-              </Button>
+                  <Button
+                    size="lg"
+                    style={styles.secondaryButton}
+                    onPress={() => router.navigate("/(auth)/signin")}
+                  >
+                    <ButtonText style={styles.secondaryButtonText}>
+                      Giriş Yap
+                    </ButtonText>
+                  </Button>
 
-              <Button
-                size="lg"
-                style={styles.demoButton}
-                onPress={() => router.navigate("/(tabs)/dashboard")}
-              >
-                <ButtonText style={styles.demoButtonText}>
-                  Demo Giriş
-                </ButtonText>
-              </Button>
+                  <Button
+                    size="lg"
+                    style={styles.demoButton}
+                    onPress={() => router.navigate("/(tabs)/dashboard")}
+                  >
+                    <ButtonText style={styles.demoButtonText}>
+                      Demo Giriş
+                    </ButtonText>
+                  </Button>
+                </>
+              )}
             </VStack>
           </Box>
         </View>

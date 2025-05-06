@@ -37,19 +37,24 @@ import {
   User,
   Chrome,
   Apple,
+  Calendar,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 
 interface FormData {
-  username: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  birthDate: string;
   password: string;
   confirmPassword: string;
 }
 
 interface FormErrors {
-  username: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  birthDate: string;
   password: string;
   confirmPassword: string;
 }
@@ -59,14 +64,18 @@ export default function SignUpPage() {
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
     useState(false);
   const [form, setForm] = useState<FormData>({
-    username: "",
+    firstName: "",
+    lastName: "",
     email: "",
+    birthDate: "01/01/2000",
     password: "",
     confirmPassword: "",
   });
   const [errors, setErrors] = useState<FormErrors>({
-    username: "",
+    firstName: "",
+    lastName: "",
     email: "",
+    birthDate: "",
     password: "",
     confirmPassword: "",
   });
@@ -85,7 +94,7 @@ export default function SignUpPage() {
       [field]: value,
     });
     // Girdi değiştiğinde hatayı temizle
-    if (errors[field]) {
+    if (errors[field as keyof FormErrors]) {
       setErrors({
         ...errors,
         [field]: "",
@@ -93,13 +102,45 @@ export default function SignUpPage() {
     }
   };
 
+  // Doğum tarihi girişini formatla (GG/AA/YYYY)
+  const formatBirthDate = (text: string) => {
+    // Sadece sayıları al
+    const cleaned = text.replace(/[^0-9]/g, "");
+
+    // Formatlama
+    let formatted = "";
+    if (cleaned.length <= 2) {
+      formatted = cleaned;
+    } else if (cleaned.length <= 4) {
+      formatted = `${cleaned.substring(0, 2)}/${cleaned.substring(2)}`;
+    } else {
+      formatted = `${cleaned.substring(0, 2)}/${cleaned.substring(
+        2,
+        4
+      )}/${cleaned.substring(4, 8)}`;
+    }
+
+    return formatted;
+  };
+
+  const handleBirthDateChange = (text: string) => {
+    const formatted = formatBirthDate(text);
+    handleInputChange("birthDate", formatted);
+  };
+
   const validateForm = () => {
     let isValid = true;
     const newErrors = { ...errors };
 
-    // Kullanıcı adı kontrolü
-    if (!form.username.trim()) {
-      newErrors.username = "Kullanıcı adı zorunludur";
+    // Ad kontrolü
+    if (!form.firstName.trim()) {
+      newErrors.firstName = "Adınız zorunludur";
+      isValid = false;
+    }
+
+    // Soyad kontrolü
+    if (!form.lastName.trim()) {
+      newErrors.lastName = "Soyadınız zorunludur";
       isValid = false;
     }
 
@@ -108,6 +149,48 @@ export default function SignUpPage() {
     if (!form.email.trim() || !emailRegex.test(form.email)) {
       newErrors.email = "Geçerli bir e-posta adresi giriniz";
       isValid = false;
+    }
+
+    // Doğum tarihi kontrolü
+    const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    const match = form.birthDate.match(dateRegex);
+
+    if (!match) {
+      newErrors.birthDate = "Geçerli bir tarih formatı giriniz (GG/AA/YYYY)";
+      isValid = false;
+    } else {
+      const day = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1; // JavaScript ayları 0-11 arası
+      const year = parseInt(match[3], 10);
+
+      const birthDate = new Date(year, month, day);
+      const today = new Date();
+
+      // Geçerli bir tarih mi kontrolü
+      if (
+        birthDate.getDate() !== day ||
+        birthDate.getMonth() !== month ||
+        birthDate.getFullYear() !== year ||
+        birthDate > today
+      ) {
+        newErrors.birthDate = "Geçerli bir tarih giriniz";
+        isValid = false;
+      } else {
+        // Yaş kontrolü
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+
+        // Doğum günü daha gelmemişse yaşı bir azalt
+        const isBeforeBirthday =
+          monthDiff < 0 ||
+          (monthDiff === 0 && today.getDate() < birthDate.getDate());
+        const calculatedAge = isBeforeBirthday ? age - 1 : age;
+
+        if (calculatedAge < 13) {
+          newErrors.birthDate = "Yaşınız 13'ten büyük olmalıdır";
+          isValid = false;
+        }
+      }
     }
 
     // Şifre kontrolü
@@ -179,13 +262,14 @@ export default function SignUpPage() {
             </Center>
 
             <Box style={{ marginTop: 24 }}>
+              {/* Ad alanı */}
               <FormControl
-                isInvalid={!!errors.username}
+                isInvalid={!!errors.firstName}
                 style={{ marginBottom: 16 }}
               >
                 <FormControlLabel>
                   <FormControlLabelText className="text-emerald-700">
-                    Kullanıcı Adı
+                    Ad
                   </FormControlLabelText>
                 </FormControlLabel>
                 <Input
@@ -196,20 +280,55 @@ export default function SignUpPage() {
                     <InputIcon as={User} color="#047857" />
                   </InputSlot>
                   <InputField
-                    placeholder="Kullanıcı adınızı girin"
-                    value={form.username}
-                    onChangeText={(text) => handleInputChange("username", text)}
+                    placeholder="Adınızı girin"
+                    value={form.firstName}
+                    onChangeText={(text) =>
+                      handleInputChange("firstName", text)
+                    }
                   />
                 </Input>
-                {errors.username ? (
+                {errors.firstName ? (
                   <FormControlError>
                     <FormControlErrorText>
-                      {errors.username}
+                      {errors.firstName}
                     </FormControlErrorText>
                   </FormControlError>
                 ) : null}
               </FormControl>
 
+              {/* Soyad alanı */}
+              <FormControl
+                isInvalid={!!errors.lastName}
+                style={{ marginBottom: 16 }}
+              >
+                <FormControlLabel>
+                  <FormControlLabelText className="text-emerald-700">
+                    Soyad
+                  </FormControlLabelText>
+                </FormControlLabel>
+                <Input
+                  size="lg"
+                  className="border-emerald-100 focus:border-emerald-500 rounded-lg"
+                >
+                  <InputSlot style={{ paddingLeft: 12 }}>
+                    <InputIcon as={User} color="#047857" />
+                  </InputSlot>
+                  <InputField
+                    placeholder="Soyadınızı girin"
+                    value={form.lastName}
+                    onChangeText={(text) => handleInputChange("lastName", text)}
+                  />
+                </Input>
+                {errors.lastName ? (
+                  <FormControlError>
+                    <FormControlErrorText>
+                      {errors.lastName}
+                    </FormControlErrorText>
+                  </FormControlError>
+                ) : null}
+              </FormControl>
+
+              {/* E-posta alanı */}
               <FormControl
                 isInvalid={!!errors.email}
                 style={{ marginBottom: 16 }}
@@ -241,6 +360,44 @@ export default function SignUpPage() {
                 ) : null}
               </FormControl>
 
+              {/* Doğum tarihi alanı */}
+              <FormControl
+                isInvalid={!!errors.birthDate}
+                style={{ marginBottom: 16 }}
+              >
+                <FormControlLabel>
+                  <FormControlLabelText className="text-emerald-700">
+                    Doğum Tarihi
+                  </FormControlLabelText>
+                </FormControlLabel>
+                <Input
+                  size="lg"
+                  className="border-emerald-100 focus:border-emerald-500 rounded-lg"
+                >
+                  <InputSlot style={{ paddingLeft: 12 }}>
+                    <InputIcon as={Calendar} color="#047857" />
+                  </InputSlot>
+                  <InputField
+                    placeholder="GG/AA/YYYY"
+                    value={form.birthDate}
+                    onChangeText={handleBirthDateChange}
+                    keyboardType="numeric"
+                    maxLength={10}
+                  />
+                </Input>
+                <Text size="xs" className="text-emerald-600 mt-1">
+                  Format: 20/10/2003
+                </Text>
+                {errors.birthDate ? (
+                  <FormControlError>
+                    <FormControlErrorText>
+                      {errors.birthDate}
+                    </FormControlErrorText>
+                  </FormControlError>
+                ) : null}
+              </FormControl>
+
+              {/* Şifre alanı */}
               <FormControl
                 isInvalid={!!errors.password}
                 style={{ marginBottom: 16 }}

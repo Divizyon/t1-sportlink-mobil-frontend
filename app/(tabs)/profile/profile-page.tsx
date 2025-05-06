@@ -42,6 +42,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "@/src/store/AuthContext";
 
 // Menü öğesi tipi tanımlama
 interface MenuItem {
@@ -57,14 +58,19 @@ interface Event {
   type: string;
   category: string;
   date: string;
-  time: string;
+  startTime: string;
+  endTime: string;
   location: string;
   coordinates: {
     latitude: number;
     longitude: number;
   };
   distance: string;
-  participants: string[];
+  participants: {
+    id: number;
+    name: string;
+    profileImage: string;
+  }[];
   participantCount: number;
   maxParticipants: number;
   rating: number;
@@ -101,11 +107,13 @@ const sportsCategories = [
 
 // Örnek kullanıcı bilgileri
 const userData = {
+  firstName: "Özgür",
+  lastName: "Eren",
   name: "Özgür Eren",
   email: "ozgur.eren@example.com",
   memberSince: "Nisan 2023",
   profileImage: "https://randomuser.me/api/portraits/men/32.jpg",
-  age: 28,
+  birthDate: "1995-06-15",
   biography:
     "Spor tutkunu, aktif yaşam tarzını seven ve yeni insanlar tanımayı seven biriyim. Haftada en az 3 kez koşu ve fitness yapıyorum. Özellikle takım sporlarına ilgi duyuyorum.",
   stats: {
@@ -125,7 +133,8 @@ const eventData = [
     title: "Futbol Turnuvası",
     category: "Futbol",
     date: "23 Ekim",
-    time: "14:00-17:00",
+    startTime: "14:00",
+    endTime: "17:00",
     location: "Meram Futbol Sahası",
     coordinates: {
       latitude: 37.8599,
@@ -133,8 +142,26 @@ const eventData = [
     },
     distance: "2.5 km",
     participants: [
-      "https://randomuser.me/api/portraits/women/65.jpg",
-      "https://randomuser.me/api/portraits/men/22.jpg",
+      {
+        id: 1,
+        name: "Ayşe K.",
+        profileImage: "https://randomuser.me/api/portraits/women/65.jpg",
+      },
+      {
+        id: 2,
+        name: "Mehmet Y.",
+        profileImage: "https://randomuser.me/api/portraits/men/22.jpg",
+      },
+      {
+        id: 3,
+        name: "Ali B.",
+        profileImage: "https://randomuser.me/api/portraits/men/32.jpg",
+      },
+      {
+        id: 4,
+        name: "Zeynep T.",
+        profileImage: "https://randomuser.me/api/portraits/women/28.jpg",
+      },
     ],
     participantCount: 18,
     maxParticipants: 22,
@@ -169,7 +196,8 @@ const eventData = [
     title: "Yüzme Etkinliği",
     category: "Yüzme",
     date: "24 Ekim",
-    time: "10:00-11:30",
+    startTime: "10:00",
+    endTime: "11:30",
     location: "Olimpik Yüzme Havuzu",
     coordinates: {
       latitude: 37.851,
@@ -177,8 +205,21 @@ const eventData = [
     },
     distance: "3.7 km",
     participants: [
-      "https://randomuser.me/api/portraits/women/33.jpg",
-      "https://randomuser.me/api/portraits/men/45.jpg",
+      {
+        id: 5,
+        name: "Deniz A.",
+        profileImage: "https://randomuser.me/api/portraits/women/33.jpg",
+      },
+      {
+        id: 6,
+        name: "Burak C.",
+        profileImage: "https://randomuser.me/api/portraits/men/45.jpg",
+      },
+      {
+        id: 7,
+        name: "Canan Y.",
+        profileImage: "https://randomuser.me/api/portraits/women/44.jpg",
+      },
     ],
     participantCount: 8,
     maxParticipants: 15,
@@ -343,9 +384,10 @@ export default function ProfileScreen() {
     },
   ]);
   const [editedProfile, setEditedProfile] = useState({
-    name: userData.name,
-    age: userData.age,
-    interests: [...userData.interests],
+    firstName: userData.firstName || "",
+    lastName: userData.lastName || "",
+    email: userData.email,
+    birthDate: userData.birthDate,
     biography: userData.biography,
     profileImage: userData.profileImage,
   });
@@ -355,24 +397,36 @@ export default function ProfileScreen() {
   };
 
   const handleSaveProfile = () => {
+    // Doğum tarihi kontrolü
+    if (editedProfile.birthDate && !isValidBirthDate(editedProfile.birthDate)) {
+      Alert.alert(
+        "Hata",
+        "Lütfen geçerli bir doğum tarihi giriniz (YYYY-AA-GG formatında).",
+        [{ text: "Tamam" }]
+      );
+      return;
+    }
+
+    // E-posta kontrolü
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editedProfile.email)) {
+      Alert.alert("Hata", "Lütfen geçerli bir e-posta adresi giriniz.", [
+        { text: "Tamam" },
+      ]);
+      return;
+    }
+
     // Here we would typically update the user data in a real app
     // For this demo, we'll just update our local userData object
-    userData.name = editedProfile.name;
-    userData.age = editedProfile.age;
-    userData.interests = [...editedProfile.interests];
+    userData.firstName = editedProfile.firstName;
+    userData.lastName = editedProfile.lastName;
+    userData.name = `${editedProfile.firstName} ${editedProfile.lastName}`;
+    userData.email = editedProfile.email;
+    userData.birthDate = editedProfile.birthDate;
     userData.biography = editedProfile.biography;
     userData.profileImage = editedProfile.profileImage;
 
     setIsEditProfileModalVisible(false);
-  };
-
-  const handleRemoveInterest = (interestToRemove: string) => {
-    setEditedProfile({
-      ...editedProfile,
-      interests: editedProfile.interests.filter(
-        (interest) => interest !== interestToRemove
-      ),
-    });
   };
 
   const handleMenuItemPress = (itemId: string) => {
@@ -385,6 +439,46 @@ export default function ProfileScreen() {
       setIsPrivacyModalVisible(true);
       // Check permissions when privacy menu is opened
       checkPermissions();
+    } else if (itemId === "logout") {
+      handleLogout();
+    }
+  };
+
+  // Logout handler
+  const { logout } = useAuth();
+  const handleLogout = async () => {
+    try {
+      Alert.alert(
+        "Çıkış Yap",
+        "Hesabınızdan çıkış yapmak istediğinize emin misiniz?",
+        [
+          { text: "İptal", style: "cancel" },
+          {
+            text: "Çıkış Yap",
+            style: "destructive",
+            onPress: async () => {
+              // Yükleme göstergesi eklenebilir
+              try {
+                await logout();
+                console.log("Başarıyla çıkış yapıldı");
+                router.replace("/");
+              } catch (error) {
+                console.error("Çıkış yaparken hata:", error);
+                Alert.alert(
+                  "Hata",
+                  "Çıkış yapılırken bir hata oluştu. Lütfen tekrar deneyin."
+                );
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Çıkış yaparken hata:", error);
+      Alert.alert(
+        "Hata",
+        "Çıkış yapılırken bir hata oluştu. Lütfen tekrar deneyin."
+      );
     }
   };
 
@@ -479,7 +573,7 @@ export default function ProfileScreen() {
     }
   };
 
-  // Pick an image from the gallery
+  // Handler for picking image from gallery
   const pickImage = async () => {
     try {
       // Request media library permissions
@@ -495,9 +589,9 @@ export default function ProfileScreen() {
         return;
       }
 
-      // Launch image library
+      // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: "images",
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
@@ -789,6 +883,94 @@ export default function ProfileScreen() {
     );
   };
 
+  // Yaş hesaplama fonksiyonu
+  const calculateAge = (birthDateStr: string): number => {
+    try {
+      const birthDate = new Date(birthDateStr);
+
+      // Geçerli bir tarih kontrolü
+      if (isNaN(birthDate.getTime())) {
+        return 0;
+      }
+
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < birthDate.getDate())
+      ) {
+        age--;
+      }
+
+      return age;
+    } catch (error) {
+      return 0;
+    }
+  };
+
+  // Doğum tarihi formatını kontrol eden fonksiyon
+  const isValidBirthDate = (dateStr: string): boolean => {
+    // YYYY-AA-GG formatına uygunluk kontrolü
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(dateStr)) {
+      return false;
+    }
+
+    // Geçerli bir tarih olup olmadığını kontrol et
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      return false;
+    }
+
+    // Girilen tarihin bugünden önce olması gerekiyor
+    const today = new Date();
+    if (date >= today) {
+      return false;
+    }
+
+    // Makul bir yaş aralığı (1-120 yaş arası)
+    const age = calculateAge(dateStr);
+    if (age < 1 || age > 120) {
+      return false;
+    }
+
+    // Parçalara ayrılmış tarihin kontrolü (ayın 1-12 arası olması, günün ayın gün sayısıyla uyumlu olması)
+    const [year, month, day] = dateStr.split("-").map(Number);
+
+    if (month < 1 || month > 12) {
+      return false;
+    }
+
+    // Ayın gün sayısı kontrolü
+    const lastDayOfMonth = new Date(year, month, 0).getDate();
+    if (day < 1 || day > lastDayOfMonth) {
+      return false;
+    }
+
+    return true;
+  };
+
+  // Doğum tarihi formatını otomatik düzeltme
+  const formatBirthDate = (input: string): string => {
+    // Sadece rakamları ve '-' karakterini kabul et
+    let cleaned = input.replace(/[^\d-]/g, "");
+
+    // Maksimum 10 karakter (YYYY-MM-DD) olsun
+    cleaned = cleaned.substring(0, 10);
+
+    // Otomatik '-' ekleme
+    if (cleaned.length > 4 && cleaned.charAt(4) !== "-") {
+      cleaned = cleaned.substring(0, 4) + "-" + cleaned.substring(4);
+    }
+    if (cleaned.length > 7 && cleaned.charAt(7) !== "-") {
+      cleaned = cleaned.substring(0, 7) + "-" + cleaned.substring(7);
+    }
+
+    return cleaned;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
@@ -867,31 +1049,91 @@ export default function ProfileScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>İsim Soyisim</Text>
+                <Text style={styles.inputLabel}>Ad</Text>
                 <TextInput
                   style={styles.textInput}
-                  value={editedProfile.name}
+                  value={editedProfile.firstName}
                   onChangeText={(text) =>
-                    setEditedProfile({ ...editedProfile, name: text })
+                    setEditedProfile({ ...editedProfile, firstName: text })
                   }
-                  placeholder="İsim Soyisim"
+                  placeholder="Adınız"
                   autoCapitalize="words"
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Yaş</Text>
+                <Text style={styles.inputLabel}>Soyad</Text>
                 <TextInput
                   style={styles.textInput}
-                  value={String(editedProfile.age)}
-                  onChangeText={(text) => {
-                    const age = parseInt(text) || 0;
-                    setEditedProfile({ ...editedProfile, age });
-                  }}
-                  placeholder="Yaş"
-                  keyboardType="number-pad"
-                  maxLength={3}
+                  value={editedProfile.lastName}
+                  onChangeText={(text) =>
+                    setEditedProfile({ ...editedProfile, lastName: text })
+                  }
+                  placeholder="Soyadınız"
+                  autoCapitalize="words"
                 />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>E-posta</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={editedProfile.email}
+                  onChangeText={(text) =>
+                    setEditedProfile({ ...editedProfile, email: text })
+                  }
+                  placeholder="E-posta adresiniz"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Doğum Tarihi</Text>
+                <View style={styles.dateInputContainer}>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      !isValidBirthDate(editedProfile.birthDate) &&
+                      editedProfile.birthDate.length === 10
+                        ? styles.invalidDateInput
+                        : {},
+                    ]}
+                    value={editedProfile.birthDate}
+                    onChangeText={(text) => {
+                      const formattedDate = formatBirthDate(text);
+                      setEditedProfile({
+                        ...editedProfile,
+                        birthDate: formattedDate,
+                      });
+                    }}
+                    placeholder="YYYY-AA-GG"
+                    keyboardType="numbers-and-punctuation"
+                    maxLength={10}
+                  />
+                  {isValidBirthDate(editedProfile.birthDate) && (
+                    <View style={styles.validDateIcon}>
+                      <Check size={16} color="#2ecc71" />
+                    </View>
+                  )}
+                </View>
+                {editedProfile.birthDate.length > 0 && (
+                  <Text
+                    style={[
+                      styles.ageCalculationText,
+                      !isValidBirthDate(editedProfile.birthDate) &&
+                      editedProfile.birthDate.length === 10
+                        ? styles.invalidAgeText
+                        : {},
+                    ]}
+                  >
+                    {isValidBirthDate(editedProfile.birthDate)
+                      ? `Yaş: ${calculateAge(editedProfile.birthDate)}`
+                      : editedProfile.birthDate.length === 10
+                      ? "Geçersiz tarih formatı. YYYY-AA-GG şeklinde giriniz."
+                      : "Tarih formatı: YYYY-AA-GG (Örn: 1995-06-15)"}
+                  </Text>
+                )}
               </View>
 
               <View style={styles.inputGroup}>
@@ -907,52 +1149,6 @@ export default function ProfileScreen() {
                   numberOfLines={4}
                   textAlignVertical="top"
                 />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>İlgi Alanları</Text>
-
-                <View style={styles.interestsEditContainer}>
-                  {editedProfile.interests.map((interest, index) => (
-                    <View key={index} style={styles.interestEditTag}>
-                      <Text style={styles.interestEditTagText}>{interest}</Text>
-                      <TouchableOpacity
-                        style={styles.removeInterestButton}
-                        onPress={() => handleRemoveInterest(interest)}
-                      >
-                        <X size={14} color="#fff" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-
-                <Text style={styles.sportSelectionLabel}>
-                  Mevcut Spor Dalları
-                </Text>
-
-                <View style={styles.sportCategoriesContainer}>
-                  {sportsCategories.map((sport, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.sportCategoryItem,
-                        editedProfile.interests.includes(sport) &&
-                          styles.selectedSportCategory,
-                      ]}
-                      onPress={() => handleToggleSport(sport)}
-                    >
-                      <Text
-                        style={[
-                          styles.sportCategoryText,
-                          editedProfile.interests.includes(sport) &&
-                            styles.selectedSportCategoryText,
-                        ]}
-                      >
-                        {sport}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
               </View>
 
               <TouchableOpacity
@@ -1338,7 +1534,9 @@ export default function ProfileScreen() {
 
               <View style={styles.ageContainer}>
                 <Cake size={14} color="#7f8c8d" />
-                <Text style={styles.ageText}>{userData.age} Yaşında</Text>
+                <Text style={styles.ageText}>
+                  {calculateAge(userData.birthDate)} Yaşında
+                </Text>
               </View>
               <View style={styles.joinDateContainer}>
                 <Calendar size={14} color="#7f8c8d" />
@@ -1420,7 +1618,9 @@ export default function ProfileScreen() {
                           color="#666"
                           style={{ marginRight: 4 }}
                         />
-                        <Text style={styles.metaText}>{event.time}</Text>
+                        <Text style={styles.metaText}>
+                          {event.startTime} - {event.endTime}
+                        </Text>
                       </View>
 
                       <View style={styles.metaRow}>
@@ -2264,5 +2464,26 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  ageCalculationText: {
+    fontSize: 14,
+    color: "#7f8c8d",
+    marginTop: 5,
+  },
+  dateInputContainer: {
+    position: "relative",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  invalidDateInput: {
+    borderColor: "#e74c3c",
+    backgroundColor: "#fdf1f0",
+  },
+  validDateIcon: {
+    position: "absolute",
+    right: 12,
+  },
+  invalidAgeText: {
+    color: "#e74c3c",
   },
 });

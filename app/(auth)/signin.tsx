@@ -107,6 +107,16 @@ export default function SignInPage() {
         // Kullanıcıya hata mesajı göster
         if (error.response?.data?.message) {
           Alert.alert("Giriş Hatası", error.response.data.message);
+        } else if (error.message === "Network Error") {
+          Alert.alert(
+            "Bağlantı Hatası",
+            "Sunucuya bağlanırken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin veya daha sonra tekrar deneyin."
+          );
+        } else if (error.code === "ECONNABORTED") {
+          Alert.alert(
+            "Bağlantı Zaman Aşımı",
+            "Sunucuya bağlanırken zaman aşımı oluştu. Lütfen daha sonra tekrar deneyin."
+          );
         } else {
           Alert.alert(
             "Giriş Hatası",

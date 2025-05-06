@@ -9,6 +9,7 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  Modal,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -33,6 +34,7 @@ import {
   Share2,
   Navigation,
   MessageCircle,
+  X,
 } from "lucide-react-native";
 import MapView, { Marker } from "react-native-maps";
 
@@ -76,6 +78,14 @@ interface Review {
   date: string;
 }
 
+// Katılımcı verisi için interface
+interface Participant {
+  id: number;
+  name: string;
+  profileImage: string;
+}
+
+// EventDetail arayüzüne participants ekle
 interface EventDetail {
   id: number;
   title: string;
@@ -102,6 +112,7 @@ interface EventDetail {
   notes: string;
   imageUrl: string;
   reviews?: Review[];
+  participants: Participant[]; // Katılımcılar listesi eklendi
 }
 
 // Örnek etkinlik verileri
@@ -133,6 +144,58 @@ const sampleEvents = [
     notes: "Maç bitiminde sosyal bir etkinlik düzenlenecektir.",
     imageUrl:
       "https://images.unsplash.com/photo-1518063319789-7217e6706b04?q=80&w=2069&auto=format&fit=crop",
+    participants: [
+      {
+        id: 1,
+        name: "Ahmet Yılmaz",
+        profileImage: "https://randomuser.me/api/portraits/men/75.jpg",
+      },
+      {
+        id: 2,
+        name: "Zeynep Kaya",
+        profileImage: "https://randomuser.me/api/portraits/women/62.jpg",
+      },
+      {
+        id: 3,
+        name: "Mehmet Demir",
+        profileImage: "https://randomuser.me/api/portraits/men/22.jpg",
+      },
+      {
+        id: 4,
+        name: "Ebru Şahin",
+        profileImage: "https://randomuser.me/api/portraits/women/45.jpg",
+      },
+      {
+        id: 5,
+        name: "Oğuz Yılmaz",
+        profileImage: "https://randomuser.me/api/portraits/men/36.jpg",
+      },
+      {
+        id: 6,
+        name: "Selma Korkut",
+        profileImage: "https://randomuser.me/api/portraits/women/28.jpg",
+      },
+      {
+        id: 7,
+        name: "Özgür Aydın",
+        profileImage: "https://randomuser.me/api/portraits/men/41.jpg",
+      },
+      {
+        id: 8,
+        name: "Ezgi Şen",
+        profileImage: "https://randomuser.me/api/portraits/women/17.jpg",
+      },
+      {
+        id: 9,
+        name: "Tolga Kara",
+        profileImage: "https://randomuser.me/api/portraits/men/54.jpg",
+      },
+      {
+        id: 10,
+        name: "Ceyda Yurt",
+        profileImage: "https://randomuser.me/api/portraits/women/33.jpg",
+      },
+    ],
     reviews: [
       {
         id: 1,
@@ -186,6 +249,29 @@ const sampleEvents = [
     notes: "Turnuva sonunda ödül töreni yapılacaktır.",
     imageUrl:
       "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=2070&auto=format&fit=crop",
+    participants: [
+      {
+        id: 1,
+        name: "Ali Yıldız",
+        profileImage: "https://randomuser.me/api/portraits/men/22.jpg",
+      },
+      {
+        id: 2,
+        name: "Selin Doğan",
+        profileImage: "https://randomuser.me/api/portraits/women/28.jpg",
+      },
+      {
+        id: 3,
+        name: "Kerem Demir",
+        profileImage: "https://randomuser.me/api/portraits/men/36.jpg",
+      },
+      // Diğer katılımcılar da benzer şekilde eklenir
+      {
+        id: 22,
+        name: "Engin Arslan",
+        profileImage: "https://randomuser.me/api/portraits/men/90.jpg",
+      },
+    ],
     reviews: [
       {
         id: 1,
@@ -251,6 +337,48 @@ const sampleEvents = [
     notes: "Lütfen seanstan 15 dakika önce hazır olunuz.",
     imageUrl:
       "https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=2070&auto=format&fit=crop",
+    participants: [
+      {
+        id: 1,
+        name: "Ayşe Yalçın",
+        profileImage: "https://randomuser.me/api/portraits/women/33.jpg",
+      },
+      {
+        id: 2,
+        name: "Selin Aksoy",
+        profileImage: "https://randomuser.me/api/portraits/women/49.jpg",
+      },
+      {
+        id: 3,
+        name: "Can Öztürk",
+        profileImage: "https://randomuser.me/api/portraits/men/41.jpg",
+      },
+      {
+        id: 4,
+        name: "Deniz Yılmaz",
+        profileImage: "https://randomuser.me/api/portraits/women/17.jpg",
+      },
+      {
+        id: 5,
+        name: "Emre Kaplan",
+        profileImage: "https://randomuser.me/api/portraits/men/62.jpg",
+      },
+      {
+        id: 6,
+        name: "Aslı Koç",
+        profileImage: "https://randomuser.me/api/portraits/women/55.jpg",
+      },
+      {
+        id: 7,
+        name: "Kaan Aydın",
+        profileImage: "https://randomuser.me/api/portraits/men/78.jpg",
+      },
+      {
+        id: 8,
+        name: "Gül Şahin",
+        profileImage: "https://randomuser.me/api/portraits/women/91.jpg",
+      },
+    ],
     reviews: [
       {
         id: 1,
@@ -306,6 +434,8 @@ export default function EventDetailsScreen() {
   const [eventDetail, setEventDetail] = useState<EventDetail | null>(null);
   const [activeTab, setActiveTab] = useState("info"); // 'info', 'map', 'reviews'
   const [isJoined, setIsJoined] = useState(false);
+  const [isParticipantsModalVisible, setIsParticipantsModalVisible] =
+    useState(false);
 
   useEffect(() => {
     // Gerçek uygulamada burada API çağrısı yapılır
@@ -371,6 +501,94 @@ export default function EventDetailsScreen() {
       "Paylaş",
       `${eventDetail.title} etkinliğini paylaşmak için bir platform seçin.`,
       [{ text: "Tamam", onPress: () => console.log("OK") }]
+    );
+  };
+
+  // Katılımcıları gösterme modalını aç
+  const handleShowParticipants = () => {
+    setIsParticipantsModalVisible(true);
+  };
+
+  // Katılımcı Modalı
+  const renderParticipantsModal = () => {
+    if (!eventDetail) return null;
+
+    return (
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isParticipantsModalVisible}
+        onRequestClose={() => setIsParticipantsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Katılımcılar ({eventDetail.participantCount}/
+                {eventDetail.maxParticipants})
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIsParticipantsModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <X size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.participantsListContainer}>
+              {eventDetail.participants &&
+              eventDetail.participants.length > 0 ? (
+                eventDetail.participants.map((participant) => (
+                  <TouchableOpacity
+                    key={participant.id}
+                    style={styles.participantItem}
+                    onPress={() => {
+                      // Gelecekte profil sayfasına yönlendirme yapılabilir
+                      console.log(`${participant.name} profiline tıklandı`);
+                      setIsParticipantsModalVisible(false);
+                      // Bu kısımda profil sayfasına yönlendirme yapılabilir
+                      // router.navigate...
+                    }}
+                  >
+                    <Image
+                      source={{ uri: participant.profileImage }}
+                      style={styles.participantImage}
+                    />
+                    <View style={styles.participantDetails}>
+                      <Text style={styles.participantName}>
+                        {participant.name}
+                      </Text>
+                      <Text style={styles.participantRole}>Katılımcı</Text>
+                    </View>
+                    <ChevronRight size={18} color={theme.textSecondary} />
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noParticipantsText}>
+                  Henüz katılımcı bulunmuyor.
+                </Text>
+              )}
+
+              {/* Eğer API'den gelen katılımcı sayısı daha fazlaysa */}
+              {eventDetail.participantCount >
+                (eventDetail.participants
+                  ? eventDetail.participants.length
+                  : 0) && (
+                <View style={styles.moreParticipantsInfo}>
+                  <Text style={styles.moreParticipantsText}>
+                    +
+                    {eventDetail.participantCount -
+                      (eventDetail.participants
+                        ? eventDetail.participants.length
+                        : 0)}{" "}
+                    kişi daha
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     );
   };
 
@@ -464,6 +682,7 @@ export default function EventDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {renderParticipantsModal()}
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -565,39 +784,60 @@ export default function EventDetailsScreen() {
             </VStack>
           </Box>
 
-          <Box style={styles.participantsCard}>
+          <TouchableOpacity
+            onPress={handleShowParticipants}
+            activeOpacity={0.7}
+          >
             <Box
               style={[
-                styles.infoIconWrapper,
-                { backgroundColor: `${categoryColor}15` },
+                styles.participantsCard,
+                { borderWidth: 1, borderColor: `${categoryColor}40` },
               ]}
             >
-              <Users size={18} color={categoryColor} />
+              <Box
+                style={[
+                  styles.infoIconWrapper,
+                  { backgroundColor: `${categoryColor}15` },
+                ]}
+              >
+                <Users size={18} color={categoryColor} />
+              </Box>
+              <VStack style={{ flex: 1 }}>
+                <HStack style={{ alignItems: "center" }}>
+                  <Text style={styles.infoLabel}>Katılımcılar</Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: categoryColor,
+                      marginLeft: 5,
+                    }}
+                  >
+                    (Tıkla)
+                  </Text>
+                </HStack>
+                <HStack style={styles.participantInfo}>
+                  <Text style={styles.infoValue}>
+                    {eventDetail.participantCount}/{eventDetail.maxParticipants}
+                  </Text>
+                  <Box style={styles.progressBarContainer}>
+                    <Box
+                      style={[
+                        styles.progressBar,
+                        {
+                          width: `${
+                            (eventDetail.participantCount /
+                              eventDetail.maxParticipants) *
+                            100
+                          }%`,
+                          backgroundColor: categoryColor,
+                        },
+                      ]}
+                    />
+                  </Box>
+                </HStack>
+              </VStack>
             </Box>
-            <VStack style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>Katılımcılar</Text>
-              <HStack style={styles.participantInfo}>
-                <Text style={styles.infoValue}>
-                  {eventDetail.participantCount}/{eventDetail.maxParticipants}
-                </Text>
-                <Box style={styles.progressBarContainer}>
-                  <Box
-                    style={[
-                      styles.progressBar,
-                      {
-                        width: `${
-                          (eventDetail.participantCount /
-                            eventDetail.maxParticipants) *
-                          100
-                        }%`,
-                        backgroundColor: categoryColor,
-                      },
-                    ]}
-                  />
-                </Box>
-              </HStack>
-            </VStack>
-          </Box>
+          </TouchableOpacity>
         </Box>
 
         {/* Tab Seçici */}
@@ -1022,5 +1262,85 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     borderWidth: 1,
     borderColor: theme.border,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    maxHeight: "80%",
+    backgroundColor: "white",
+    borderRadius: 15,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  closeButton: {
+    padding: 5,
+  },
+  participantsListContainer: {
+    flex: 1,
+  },
+  participantItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  participantImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 15,
+  },
+  participantDetails: {
+    flex: 1,
+  },
+  participantName: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: theme.text,
+  },
+  participantRole: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    marginTop: 2,
+  },
+  moreParticipantsInfo: {
+    padding: 15,
+    alignItems: "center",
+  },
+  moreParticipantsText: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    fontWeight: "500",
+  },
+  noParticipantsText: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    textAlign: "center",
+    marginVertical: 20,
   },
 });

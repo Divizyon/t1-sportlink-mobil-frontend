@@ -108,7 +108,12 @@ export default function SystemNotificationsScreen() {
     // Bildirimde bir actionUrl varsa, o sayfaya yönlendir
     if (notification.actionUrl) {
       // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
-      router.push(notification.actionUrl);
+      // Doğru formatta yönlendirme yapalım
+      try {
+        router.push(notification.actionUrl as any);
+      } catch (error) {
+        console.error("Yönlendirme hatası:", error);
+      }
     }
   };
 

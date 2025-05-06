@@ -11,9 +11,9 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { router } from "expo-router";
 import { Text } from "@/components/ui/text";
-import { 
-  ChevronLeft, 
-  MessageCircle, 
+import {
+  ChevronLeft,
+  MessageCircle,
   Search,
   Circle,
   Clock,
@@ -79,7 +79,8 @@ const MESSAGES: Message[] = [
     senderId: 105,
     senderName: "Can Yıldız",
     senderAvatar: "https://randomuser.me/api/portraits/men/22.jpg",
-    lastMessage: "Geçen haftaki tenis maçı çok güzeldi, tekrar ne zaman oynayalım?",
+    lastMessage:
+      "Geçen haftaki tenis maçı çok güzeldi, tekrar ne zaman oynayalım?",
     time: "2 gün önce",
     unreadCount: 0,
     isOnline: true,
@@ -106,39 +107,36 @@ export default function MessagesScreen() {
 
   const handleMessagePress = (messageId: number, senderId: number) => {
     // Gerçek uygulamada okunmamış mesaj sayısını sıfırla
-    setMessages(prev => 
-      prev.map(msg => 
-        msg.id === messageId 
-          ? { ...msg, unreadCount: 0 } 
-          : msg
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId ? { ...msg, unreadCount: 0 } : msg
       )
     );
-    
+
     // Mesaj detay sayfasına yönlendir
-    // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
-    router.push(`/chat/${senderId}`);
+    router.push(`/chat/${senderId}` as any);
   };
 
   const filteredMessages = searchQuery
-    ? messages.filter(message => 
-        message.senderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        message.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+    ? messages.filter(
+        (message) =>
+          message.senderName
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          message.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : messages;
 
   const renderMessageItem = ({ item }: { item: Message }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.messageItem, item.unreadCount > 0 && styles.unreadItem]}
       onPress={() => handleMessagePress(item.id, item.senderId)}
     >
       <View style={styles.avatarContainer}>
-        <Image 
-          source={{ uri: item.senderAvatar }} 
-          style={styles.avatar} 
-        />
+        <Image source={{ uri: item.senderAvatar }} style={styles.avatar} />
         {item.isOnline && <View style={styles.onlineIndicator} />}
       </View>
-      
+
       <View style={styles.messageContent}>
         <View style={styles.messageHeader}>
           <Text style={styles.senderName}>{item.senderName}</Text>
@@ -147,16 +145,19 @@ export default function MessagesScreen() {
             <Text style={styles.messageTime}>{item.time}</Text>
           </View>
         </View>
-        
-        <Text 
-          style={[styles.messageText, item.unreadCount > 0 && styles.unreadText]}
+
+        <Text
+          style={[
+            styles.messageText,
+            item.unreadCount > 0 && styles.unreadText,
+          ]}
           numberOfLines={1}
           ellipsizeMode="tail"
         >
           {item.lastMessage}
         </Text>
       </View>
-      
+
       {item.unreadCount > 0 && (
         <View style={styles.unreadBadge}>
           <Text style={styles.unreadCount}>{item.unreadCount}</Text>
@@ -168,7 +169,7 @@ export default function MessagesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      
+
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <ChevronLeft size={24} color="#333" />
@@ -178,11 +179,11 @@ export default function MessagesScreen() {
           <MoreVertical size={24} color="#333" />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Search size={18} color="#95a5a6" style={styles.searchIcon} />
-          <TextInput 
+          <TextInput
             style={styles.searchInput}
             placeholder="Mesajlarda ara..."
             value={searchQuery}
@@ -190,13 +191,13 @@ export default function MessagesScreen() {
           />
         </View>
       </View>
-      
+
       {filteredMessages.length === 0 ? (
         <View style={styles.emptyContainer}>
           <MessageCircle size={64} color="#d5d5d5" />
           <Text style={styles.emptyText}>Mesaj Bulunamadı</Text>
           <Text style={styles.emptySubText}>
-            {searchQuery 
+            {searchQuery
               ? "Arama kriterlerine uygun mesaj bulunamadı."
               : "Henüz mesajınız bulunmuyor."}
           </Text>
@@ -364,4 +365,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     marginTop: 8,
   },
-}); 
+});

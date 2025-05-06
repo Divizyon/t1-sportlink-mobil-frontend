@@ -136,16 +136,13 @@ export default function NotificationsScreen() {
         // Eğer başlık "Etkinlik Hatırlatıcı" ise yaklaşan etkinlikler sayfasına yönlendir
         if (notification.title === "Etkinlik Hatırlatıcı") {
           // Yaklaşan etkinlikler sayfasına yönlendir
-          // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
-          router.push("/upcoming-events");
+          router.push("/upcoming-events" as any);
         } else if (notification.title === "Etkinlik Güncellemesi") {
           // Eğer başlık "Etkinlik Güncellemesi" ise güncellenen etkinlikler sayfasına yönlendir
-          // @ts-ignore
-          router.push("/event-updates");
+          router.push("/event-updates" as any);
         } else if (notification.title === "Yeni Etkinlik") {
           // Eğer başlık "Yeni Etkinlik" ise tüm etkinlikler sayfasına yönlendir
-          // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
-          router.push("/all-events");
+          router.push("/all-events" as any);
         } else {
           // Diğer etkinlik bildirimleri için (örn. güncellemeler), spesifik etkinliğe yönlendir
           if (notification.data?.eventId) {
@@ -161,13 +158,11 @@ export default function NotificationsScreen() {
         break;
       case "message":
         // Mesajlar sayfasına yönlendir
-        // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
-        router.push("/messages");
+        router.push("/messages/index" as any);
         break;
       case "friend":
         // Arkadaşlık istekleri sayfasına yönlendir
-        // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
-        router.push("/friend-requests");
+        router.push("/friend-requests/index" as any);
         break;
       case "like":
         // Beğeni bildirimleri için şimdilik profil sayfasına yönlendir
@@ -180,8 +175,7 @@ export default function NotificationsScreen() {
         break;
       case "system":
         // Sistem bildirimleri sayfasına yönlendir
-        // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
-        router.push("/system-notifications");
+        router.push("/system-notifications/index" as any);
         break;
       default:
         break;
