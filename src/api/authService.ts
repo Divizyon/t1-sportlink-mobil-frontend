@@ -82,7 +82,7 @@ export const authService = {
       console.log("Register yanıtı alındı:", response.status);
 
       // Store tokens and user data if available
-      if (response.data.data.session) {
+      if (response.data.data && response.data.data.session) {
         await AsyncStorage.setItem(
           AUTH_TOKEN_KEY,
           response.data.data.session.access_token
@@ -124,15 +124,30 @@ export const authService = {
           "İnternet bağlantısı olmadığından, sadece yerel oturum kapatılacak"
         );
       } else {
-        await apiClient.post("/auth/logout");
+        // Token'ı al
+        const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+
+        if (token) {
+          try {
+            // Logout endpoint'ine istek gönder
+            await apiClient.post("/auth/logout");
+            console.log("Sunucu oturumu başarıyla kapatıldı");
+          } catch (error: any) {
+            console.error(
+              "Logout API error details:",
+              error.message,
+              error.code
+            );
+            // Sunucu hatası olsa bile yerel oturumu kapatmaya devam et
+          }
+        }
       }
     } catch (error: any) {
-      console.error("Logout API error details:", error.message, error.code);
+      console.error("Logout error details:", error.message, error.code);
     } finally {
-      // Clear stored data regardless of API success
-      await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
-      await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
-      await AsyncStorage.removeItem(USER_DATA_KEY);
+      // Yerel depolamadan oturum verilerini temizle
+      await this.clearSession();
+      console.log("Yerel oturum verileri temizlendi");
     }
   },
 
@@ -171,30 +186,51 @@ export const authService = {
       if (!refreshToken) return false;
 
       // Sunucuya token yenileme isteği gönder
-      const response = await apiClient.post<AuthResponse>(
-        "/auth/refresh-token",
-        {
-          refresh_token: refreshToken,
+      try {
+        const response = await apiClient.post<AuthResponse>(
+          "/auth/session/refresh",
+          {
+            refresh_token: refreshToken,
+          }
+        );
+
+        // Yeni token bilgilerini kaydet
+        if (response.data && response.data.data && response.data.data.session) {
+          await AsyncStorage.setItem(
+            AUTH_TOKEN_KEY,
+            response.data.data.session.access_token
+          );
+          await AsyncStorage.setItem(
+            REFRESH_TOKEN_KEY,
+            response.data.data.session.refresh_token
+          );
+          return true;
         }
-      );
 
-      // Yeni token bilgilerini kaydet
-      if (response.data.data.session) {
-        await AsyncStorage.setItem(
-          AUTH_TOKEN_KEY,
-          response.data.data.session.access_token
-        );
-        await AsyncStorage.setItem(
-          REFRESH_TOKEN_KEY,
-          response.data.data.session.refresh_token
-        );
-        return true;
+        // Eğer session yoksa oturumu temizle
+        await this.clearSession();
+        return false;
+      } catch (error) {
+        console.error("Token yenileme isteği hatası:", error);
+        // Token yenileme başarısız olursa oturumu temizle
+        await this.clearSession();
+        return false;
       }
-
-      return false;
     } catch (error) {
-      console.error("refreshToken error:", error);
+      console.error("Token yenileme hatası:", error);
+      await this.clearSession();
       return false;
+    }
+  },
+
+  // Oturum bilgilerini temizleme
+  async clearSession(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+      await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+      await AsyncStorage.removeItem(USER_DATA_KEY);
+    } catch (error) {
+      console.error("Oturum temizleme hatası:", error);
     }
   },
 };

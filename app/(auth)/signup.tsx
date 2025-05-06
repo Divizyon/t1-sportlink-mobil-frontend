@@ -8,6 +8,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Button, ButtonText } from "../../components/ui/button";
 import {
@@ -40,6 +42,7 @@ import {
   Calendar,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import { authService } from "../../src/api/authService";
 
 interface FormData {
   firstName: string;
@@ -67,7 +70,7 @@ export default function SignUpPage() {
     firstName: "",
     lastName: "",
     email: "",
-    birthDate: "01/01/2000",
+    birthDate: "2000-01-01",
     password: "",
     confirmPassword: "",
   });
@@ -79,6 +82,7 @@ export default function SignUpPage() {
     password: "",
     confirmPassword: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const togglePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);
@@ -102,22 +106,22 @@ export default function SignUpPage() {
     }
   };
 
-  // Doğum tarihi girişini formatla (GG/AA/YYYY)
+  // Doğum tarihi girişini formatla (YYYY-MM-DD)
   const formatBirthDate = (text: string) => {
     // Sadece sayıları al
     const cleaned = text.replace(/[^0-9]/g, "");
 
-    // Formatlama
+    // Formatlama (YYYY-MM-DD)
     let formatted = "";
-    if (cleaned.length <= 2) {
+    if (cleaned.length <= 4) {
       formatted = cleaned;
-    } else if (cleaned.length <= 4) {
-      formatted = `${cleaned.substring(0, 2)}/${cleaned.substring(2)}`;
+    } else if (cleaned.length <= 6) {
+      formatted = `${cleaned.substring(0, 4)}-${cleaned.substring(4)}`;
     } else {
-      formatted = `${cleaned.substring(0, 2)}/${cleaned.substring(
-        2,
-        4
-      )}/${cleaned.substring(4, 8)}`;
+      formatted = `${cleaned.substring(0, 4)}-${cleaned.substring(
+        4,
+        6
+      )}-${cleaned.substring(6, 8)}`;
     }
 
     return formatted;
@@ -152,16 +156,16 @@ export default function SignUpPage() {
     }
 
     // Doğum tarihi kontrolü
-    const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    const dateRegex = /^(\d{4})-(\d{2})-(\d{2})$/;
     const match = form.birthDate.match(dateRegex);
 
     if (!match) {
-      newErrors.birthDate = "Geçerli bir tarih formatı giriniz (GG/AA/YYYY)";
+      newErrors.birthDate = "Geçerli bir tarih formatı giriniz (YYYY-MM-DD)";
       isValid = false;
     } else {
-      const day = parseInt(match[1], 10);
+      const year = parseInt(match[1], 10);
       const month = parseInt(match[2], 10) - 1; // JavaScript ayları 0-11 arası
-      const year = parseInt(match[3], 10);
+      const day = parseInt(match[3], 10);
 
       const birthDate = new Date(year, month, day);
       const today = new Date();
@@ -212,7 +216,56 @@ export default function SignUpPage() {
   const handleSignUp = () => {
     if (validateForm()) {
       console.log("Kayıt formu:", form);
-      router.navigate("/(auth)/signin");
+
+      // Yükleme durumunu göstermek için state ekleyelim
+      setIsLoading(true);
+
+      // Backend API'sinin beklediği formatta veriyi hazırla
+      const userData = {
+        email: form.email,
+        password: form.password,
+        password_confirm: form.confirmPassword, // Backend password_confirm bekliyor
+        first_name: form.firstName,
+        last_name: form.lastName,
+        birthday_date: form.birthDate, // YYYY-MM-DD formatı zaten uyumlu
+      };
+
+      // API üzerinden kayıt işlemi
+      authService
+        .register(userData)
+        .then((user) => {
+          console.log("Kayıt başarılı:", user);
+          Alert.alert(
+            "Kayıt Başarılı",
+            "Hesabınız başarıyla oluşturuldu. Giriş yapabilirsiniz.",
+            [
+              {
+                text: "Tamam",
+                onPress: () => router.navigate("/(auth)/signin"),
+              },
+            ]
+          );
+        })
+        .catch((error) => {
+          console.error("Kayıt hatası:", error);
+          let errorMessage = "Kayıt sırasında bir hata oluştu.";
+
+          // Backend'den gelen hata mesajını göster
+          if (
+            error.response &&
+            error.response.data &&
+            error.response.data.message
+          ) {
+            errorMessage = error.response.data.message;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+
+          Alert.alert("Kayıt Hatası", errorMessage);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
   };
 
@@ -378,7 +431,7 @@ export default function SignUpPage() {
                     <InputIcon as={Calendar} color="#047857" />
                   </InputSlot>
                   <InputField
-                    placeholder="GG/AA/YYYY"
+                    placeholder="YYYY-MM-DD"
                     value={form.birthDate}
                     onChangeText={handleBirthDateChange}
                     keyboardType="numeric"
@@ -386,7 +439,7 @@ export default function SignUpPage() {
                   />
                 </Input>
                 <Text size="xs" className="text-emerald-600 mt-1">
-                  Format: 20/10/2003
+                  Format: 2000-01-31
                 </Text>
                 {errors.birthDate ? (
                   <FormControlError>
@@ -498,8 +551,15 @@ export default function SignUpPage() {
                 className="bg-emerald-600 rounded-lg"
                 size="lg"
                 onPress={handleSignUp}
+                disabled={isLoading}
               >
-                <ButtonText style={{ fontWeight: "bold" }}>Kayıt Ol</ButtonText>
+                {isLoading ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <ButtonText style={{ fontWeight: "bold" }}>
+                    Kayıt Ol
+                  </ButtonText>
+                )}
               </Button>
 
               <Center style={{ marginTop: 24, marginBottom: 24 }}>

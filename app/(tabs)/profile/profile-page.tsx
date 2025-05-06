@@ -43,6 +43,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "@/src/store/AuthContext";
+import apiClient from "@/src/api";
 
 // Menü öğesi tipi tanımlama
 interface MenuItem {
@@ -335,6 +336,17 @@ const defaultNotificationCategories: NotificationCategory[] = [
   },
 ];
 
+// Profil servisini oluştur
+const profileService = {
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+    confirmNewPassword: string;
+  }) => {
+    return apiClient.put("/profile/password", data);
+  },
+};
+
 export default function ProfileScreen() {
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
@@ -457,27 +469,57 @@ export default function ProfileScreen() {
             text: "Çıkış Yap",
             style: "destructive",
             onPress: async () => {
-              // Yükleme göstergesi eklenebilir
+              // Çıkış işlemi başlatılıyor
+              Alert.alert(
+                "Çıkış İşlemi",
+                "Çıkış yapılıyor, lütfen bekleyin...",
+                [],
+                { cancelable: false }
+              );
+
               try {
                 await logout();
                 console.log("Başarıyla çıkış yapıldı");
-                router.replace("/");
+
+                // Başarı mesajı
+                Alert.alert("Başarılı", "Çıkış işlemi başarıyla tamamlandı.", [
+                  {
+                    text: "Tamam",
+                    onPress: () => {
+                      // Giriş sayfasına yönlendir
+                      router.replace("/");
+                    },
+                  },
+                ]);
               } catch (error) {
                 console.error("Çıkış yaparken hata:", error);
-                Alert.alert(
-                  "Hata",
-                  "Çıkış yapılırken bir hata oluştu. Lütfen tekrar deneyin."
-                );
+
+                // Hata durumunda detaylı bilgi ver
+                let errorMessage =
+                  "Çıkış yapılırken bir sorun oluştu. Lütfen tekrar deneyin.";
+                if (error instanceof Error) {
+                  errorMessage = `Hata: ${error.message}`;
+                }
+
+                Alert.alert("Çıkış Hatası", errorMessage, [
+                  {
+                    text: "Tekrar Dene",
+                    onPress: () => handleLogout(),
+                  },
+                  {
+                    text: "İptal",
+                  },
+                ]);
               }
             },
           },
         ]
       );
     } catch (error) {
-      console.error("Çıkış yaparken hata:", error);
+      console.error("Çıkış yaparken genel hata:", error);
       Alert.alert(
         "Hata",
-        "Çıkış yapılırken bir hata oluştu. Lütfen tekrar deneyin."
+        "Çıkış işlemi başlatılamadı. Lütfen uygulamayı yeniden başlatın."
       );
     }
   };
@@ -686,23 +728,71 @@ export default function ProfileScreen() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      Alert.alert("Hata", "Şifre en az 8 karakter olmalıdır.");
+    if (newPassword.length < 6) {
+      Alert.alert("Hata", "Şifre en az 6 karakter olmalıdır.");
       return;
     }
 
-    // Here you would implement actual password change API call
-    Alert.alert("Başarılı", "Şifreniz başarıyla değiştirildi.", [
-      {
-        text: "Tamam",
-        onPress: () => {
-          setCurrentPassword("");
-          setNewPassword("");
-          setConfirmPassword("");
-          setActivePrivacySection(null);
-        },
-      },
-    ]);
+    console.log("Şifre değiştirme isteği gönderiliyor");
+
+    // Doğrudan şifre değiştirme isteği gönder, önce profil kontrolü yapma
+    apiClient
+      .put("/profile/password", {
+        currentPassword,
+        newPassword,
+        confirmNewPassword: confirmPassword,
+      })
+      .then(() => {
+        console.log("Şifre başarıyla değiştirildi");
+        Alert.alert("Başarılı", "Şifreniz başarıyla değiştirildi.", [
+          {
+            text: "Tamam",
+            onPress: () => {
+              setCurrentPassword("");
+              setNewPassword("");
+              setConfirmPassword("");
+              setActivePrivacySection(null);
+            },
+          },
+        ]);
+      })
+      .catch((error) => {
+        let errorMessage = "Şifre değiştirme sırasında bir hata oluştu.";
+
+        // Eğer belirli bir hata mesajı varsa, onu kullan
+        if (
+          error.response &&
+          error.response.data &&
+          error.response.data.message
+        ) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        // Özel hata kontrolü
+        if (error.response) {
+          if (error.response.status === 401) {
+            errorMessage = "Mevcut şifreniz yanlış.";
+
+            // Mevcut şifre yanlış olduğunda kullanıcıya uyarı göster, token yenilemeye çalışma
+            Alert.alert(
+              "Şifre Doğrulama Hatası",
+              "Mevcut şifreniz yanlış. Lütfen doğru şifreyi girin.",
+              [{ text: "Tamam" }]
+            );
+            return;
+          } else if (error.response.status === 404) {
+            errorMessage =
+              "İstek yapılan endpoint bulunamadı. Lütfen daha sonra tekrar deneyin.";
+          } else if (error.response.status === 400) {
+            errorMessage =
+              "Geçersiz şifre formatı. Şifreniz en az 6 karakter olmalıdır.";
+          }
+        }
+
+        Alert.alert("Hata", errorMessage);
+      });
   };
 
   const handleFreezeAccount = () => {
@@ -910,65 +1000,47 @@ export default function ProfileScreen() {
     }
   };
 
-  // Doğum tarihi formatını kontrol eden fonksiyon
-  const isValidBirthDate = (dateStr: string): boolean => {
-    // YYYY-AA-GG formatına uygunluk kontrolü
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(dateStr)) {
-      return false;
-    }
-
-    // Geçerli bir tarih olup olmadığını kontrol et
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) {
-      return false;
-    }
-
-    // Girilen tarihin bugünden önce olması gerekiyor
-    const today = new Date();
-    if (date >= today) {
-      return false;
-    }
-
-    // Makul bir yaş aralığı (1-120 yaş arası)
-    const age = calculateAge(dateStr);
-    if (age < 1 || age > 120) {
-      return false;
-    }
-
-    // Parçalara ayrılmış tarihin kontrolü (ayın 1-12 arası olması, günün ayın gün sayısıyla uyumlu olması)
-    const [year, month, day] = dateStr.split("-").map(Number);
-
-    if (month < 1 || month > 12) {
-      return false;
-    }
-
-    // Ayın gün sayısı kontrolü
-    const lastDayOfMonth = new Date(year, month, 0).getDate();
-    if (day < 1 || day > lastDayOfMonth) {
-      return false;
-    }
-
-    return true;
-  };
-
   // Doğum tarihi formatını otomatik düzeltme
   const formatBirthDate = (input: string): string => {
-    // Sadece rakamları ve '-' karakterini kabul et
-    let cleaned = input.replace(/[^\d-]/g, "");
+    // Sadece sayıları al
+    const cleaned = input.replace(/[^0-9]/g, "");
 
-    // Maksimum 10 karakter (YYYY-MM-DD) olsun
-    cleaned = cleaned.substring(0, 10);
-
-    // Otomatik '-' ekleme
-    if (cleaned.length > 4 && cleaned.charAt(4) !== "-") {
-      cleaned = cleaned.substring(0, 4) + "-" + cleaned.substring(4);
+    // Formatlama (YYYY-MM-DD)
+    let formatted = "";
+    if (cleaned.length <= 4) {
+      formatted = cleaned;
+    } else if (cleaned.length <= 6) {
+      formatted = `${cleaned.substring(0, 4)}-${cleaned.substring(4)}`;
+    } else {
+      formatted = `${cleaned.substring(0, 4)}-${cleaned.substring(
+        4,
+        6
+      )}-${cleaned.substring(6, 8)}`;
     }
-    if (cleaned.length > 7 && cleaned.charAt(7) !== "-") {
-      cleaned = cleaned.substring(0, 7) + "-" + cleaned.substring(7);
-    }
 
-    return cleaned;
+    return formatted;
+  };
+
+  // Doğum tarihi kontrolü
+  const isValidBirthDate = (dateStr: string): boolean => {
+    // YYYY-MM-DD formatını kontrol et
+    const dateRegex = /^(\d{4})-(\d{2})-(\d{2})$/;
+    const match = dateStr.match(dateRegex);
+
+    if (!match) return false;
+
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1; // JavaScript'te ay 0-11 arası
+    const day = parseInt(match[3], 10);
+
+    // Geçerli bir tarih mi?
+    const birthDate = new Date(year, month, day);
+    return (
+      birthDate.getFullYear() === year &&
+      birthDate.getMonth() === month &&
+      birthDate.getDate() === day &&
+      birthDate <= new Date()
+    );
   };
 
   return (
@@ -1107,7 +1179,7 @@ export default function ProfileScreen() {
                         birthDate: formattedDate,
                       });
                     }}
-                    placeholder="YYYY-AA-GG"
+                    placeholder="YYYY-MM-DD"
                     keyboardType="numbers-and-punctuation"
                     maxLength={10}
                   />
@@ -1130,8 +1202,8 @@ export default function ProfileScreen() {
                     {isValidBirthDate(editedProfile.birthDate)
                       ? `Yaş: ${calculateAge(editedProfile.birthDate)}`
                       : editedProfile.birthDate.length === 10
-                      ? "Geçersiz tarih formatı. YYYY-AA-GG şeklinde giriniz."
-                      : "Tarih formatı: YYYY-AA-GG (Örn: 1995-06-15)"}
+                      ? "Geçersiz tarih formatı. YYYY-MM-DD şeklinde giriniz."
+                      : "Tarih formatı: YYYY-MM-DD (Örn: 1995-06-15)"}
                   </Text>
                 )}
               </View>

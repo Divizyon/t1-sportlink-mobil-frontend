@@ -44,6 +44,14 @@ apiClient.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // URL yolunda çift '/api' olup olmadığını kontrol et
+    if (config.url && config.url.startsWith("/api/")) {
+      // URL'den başındaki '/api/' kısmını çıkar
+      config.url = config.url.replace(/^\/api\//, "/");
+      console.log("URL düzeltildi:", config.url);
+    }
+
     return config;
   },
   (error) => {
@@ -78,6 +86,15 @@ apiClient.interceptors.response.use(
 
     // Yetkisiz erişim hatası (401) ve henüz tekrar denenmemişse
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Şifre değiştirme URL'si için token yenileme işlemini atla
+      if (
+        originalRequest.url &&
+        originalRequest.url.includes("/profile/password")
+      ) {
+        console.log("Şifre değiştirme endpointi için token yenileme atlanıyor");
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
 
       try {
@@ -87,33 +104,52 @@ apiClient.interceptors.response.use(
 
         if (!refreshToken) {
           // Refresh token yoksa, kullanıcıyı çıkış yapmaya yönlendir
+          await AsyncStorage.removeItem("authToken");
+          await AsyncStorage.removeItem("refreshToken");
+          await AsyncStorage.removeItem("userData");
           return Promise.reject(
             new Error("Oturum süresi doldu, tekrar giriş yapın")
           );
         }
 
         // Refresh token isteği
-        const response = await axios.post(`${API_URL}/auth/session/refresh`, {
-          refresh_token: refreshToken,
-        });
+        try {
+          const response = await axios.post(`${API_URL}/auth/session/refresh`, {
+            refresh_token: refreshToken,
+          });
 
-        if (response.data && response.data.data && response.data.data.session) {
-          // Yeni tokenları kaydet
-          await AsyncStorage.setItem(
-            "authToken",
-            response.data.data.session.access_token
-          );
-          await AsyncStorage.setItem(
-            "refreshToken",
-            response.data.data.session.refresh_token
-          );
+          if (
+            response.data &&
+            response.data.data &&
+            response.data.data.session
+          ) {
+            // Yeni tokenları kaydet
+            await AsyncStorage.setItem(
+              "authToken",
+              response.data.data.session.access_token
+            );
+            await AsyncStorage.setItem(
+              "refreshToken",
+              response.data.data.session.refresh_token
+            );
 
-          // Orijinal isteği yeni token ile tekrarla
-          originalRequest.headers.Authorization = `Bearer ${response.data.data.session.access_token}`;
-          return axios(originalRequest);
+            // Orijinal isteği yeni token ile tekrarla
+            originalRequest.headers.Authorization = `Bearer ${response.data.data.session.access_token}`;
+            return axios(originalRequest);
+          }
+
+          // Token yenileme başarısız olursa sessionı temizle
+          await AsyncStorage.removeItem("authToken");
+          await AsyncStorage.removeItem("refreshToken");
+          await AsyncStorage.removeItem("userData");
+          return Promise.reject(new Error("Token yenileme başarısız"));
+        } catch (error) {
+          // Token yenileme isteği sırasında hata olursa sessionı temizle
+          await AsyncStorage.removeItem("authToken");
+          await AsyncStorage.removeItem("refreshToken");
+          await AsyncStorage.removeItem("userData");
+          return Promise.reject(new Error("Token yenileme başarısız"));
         }
-
-        return Promise.reject(new Error("Token yenileme başarısız"));
       } catch (refreshError) {
         console.error("Token yenileme hatası:", refreshError);
         // Kullanıcı oturumu kapatılmalı ve giriş sayfasına yönlendirilmeli
@@ -125,9 +161,16 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Diğer durum kodları için özel işlemler (opsiyonel)
+    // 404 hatası için özel işlemler
     if (error.response?.status === 404) {
-      console.log("İstek yapılan kaynak bulunamadı");
+      console.log("İstek yapılan kaynak bulunamadı:", error.config.url);
+      // URL'de çifte /api/ sorunu varsa bunu düzelt ve tekrar dene
+      if (error.config.url && error.config.url.includes("/api/api/")) {
+        console.log("Hatalı URL formatı tespit edildi, düzeltiliyor...");
+        const correctedUrl = error.config.url.replace("/api/api/", "/api/");
+        error.config.url = correctedUrl;
+        return axios(error.config);
+      }
     }
 
     if (error.response?.status === 500) {
