@@ -179,50 +179,6 @@ export const authService = {
     }
   },
 
-  // Token yenileme
-  async refreshToken(): Promise<boolean> {
-    try {
-      const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
-      if (!refreshToken) return false;
-
-      // Sunucuya token yenileme isteği gönder
-      try {
-        const response = await apiClient.post<AuthResponse>(
-          "/auth/session/refresh",
-          {
-            refresh_token: refreshToken,
-          }
-        );
-
-        // Yeni token bilgilerini kaydet
-        if (response.data && response.data.data && response.data.data.session) {
-          await AsyncStorage.setItem(
-            AUTH_TOKEN_KEY,
-            response.data.data.session.access_token
-          );
-          await AsyncStorage.setItem(
-            REFRESH_TOKEN_KEY,
-            response.data.data.session.refresh_token
-          );
-          return true;
-        }
-
-        // Eğer session yoksa oturumu temizle
-        await this.clearSession();
-        return false;
-      } catch (error) {
-        console.error("Token yenileme isteği hatası:", error);
-        // Token yenileme başarısız olursa oturumu temizle
-        await this.clearSession();
-        return false;
-      }
-    } catch (error) {
-      console.error("Token yenileme hatası:", error);
-      await this.clearSession();
-      return false;
-    }
-  },
-
   // Oturum bilgilerini temizleme
   async clearSession(): Promise<void> {
     try {
