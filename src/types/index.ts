@@ -30,3 +30,18 @@ export interface AuthResponse {
     user: User;
   };
 }
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  phone?: string;
+  avatar?: string;
+  bio?: string;
+  gender?: string;
+  birthday_date?: string;
+  address?: string;
+  first_name: string;
+  last_name: string;
+  total_events: number;
+  friend_count: number;
+}
