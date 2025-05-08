@@ -1,15 +1,6 @@
 import { Text } from "@/components/ui/text";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import {
-  Bell,
-  Calendar,
-  Clock,
-  Info,
-  MessageCircle,
-  ThumbsUp,
-  User,
-} from "lucide-react-native";
 import React, { useState, useEffect } from "react";
 import {
   FlatList,
@@ -27,104 +18,16 @@ import {
 } from "../../services/api/friendships";
 import { FriendshipRequest } from "../../types/friendships";
 import FriendshipRequestItem from "../../components/notifications/FriendshipRequestItem";
-
-// Bildirim tipi tanımlama
-interface Notification {
-  id: string;
-  type: "event" | "message" | "friend" | "system" | "like";
-  title: string;
-  message: string;
-  time: string;
-  isRead: boolean;
-  data?: {
-    eventId?: number;
-    userId?: number;
-    messageId?: number;
-  };
-}
-
-// Örnek bildirim verileri
-const notificationsData: Notification[] = [
-  {
-    id: "1",
-    type: "event",
-    title: "Etkinlik Hatırlatıcı",
-    message: "Basketbol Maçı etkinliği 2 saat içinde başlayacak.",
-    time: "10 dakika önce",
-    isRead: false,
-    data: {
-      eventId: 1,
-    },
-  },
-  {
-    id: "2",
-    type: "message",
-    title: "Yeni Mesaj",
-    message: "Ahmet Yılmaz size mesaj gönderdi.",
-    time: "25 dakika önce",
-    isRead: false,
-    data: {
-      userId: 1,
-      messageId: 101,
-    },
-  },
-  {
-    id: "3",
-    type: "friend",
-    title: "Arkadaşlık İsteği",
-    message: "Zeynep Şahin sizinle arkadaş olmak istiyor.",
-    time: "1 saat önce",
-    isRead: true,
-    data: {
-      userId: 4,
-    },
-  },
-  {
-    id: "4",
-    type: "event",
-    title: "Etkinlik Güncellemesi",
-    message: "Futbol Turnuvası etkinliğinin yeri değişti.",
-    time: "3 saat önce",
-    isRead: true,
-    data: {
-      eventId: 2,
-    },
-  },
-  {
-    id: "5",
-    type: "system",
-    title: "Sistem Bildirimi",
-    message: "Hesabınız başarıyla doğrulandı, tüm özelliklere erişebilirsiniz.",
-    time: "1 gün önce",
-    isRead: true,
-  },
-  {
-    id: "6",
-    type: "like",
-    title: "Beğeni",
-    message: "Murat Öztürk yorumunuzu beğendi.",
-    time: "1 gün önce",
-    isRead: true,
-    data: {
-      userId: 5,
-    },
-  },
-  {
-    id: "7",
-    type: "event",
-    title: "Yeni Etkinlik",
-    message: "İlgilenebileceğiniz yeni bir etkinlik: Yüzme Etkinliği",
-    time: "2 gün önce",
-    isRead: true,
-    data: {
-      eventId: 3,
-    },
-  },
-];
+import NotificationItem from "../../components/notifications/NotificationItem";
+import notificationsService, {
+  NotificationResponse,
+} from "../../services/api/notifications";
+import { Linking } from "react-native";
 
 export default function NotificationsScreen() {
-  const [notifications, setNotifications] =
-    useState<Notification[]>(notificationsData);
+  const [apiNotifications, setApiNotifications] = useState<
+    NotificationResponse[]
+  >([]);
   const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
   const [friendRequests, setFriendRequests] = useState<FriendshipRequest[]>([]);
   const [loading, setLoading] = useState(false);
@@ -133,6 +36,26 @@ export default function NotificationsScreen() {
     []
   );
 
+  // Bildirimleri getir
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await notificationsService.getNotifications();
+      console.log("NOTIFICATIONS", response.data);
+      if (response.data.success) {
+        console.log("Bildirimler başarıyla alındı:", response.data);
+        setApiNotifications(response.data.data || []);
+      } else {
+        console.error("Bildirimler alınırken bir hata oluştu:", response.data);
+      }
+    } catch (error) {
+      console.error("Bildirimler getirilirken hata:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   // Arkadaşlık isteklerini getir
   const fetchFriendshipRequests = async () => {
     try {
@@ -140,7 +63,6 @@ export default function NotificationsScreen() {
       const response = await getIncomingFriendshipRequests();
       if (response.status === "success" && response.data) {
         console.log("Gelen arkadaşlık istekleri:", response.data.length);
-        console.log("İstek detayları:", JSON.stringify(response.data, null, 2));
         // Sadece geçerli verileri al
         const validRequests = response.data.filter(
           (req: FriendshipRequest) => req && req.id
@@ -157,11 +79,13 @@ export default function NotificationsScreen() {
 
   // Sayfa yüklendiğinde ve yenilendiğinde istekleri getir
   useEffect(() => {
+    fetchNotifications();
     fetchFriendshipRequests();
   }, []);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
+    fetchNotifications();
     fetchFriendshipRequests();
   }, []);
 
@@ -223,63 +147,66 @@ export default function NotificationsScreen() {
     setActiveTab(tab);
   };
 
-  const handleNotificationPress = (notification: Notification) => {
-    // Bildirimi okundu olarak işaretleme
-    setNotifications((prevNotifications) =>
-      prevNotifications.map((item) =>
-        item.id === notification.id ? { ...item, isRead: true } : item
-      )
-    );
+  // Bildirimleri okundu olarak işaretle
+  const handleMarkNotificationAsRead = async (
+    notification: NotificationResponse
+  ) => {
+    try {
+      const response = await notificationsService.markAsRead(notification.id);
+      if (response.data.success) {
+        // Bildirimi yerel olarak güncelle
+        setApiNotifications((prevState) =>
+          prevState.map((item) =>
+            item.id === notification.id ? { ...item, read_status: true } : item
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Bildirim okundu işaretlenirken hata:", error);
+    }
+  };
 
-    // Bildirim tipine göre yönlendirme yap
-    switch (notification.type) {
-      case "event":
-        // Eğer başlık "Etkinlik Hatırlatıcı" ise yaklaşan etkinlikler sayfasına yönlendir
-        if (notification.title === "Etkinlik Hatırlatıcı") {
-          // Yaklaşan etkinlikler sayfasına yönlendir
-          router.push("/upcoming-events" as any);
-        } else if (notification.title === "Etkinlik Güncellemesi") {
-          // Eğer başlık "Etkinlik Güncellemesi" ise güncellenen etkinlikler sayfasına yönlendir
-          router.push("/event-updates" as any);
-        } else if (notification.title === "Yeni Etkinlik") {
-          // Eğer başlık "Yeni Etkinlik" ise tüm etkinlikler sayfasına yönlendir
-          router.push("/all-events" as any);
-        } else {
-          // Diğer etkinlik bildirimleri için (örn. güncellemeler), spesifik etkinliğe yönlendir
-          if (notification.data?.eventId) {
-            router.push({
-              pathname: "/(tabs)/reminders/[id]",
-              params: { id: notification.data.eventId },
-            });
-          } else {
-            // Etkinlik yoksa etkinlikler listesine yönlendir
-            router.push("/(tabs)/reminders/index");
-          }
-        }
-        break;
-      case "message":
-        // Mesajlar sayfasına yönlendir
-        router.push("/messages/index" as any);
-        break;
-      case "friend":
-        // Arkadaşlık istekleri sayfasına yönlendir
-        router.push("/friend-requests" as any);
-        break;
-      case "like":
-        // Beğeni bildirimleri için şimdilik profil sayfasına yönlendir
-        if (notification.data?.userId) {
+  // Bildirime tıklandığında
+  const handleNotificationPress = async (
+    notification: NotificationResponse
+  ) => {
+    // Bildirimi okundu olarak işaretle
+    await handleMarkNotificationAsRead(notification);
+
+    // Etkinlik tipine göre deeplink yönlendirmesi yap
+    if (notification.data && notification.data.deepLink) {
+      try {
+        // Deep linki aç
+        await Linking.openURL(notification.data.deepLink);
+      } catch (error) {
+        console.error("Deeplink açılırken hata:", error);
+
+        // Fallback - Eğer deeplink çalışmazsa ve etkinlik ID'si varsa
+        if (notification.data.eventId) {
           router.push({
-            pathname: "/(tabs)/profile",
-            params: { id: notification.data.userId },
+            pathname: "/(tabs)/events/[id]",
+            params: { id: notification.data.eventId },
           });
         }
-        break;
-      case "system":
-        // Sistem bildirimleri sayfasına yönlendir
-        router.push("/system-notifications/index" as any);
-        break;
-      default:
-        break;
+      }
+    } else if (
+      notification.notification_type === "event_update" &&
+      notification.data?.eventId
+    ) {
+      // Etkinlik sayfasına yönlendir
+      router.push({
+        pathname: "/(tabs)/events/[id]",
+        params: { id: notification.data.eventId },
+      });
+    } else if (notification.notification_type === "friend_request") {
+      // Arkadaşlık istekleri sayfasına yönlendir
+      router.push("/friend-requests" as any);
+    } else if (notification.notification_type === "chat_message") {
+      // Mesajlar sayfasına yönlendir
+      router.push("/messages/index" as any);
+    } else if (notification.notification_type === "system") {
+      // Sistem bildirimleri sayfasına yönlendir
+      router.push("/system-notifications/index" as any);
     }
   };
 
@@ -288,68 +215,26 @@ export default function NotificationsScreen() {
     router.push("/friend-requests" as any);
   };
 
-  const handleClearAll = () => {
-    // Tüm bildirimleri okundu olarak işaretle
-    setNotifications((prevNotifications) =>
-      prevNotifications.map((item) => ({ ...item, isRead: true }))
-    );
+  // Tüm bildirimleri okundu olarak işaretle
+  const handleMarkAllAsRead = async () => {
+    try {
+      const response = await notificationsService.markAllAsRead();
+      if (response.data.success) {
+        // Tüm bildirimleri yerel olarak okundu işaretle
+        setApiNotifications((prevState) =>
+          prevState.map((item) => ({ ...item, read_status: true }))
+        );
+      }
+    } catch (error) {
+      console.error("Tüm bildirimler okundu işaretlenirken hata:", error);
+    }
   };
 
   const getFilteredNotifications = () => {
     return activeTab === "all"
-      ? notifications
-      : notifications.filter((item) => !item.isRead);
+      ? apiNotifications
+      : apiNotifications.filter((item) => !item.read_status);
   };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "event":
-        return <Calendar size={24} color="#3498db" />;
-      case "message":
-        return <MessageCircle size={24} color="#2ecc71" />;
-      case "friend":
-        return <User size={24} color="#9b59b6" />;
-      case "system":
-        return <Bell size={24} color="#f39c12" />;
-      case "like":
-        return <ThumbsUp size={24} color="#e74c3c" />;
-      default:
-        return <Info size={24} color="#95a5a6" />;
-    }
-  };
-
-  const renderNotificationItem = ({ item }: { item: Notification }) => (
-    <TouchableOpacity
-      style={[styles.notificationItem, !item.isRead && styles.unreadItem]}
-      onPress={() => handleNotificationPress(item)}
-    >
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <View style={styles.iconContainer}>
-          {getNotificationIcon(item.type)}
-        </View>
-
-        <View style={{ flex: 1, marginLeft: 12 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text style={styles.title}>{item.title}</Text>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Clock size={12} color="#95a5a6" />
-              <Text style={styles.time}>{item.time}</Text>
-            </View>
-          </View>
-
-          <Text style={styles.message}>{item.message}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const unreadCount = notifications.filter((item) => !item.isRead).length;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -359,8 +244,8 @@ export default function NotificationsScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Bildirimler</Text>
 
-        {activeTab === "all" && notifications.length > 0 && (
-          <TouchableOpacity onPress={handleClearAll}>
+        {activeTab === "all" && apiNotifications.length > 0 && (
+          <TouchableOpacity onPress={handleMarkAllAsRead}>
             <Text style={styles.clearText}>Tümünü Okundu İşaretle</Text>
           </TouchableOpacity>
         )}
@@ -378,7 +263,7 @@ export default function NotificationsScreen() {
               activeTab === "all" && styles.activeTabText,
             ]}
           >
-            Tümü ({notifications.length})
+            Tümü ({apiNotifications.length})
           </Text>
         </TouchableOpacity>
 
@@ -392,7 +277,8 @@ export default function NotificationsScreen() {
               activeTab === "unread" && styles.activeTabText,
             ]}
           >
-            Okunmamış ({unreadCount})
+            Okunmamış (
+            {apiNotifications.filter((item) => !item.read_status).length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -432,8 +318,13 @@ export default function NotificationsScreen() {
       {/* Bildirimler Listesi */}
       <FlatList
         data={getFilteredNotifications()}
-        keyExtractor={(item) => item.id}
-        renderItem={renderNotificationItem}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <NotificationItem
+            notification={item}
+            onPress={handleNotificationPress}
+          />
+        )}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
@@ -497,46 +388,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-  },
-  notificationItem: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 1,
-  },
-  unreadItem: {
-    backgroundColor: "#f5faff",
-    borderLeftWidth: 4,
-    borderLeftColor: "#3498db",
-  },
-  iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#f0f0f0",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 2,
-  },
-  time: {
-    fontSize: 12,
-    color: "#95a5a6",
-    marginLeft: 4,
-  },
-  message: {
-    fontSize: 14,
-    color: "#555",
-    lineHeight: 20,
-    marginTop: 4,
   },
   clearAllButton: {
     paddingVertical: 6,
