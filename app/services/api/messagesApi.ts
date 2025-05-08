@@ -1,36 +1,41 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+import { apiClient } from '../../../services/api/client';
 
 export const messagesApi = {
-  // Tüm mesajları getir
+  // Sohbet listesini getir
   getMessages: async () => {
-    const token = await AsyncStorage.getItem('token');
-    console.log('[API Debug] Mesajlar istek başlatılıyor:', { url: '/mobile/messages', token });
-    return axios.get(`${BASE_URL}/mobile/messages`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    try {
+      console.log('[API Debug] Mesajlar istek başlatılıyor:', { url: '/mobile/messages/chat-list' });
+      return apiClient.get('/mobile/messages/chat-list');
+    } catch (error) {
+      console.error('Mesajlar alınırken hata:', error);
+      throw error;
+    }
   },
 
   // Belirli bir kullanıcı ile olan mesajları getir
   getChatMessages: async (userId: string) => {
-    const token = await AsyncStorage.getItem('token');
-    console.log('[API Debug] Mesajlar (chat) istek başlatılıyor:', { url: `/mobile/messages/${userId}`, token });
-    return axios.get(`${BASE_URL}/mobile/messages/${userId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    try {
+      console.log('[API Debug] Mesajlar (chat) istek başlatılıyor:', { url: `/mobile/messages/${userId}` });
+      return apiClient.get(`/mobile/messages/${userId}`);
+    } catch (error) {
+      console.error('Mesajlar alınırken hata:', error);
+      throw error;
+    }
   },
 
   // Mesaj gönder
-  sendMessage: async (userId: string, message: string) => {
-    const token = await AsyncStorage.getItem('token');
-    console.log('[API Debug] Mesaj gönderiliyor:', { url: '/mobile/messages', token });
-    return axios.post(`${BASE_URL}/mobile/messages`, {
-      receiverId: userId,
-      message
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  sendMessage: async (userId: string, content: string) => {
+    try {
+      console.log('[API Debug] Mesaj gönderiliyor:', { url: `/mobile/messages/${userId}` });
+      return apiClient.post(`/mobile/messages/${userId}`, {
+        content,
+        content_type: 'text'
+      });
+    } catch (error) {
+      console.error('Mesaj gönderilirken hata:', error);
+      throw error;
+    }
   }
 }; 
