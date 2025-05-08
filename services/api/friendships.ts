@@ -15,6 +15,16 @@ export interface FriendRequest {
   };
 }
 
+export interface Friend {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  profile_picture: string;
+  is_online: boolean;
+  last_seen_at: string;
+}
+
 export const friendshipsApi = {
   // Arkadaşlık isteği gönder
   sendRequest: async (receiverId: string) => {
@@ -52,5 +62,11 @@ export const friendshipsApi = {
   cancelRequest: async (requestId: string) => {
     const response = await apiClient.delete(`/mobile/friendships/requests/${requestId}`);
     return response.data;
+  },
+
+  // Arkadaş listesini getir
+  getFriends: async () => {
+    const response = await apiClient.get('/mobile/friendships');
+    return response.data.data as Friend[];
   }
 }; 

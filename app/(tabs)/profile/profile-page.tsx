@@ -26,7 +26,7 @@ import {
   Users,
   X,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActionSheetIOS,
   Alert,
@@ -44,6 +44,8 @@ import {
 } from "react-native";
 import { useAuth } from "@/src/store/AuthContext";
 import apiClient from "@/src/api";
+import { useRouter } from 'expo-router';
+import { friendshipsApi } from '@/services/api/friendships';
 
 // Menü öğesi tipi tanımlama
 interface MenuItem {
@@ -403,6 +405,21 @@ export default function ProfileScreen() {
     biography: userData.biography,
     profileImage: userData.profileImage,
   });
+  const [friendCount, setFriendCount] = useState<number>(0);
+  const router = useRouter();
+
+  useEffect(() => {
+    loadFriendCount();
+  }, []);
+
+  const loadFriendCount = async () => {
+    try {
+      const friends = await friendshipsApi.getFriends();
+      setFriendCount(friends.length);
+    } catch (e) {
+      setFriendCount(0);
+    }
+  };
 
   const handleEditProfile = () => {
     setIsEditProfileModalVisible(true);
@@ -1638,10 +1655,10 @@ export default function ProfileScreen() {
               <Text style={styles.statNumber}>{userData.stats.events}</Text>
               <Text style={styles.statLabel}>Etkinlik</Text>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userData.stats.friends}</Text>
+            <TouchableOpacity style={styles.statItem} onPress={() => router.push('/(tabs)/profile/friends-list')}>
+              <Text style={styles.statNumber}>{friendCount}</Text>
               <Text style={styles.statLabel}>Arkadaş</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 

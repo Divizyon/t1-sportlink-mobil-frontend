@@ -69,6 +69,7 @@ export default function FindFriendsScreen() {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [pendingRequests, setPendingRequests] = useState<string[]>([]);
+  const [friends, setFriends] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,19 +79,39 @@ export default function FindFriendsScreen() {
   const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([18, 60]);
   const [isAgeFilterActive, setIsAgeFilterActive] = useState(false);
 
-  // Kullanıcıları yükle
+  // Arkadaşları yükle ve ardından kullanıcıları yükle
   useEffect(() => {
-    loadUsers();
+    loadFriends();
   }, []);
+
+  useEffect(() => {
+    if (friends !== null) {
+      loadUsers();
+    }
+  }, [friends]);
+
+  const loadFriends = async () => {
+    try {
+      const friendsList = await friendshipsApi.getFriends();
+      const friendIds = friendsList.map(friend => friend.id);
+      setFriends(friendIds);
+    } catch (error) {
+      setFriends([]);
+    }
+  };
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await usersApi.getUsersByRole();
-      const users = response.data.users;
-      setUsers(users);
-      setFilteredUsers(users);
+      const allUsers = response.data.users;
+      // Arkadaş olan kullanıcıları filtrele (tip ve trim farkı olmadan)
+      const nonFriendUsers = allUsers.filter(user =>
+        !(friends ?? []).some(fid => String(fid).trim() === String(user.id).trim())
+      );
+      setUsers(nonFriendUsers);
+      setFilteredUsers(nonFriendUsers);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Kullanıcılar yüklenirken bir hata oluştu');
       Alert.alert('Hata', err.response?.data?.message || 'Kullanıcılar yüklenirken bir hata oluştu');
@@ -145,67 +166,77 @@ export default function FindFriendsScreen() {
     setIsFilterModalVisible(false);
   };
 
-  const renderUserItem = ({ item }: { item: User }) => (
-    <View style={styles.userCard}>
-      <View style={styles.userHeader}>
-        <View style={styles.userAvatarContainer}>
-          <Image 
-            source={{ uri: item.avatar_url || 'https://via.placeholder.com/150' }} 
-            style={styles.userAvatar} 
-          />
-          <View style={styles.onlineIndicator} />
+  const renderUserItem = ({ item }: { item: User }) => {
+    const isFriend = friends?.some(fid => String(fid).trim() === String(item.id).trim());
+    console.log('Kullanıcı render ediliyor:', item.id, 'Arkadaş mı:', isFriend);
+    return (
+      <View style={styles.userCard}>
+        <View style={styles.userHeader}>
+          <View style={styles.userAvatarContainer}>
+            <Image 
+              source={{ uri: item.avatar_url || 'https://via.placeholder.com/150' }} 
+              style={styles.userAvatar} 
+            />
+            <View style={styles.onlineIndicator} />
+          </View>
+
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{`${item.first_name} ${item.last_name}`}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MapPin size={14} color="#888" />
+              <Text style={styles.userLocation}>İstanbul</Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+              <Calendar size={14} color="#888" />
+              <Text style={styles.userLocation}>25 yaşında</Text>
+            </View>
+          </View>
         </View>
 
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>{`${item.first_name} ${item.last_name}`}</Text>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <MapPin size={14} color="#888" />
-            <Text style={styles.userLocation}>İstanbul</Text>
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-            <Calendar size={14} color="#888" />
-            <Text style={styles.userLocation}>25 yaşında</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[
-            styles.friendRequestButton,
-            pendingRequests.includes(item.id) && styles.requestSentButton,
-          ]}
-          onPress={() =>
-            pendingRequests.includes(item.id)
-              ? handleCancelRequest(item.id)
-              : handleFriendRequest(item.id)
-          }
-        >
-          {pendingRequests.includes(item.id) ? (
-            <>
-              <X size={16} color="#fff" />
-              <Text style={styles.friendRequestButtonText}>
-                İsteği İptal Et
-              </Text>
-            </>
+        <View style={styles.buttonContainer}>
+          {isFriend ? (
+            <View style={[styles.friendRequestButton, styles.friendButton]}>
+              <Text style={styles.friendRequestButtonText}>Arkadaş</Text>
+            </View>
           ) : (
-            <>
-              <UserPlus size={16} color="#fff" />
-              <Text style={styles.friendRequestButtonText}>Takip Et</Text>
-            </>
+            <TouchableOpacity
+              style={[
+                styles.friendRequestButton,
+                pendingRequests.includes(item.id) && styles.requestSentButton,
+              ]}
+              onPress={() =>
+                pendingRequests.includes(item.id)
+                  ? handleCancelRequest(item.id)
+                  : handleFriendRequest(item.id)
+              }
+            >
+              {pendingRequests.includes(item.id) ? (
+                <>
+                  <X size={16} color="#fff" />
+                  <Text style={styles.friendRequestButtonText}>
+                    İsteği İptal Et
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <UserPlus size={16} color="#fff" />
+                  <Text style={styles.friendRequestButtonText}>Takip Et</Text>
+                </>
+              )}
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.messageButton}
-          onPress={() => handleSendMessage(item.id)}
-        >
-          <MessageCircle size={16} color="#fff" />
-          <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.messageButton}
+            onPress={() => handleSendMessage(item.id)}
+          >
+            <MessageCircle size={16} color="#fff" />
+            <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderCategoryItem = ({ item }: { item: SportCategory }) => (
     <TouchableOpacity
@@ -830,5 +861,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  friendButton: {
+    backgroundColor: '#4dabf7',
+    opacity: 0.8,
   },
 });
