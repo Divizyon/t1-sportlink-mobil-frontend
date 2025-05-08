@@ -26,9 +26,10 @@ const Header: React.FC<HeaderProps> = ({
   unreadMessages = 0,
 }) => {
   const handleMessagesPress = () => {
-    router.push("/messages");
+    router.push("/(tabs)/profile/friends-list", {
+      withAnchor:true,
+    });
   };
-
   return (
     <Box style={styles.header}>
       <HStack style={styles.userInfo}>

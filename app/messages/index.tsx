@@ -21,21 +21,36 @@ import {
 } from "lucide-react-native";
 import { messagesApi } from "@/app/services/api/messagesApi";
 
-// Mesaj arayüzü
-interface Message {
+interface Friend {
   id: string;
-  senderId: string;
-  senderName: string;
-  senderAvatar: string;
-  lastMessage: string;
-  time: string;
-  unreadCount: number;
-  isOnline: boolean;
+  first_name: string;
+  last_name: string;
+  profile_picture: string;
+  is_online: boolean;
+  last_seen_at: string;
+}
+
+interface LastMessage {
+  id: number;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  content_type: string;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ChatItem {
+  friend: Friend;
+  last_message: LastMessage;
+  unread_count: number;
+  last_activity: string;
 }
 
 export default function MessagesScreen() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [chats, setChats] = useState<ChatItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +63,7 @@ export default function MessagesScreen() {
       setLoading(true);
       const response = await messagesApi.getMessages();
       if (response?.data?.data) {
-        setMessages(response.data.data);
+        setChats(response.data.data);
       }
     } catch (err) {
       setError('Mesajlar yüklenirken bir hata oluştu');
@@ -62,55 +77,69 @@ export default function MessagesScreen() {
     router.back();
   };
 
-  const handleMessagePress = (messageId: string, senderId: string) => {
-    // Mesaj detay sayfasına yönlendir
-    router.push(`/chat/${senderId}` as any);
+  const handleMessagePress = (friendId: string) => {
+    router.push({
+      pathname: "/messages/[id]",
+      params: { 
+        id: friendId,
+      }
+    });
   };
 
-  const filteredMessages = searchQuery
-    ? messages.filter(
-        (message) =>
-          message.senderName
+  const filteredChats = searchQuery
+    ? chats.filter(
+        (chat) =>
+          `${chat.friend.first_name} ${chat.friend.last_name}`
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
-          message.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+          chat.last_message.content.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : messages;
+    : chats;
 
-  const renderMessageItem = ({ item }: { item: Message }) => (
+  const renderChatItem = ({ item }: { item: ChatItem }) => (
     <TouchableOpacity
-      style={[styles.messageItem, item.unreadCount > 0 && styles.unreadItem]}
-      onPress={() => handleMessagePress(item.id, item.senderId)}
+      style={[styles.messageItem, item.unread_count > 0 && styles.unreadItem]}
+      onPress={() => handleMessagePress(item.friend.id)}
     >
       <View style={styles.avatarContainer}>
-        <Image source={{ uri: item.senderAvatar }} style={styles.avatar} />
-        {item.isOnline && <View style={styles.onlineIndicator} />}
+        <Image 
+          source={{ uri: item.friend.profile_picture || 'https://via.placeholder.com/100' }} 
+          style={styles.avatar} 
+        />
+        {item.friend.is_online && <View style={styles.onlineIndicator} />}
       </View>
 
       <View style={styles.messageContent}>
         <View style={styles.messageHeader}>
-          <Text style={styles.senderName}>{item.senderName}</Text>
+          <Text style={styles.senderName}>
+            {`${item.friend.first_name} ${item.friend.last_name}`}
+          </Text>
           <View style={styles.timeContainer}>
             <Clock size={12} color="#95a5a6" />
-            <Text style={styles.messageTime}>{item.time}</Text>
+            <Text style={styles.messageTime}>
+              {new Date(item.last_activity).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </Text>
           </View>
         </View>
 
         <Text
           style={[
             styles.messageText,
-            item.unreadCount > 0 && styles.unreadText,
+            item.unread_count > 0 && styles.unreadText,
           ]}
           numberOfLines={1}
           ellipsizeMode="tail"
         >
-          {item.lastMessage}
+          {item.last_message.content}
         </Text>
       </View>
 
-      {item.unreadCount > 0 && (
+      {item.unread_count > 0 && (
         <View style={styles.unreadBadge}>
-          <Text style={styles.unreadCount}>{item.unreadCount}</Text>
+          <Text style={styles.unreadCount}>{item.unread_count}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -161,7 +190,7 @@ export default function MessagesScreen() {
         </View>
       </View>
 
-      {filteredMessages.length === 0 ? (
+      {filteredChats.length === 0 ? (
         <View style={styles.emptyContainer}>
           <MessageCircle size={64} color="#d5d5d5" />
           <Text style={styles.emptyText}>Mesaj Bulunamadı</Text>
@@ -173,9 +202,9 @@ export default function MessagesScreen() {
         </View>
       ) : (
         <FlatList
-          data={filteredMessages}
-          renderItem={renderMessageItem}
-          keyExtractor={(item) => item.id}
+          data={filteredChats}
+          renderItem={renderChatItem}
+          keyExtractor={(item) => item.friend.id}
           contentContainerStyle={styles.listContent}
           refreshing={loading}
           onRefresh={fetchMessages}
