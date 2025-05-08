@@ -46,7 +46,9 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useAuth } from "@/src/store/AuthContext";
-import apiClient from "../../../src/api";
+import apiClient from "@/src/api";
+import { useRouter } from 'expo-router';
+import { friendshipsApi } from '@/services/api/friendships';
 import profileService from "@/src/api/profileService";
 import { UserProfile } from "@/src/types";
 import eventService from "@/src/api/eventService";
@@ -470,6 +472,21 @@ export default function ProfileScreen() {
     profileImage: DEFAULT_PROFILE_IMAGE,
     interests: [] as string[],
   });
+  const [friendCount, setFriendCount] = useState<number>(0);
+  const router = useRouter();
+
+  useEffect(() => {
+    loadFriendCount();
+  }, []);
+
+  const loadFriendCount = async () => {
+    try {
+      const friends = await friendshipsApi.getFriends();
+      setFriendCount(friends.length);
+    } catch (e) {
+      setFriendCount(0);
+    }
+  };
 
   // Orijinal profil verilerini saklamak için yeni state ekleyelim
   const [originalProfile, setOriginalProfile] = useState({
@@ -1468,12 +1485,15 @@ export default function ProfileScreen() {
                 </Text>
                 <Text style={styles.statLabel}>Etkinlik</Text>
               </View>
-              <View style={styles.statItem}>
+              <TouchableOpacity 
+                style={styles.statItem}
+                onPress={() => router.push('/(tabs)/profile/friends-list' as any)}
+              >
                 <Text style={styles.statNumber}>
                   {userProfile?.friend_count || 0}
                 </Text>
                 <Text style={styles.statLabel}>Arkadaş</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -1707,7 +1727,346 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Diğer modallar ve UI bileşenleri (gerekiyorsa) */}
+      {/* Bildirim Ayarları Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isNotificationsModalVisible}
+        onRequestClose={() => setIsNotificationsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Bildirim Ayarları</Text>
+              <TouchableOpacity
+                onPress={() => setIsNotificationsModalVisible(false)}
+              >
+                <X size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              {/* Main notification toggle */}
+              <View style={styles.notificationToggleContainer}>
+                <View style={styles.notificationToggleInfo}>
+                  <Bell size={22} color="#f39c12" style={{ marginRight: 12 }} />
+                  <View>
+                    <Text style={styles.notificationToggleTitle}>
+                      Tüm Bildirimleri Etkinleştir
+                    </Text>
+                    <Text style={styles.notificationToggleDesc}>
+                      Tüm bildirimleri açıp kapatın
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  trackColor={{ false: "#e0e0e0", true: "#bde0fe" }}
+                  thumbColor={notificationsEnabled ? "#3498db" : "#f4f3f4"}
+                  ios_backgroundColor="#e0e0e0"
+                  onValueChange={toggleNotifications}
+                  value={notificationsEnabled}
+                />
+              </View>
+
+              <View style={styles.notificationCategoriesHeader}>
+                <Text style={styles.notificationCategoriesTitle}>
+                  Bildirim Tercihleri
+                </Text>
+              </View>
+
+              {/* Notification category toggles */}
+              {notificationCategories.map((category) => (
+                <View key={category.id} style={styles.notificationCategoryItem}>
+                  <View style={styles.notificationCategoryInfo}>
+                    <Text style={styles.notificationCategoryTitle}>
+                      {category.title}
+                    </Text>
+                    <Text style={styles.notificationCategoryDesc}>
+                      {category.description}
+                    </Text>
+                  </View>
+                  <Switch
+                    trackColor={{ false: "#e0e0e0", true: "#bde0fe" }}
+                    thumbColor={category.enabled ? "#3498db" : "#f4f3f4"}
+                    ios_backgroundColor="#e0e0e0"
+                    onValueChange={(value) =>
+                      toggleNotificationCategory(category.id, value)
+                    }
+                    value={category.enabled}
+                    disabled={!notificationsEnabled}
+                  />
+                </View>
+              ))}
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleSaveNotificationSettings}
+              >
+                <Text style={styles.saveButtonText}>Kaydet</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Gizlilik ve Güvenlik Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isPrivacyModalVisible}
+        onRequestClose={() => {
+          setActivePrivacySection(null);
+          setIsPrivacyModalVisible(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {activePrivacySection === null
+                  ? "Gizlilik ve Güvenlik"
+                  : activePrivacySection === "password"
+                  ? "Şifre Değiştir"
+                  : activePrivacySection === "freeze"
+                  ? "Hesabı Dondur"
+                  : "Hesabı Sil"}
+              </Text>
+              {activePrivacySection !== null ? (
+                <TouchableOpacity onPress={handleBackToPrivacyMenu}>
+                  <ArrowLeft size={24} color="#333" />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => setIsPrivacyModalVisible(false)}
+                >
+                  <X size={24} color="#333" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              {activePrivacySection === null ? (
+                // Main Privacy and Security Menu
+                <View>
+                  <TouchableOpacity
+                    style={styles.privacyMenuItem}
+                    onPress={() => setActivePrivacySection("password")}
+                  >
+                    <View style={styles.privacyMenuIconContainer}>
+                      <Shield size={22} color="#3498db" />
+                    </View>
+                    <View style={styles.privacyMenuTextContainer}>
+                      <Text style={styles.privacyMenuTitle}>
+                        Şifre Değiştirme
+                      </Text>
+                      <Text style={styles.privacyMenuDescription}>
+                        Hesap şifrenizi değiştirin
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#ccc" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.privacyMenuItem}
+                    onPress={() => setActivePrivacySection("permissions")}
+                  >
+                    <View style={styles.privacyMenuIconContainer}>
+                      <BookOpen size={22} color="#27ae60" />
+                    </View>
+                    <View style={styles.privacyMenuTextContainer}>
+                      <Text style={styles.privacyMenuTitle}>İzinler</Text>
+                      <Text style={styles.privacyMenuDescription}>
+                        Uygulama izinlerini yönet
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#ccc" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.privacyMenuItem}
+                    onPress={() => setActivePrivacySection("freeze")}
+                  >
+                    <View style={styles.privacyMenuIconContainer}>
+                      <Clock size={22} color="#f39c12" />
+                    </View>
+                    <View style={styles.privacyMenuTextContainer}>
+                      <Text style={styles.privacyMenuTitle}>
+                        Hesabı Dondurma
+                      </Text>
+                      <Text style={styles.privacyMenuDescription}>
+                        Hesabınızı geçici olarak askıya alın
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#ccc" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.privacyMenuItem}
+                    onPress={() => setActivePrivacySection("delete")}
+                  >
+                    <View style={styles.privacyMenuIconContainer}>
+                      <X size={22} color="#e74c3c" />
+                    </View>
+                    <View style={styles.privacyMenuTextContainer}>
+                      <Text style={styles.privacyMenuTitle}>Hesabı Silme</Text>
+                      <Text style={styles.privacyMenuDescription}>
+                        Hesabınızı ve tüm verilerinizi kalıcı olarak silin
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#ccc" />
+                  </TouchableOpacity>
+                </View>
+              ) : activePrivacySection === "password" ? (
+                // Password Change Form
+                <View style={styles.securitySection}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Mevcut Şifre</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={currentPassword}
+                      onChangeText={setCurrentPassword}
+                      placeholder="Mevcut şifrenizi girin"
+                      secureTextEntry={true}
+                    />
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Yeni Şifre</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      placeholder="Yeni şifrenizi girin"
+                      secureTextEntry={true}
+                    />
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Yeni Şifre Tekrar</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      placeholder="Yeni şifrenizi tekrar girin"
+                      secureTextEntry={true}
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.primaryButton}
+                    onPress={handlePasswordChange}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      Şifreyi Değiştir
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : activePrivacySection === "permissions" ? (
+                // Permissions Section
+                <View style={styles.securitySection}>
+                  <Text style={styles.securityDescription}>
+                    Uygulama özelliklerini kullanmak için aşağıdaki izinlere
+                    erişim vermeniz gerekiyor. İzin durumunu değiştirmek için
+                    ilgili butona tıklayın.
+                  </Text>
+
+                  {permissions.map((permission) => (
+                    <TouchableOpacity
+                      key={permission.id}
+                      style={styles.permissionItem}
+                      onPress={() => requestPermission(permission.id)}
+                    >
+                      <View style={styles.permissionIconContainer}>
+                        {permission.icon}
+                      </View>
+                      <View style={styles.permissionContent}>
+                        <View style={styles.permissionHeader}>
+                          <Text style={styles.permissionTitle}>
+                            {permission.title}
+                          </Text>
+                          {permission.status === "granted" && (
+                            <View style={styles.permissionGrantedBadge}>
+                              <Check size={14} color="#fff" />
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.permissionDescription}>
+                          {permission.description}
+                        </Text>
+                        <View style={styles.permissionStatus}>
+                          <View
+                            style={[
+                              styles.permissionStatusIndicator,
+                              permission.status === "granted"
+                                ? styles.permissionGranted
+                                : permission.status === "denied"
+                                ? styles.permissionDenied
+                                : styles.permissionUnknown,
+                            ]}
+                          />
+                          <Text style={styles.permissionStatusText}>
+                            {permission.status === "granted"
+                              ? "İzin Verildi"
+                              : permission.status === "denied"
+                              ? "İzin Reddedildi"
+                              : "İzin Belirlenmedi"}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={() => Linking.openSettings()}
+                  >
+                    <Text style={styles.secondaryButtonText}>
+                      Tüm İzinleri Uygulama Ayarlarında Yönet
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : activePrivacySection === "freeze" ? (
+                // Account Freeze Section
+                <View style={styles.securitySection}>
+                  <Text style={styles.securityDescription}>
+                    Hesabınızı dondurduğunuzda, profiliniz diğer kullanıcılara
+                    görünmez olacak ve etkinliklere katılamazsınız. İstediğiniz
+                    zaman tekrar giriş yaparak hesabınızı
+                    aktifleştirebilirsiniz.
+                  </Text>
+
+                  <TouchableOpacity
+                    style={styles.accountActionButton}
+                    onPress={handleFreezeAccount}
+                  >
+                    <Text style={styles.accountActionButtonText}>
+                      Hesabımı Dondur
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                // Account Deletion Section
+                <View style={styles.securitySection}>
+                  <Text style={styles.securityDescription}>
+                    Hesabınızı sildiğinizde, tüm kişisel bilgileriniz,
+                    etkinlikleriniz, mesajlarınız ve değerlendirmeleriniz kalıcı
+                    olarak silinecektir. Bu işlem geri alınamaz.
+                  </Text>
+
+                  <TouchableOpacity
+                    style={styles.dangerButton}
+                    onPress={handleDeleteAccount}
+                  >
+                    <Text style={styles.dangerButtonText}>
+                      Hesabımı Kalıcı Olarak Sil
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
