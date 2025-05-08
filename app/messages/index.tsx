@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   Image,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { router } from "expo-router";
@@ -15,15 +16,15 @@ import {
   ChevronLeft,
   MessageCircle,
   Search,
-  Circle,
   Clock,
   MoreVertical,
 } from "lucide-react-native";
+import { messagesApi } from "@/app/services/api/messagesApi";
 
 // Mesaj arayüzü
 interface Message {
-  id: number;
-  senderId: number;
+  id: string;
+  senderId: string;
   senderName: string;
   senderAvatar: string;
   lastMessage: string;
@@ -32,87 +33,36 @@ interface Message {
   isOnline: boolean;
 }
 
-// Örnek mesaj verileri
-const MESSAGES: Message[] = [
-  {
-    id: 1,
-    senderId: 101,
-    senderName: "Ahmet Yılmaz",
-    senderAvatar: "https://randomuser.me/api/portraits/men/32.jpg",
-    lastMessage: "Merhaba, yarın basketbol maçına katılacak mısın?",
-    time: "10 dk önce",
-    unreadCount: 2,
-    isOnline: true,
-  },
-  {
-    id: 2,
-    senderId: 102,
-    senderName: "Zeynep Kaya",
-    senderAvatar: "https://randomuser.me/api/portraits/women/44.jpg",
-    lastMessage: "Voleybol antrenmanına bekliyoruz. Unutma!",
-    time: "30 dk önce",
-    unreadCount: 0,
-    isOnline: true,
-  },
-  {
-    id: 3,
-    senderId: 103,
-    senderName: "Mehmet Öztürk",
-    senderAvatar: "https://randomuser.me/api/portraits/men/68.jpg",
-    lastMessage: "Futbol turnuvası için takım oluşturuyorum. İlgilenir misin?",
-    time: "2 saat önce",
-    unreadCount: 1,
-    isOnline: false,
-  },
-  {
-    id: 4,
-    senderId: 104,
-    senderName: "Ayşe Demir",
-    senderAvatar: "https://randomuser.me/api/portraits/women/65.jpg",
-    lastMessage: "Yüzme etkinliğinin yeri değişti, haberiniz olsun.",
-    time: "Dün",
-    unreadCount: 0,
-    isOnline: false,
-  },
-  {
-    id: 5,
-    senderId: 105,
-    senderName: "Can Yıldız",
-    senderAvatar: "https://randomuser.me/api/portraits/men/22.jpg",
-    lastMessage:
-      "Geçen haftaki tenis maçı çok güzeldi, tekrar ne zaman oynayalım?",
-    time: "2 gün önce",
-    unreadCount: 0,
-    isOnline: true,
-  },
-  {
-    id: 6,
-    senderId: 106,
-    senderName: "Selin Arslan",
-    senderAvatar: "https://randomuser.me/api/portraits/women/90.jpg",
-    lastMessage: "Bisiklet turu için hazırlıklar tamam mı?",
-    time: "1 hafta önce",
-    unreadCount: 0,
-    isOnline: false,
-  },
-];
-
 export default function MessagesScreen() {
-  const [messages, setMessages] = useState<Message[]>(MESSAGES);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const fetchMessages = async () => {
+    try {
+      setLoading(true);
+      const response = await messagesApi.getMessages();
+      if (response?.data?.data) {
+        setMessages(response.data.data);
+      }
+    } catch (err) {
+      setError('Mesajlar yüklenirken bir hata oluştu');
+      console.error('Mesajlar yüklenirken hata:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBackPress = () => {
     router.back();
   };
 
-  const handleMessagePress = (messageId: number, senderId: number) => {
-    // Gerçek uygulamada okunmamış mesaj sayısını sıfırla
-    setMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === messageId ? { ...msg, unreadCount: 0 } : msg
-      )
-    );
-
+  const handleMessagePress = (messageId: string, senderId: string) => {
     // Mesaj detay sayfasına yönlendir
     router.push(`/chat/${senderId}` as any);
   };
@@ -166,6 +116,25 @@ export default function MessagesScreen() {
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchMessages}>
+          <Text style={styles.retryButtonText}>Tekrar Dene</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
@@ -206,8 +175,10 @@ export default function MessagesScreen() {
         <FlatList
           data={filteredMessages}
           renderItem={renderMessageItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
+          refreshing={loading}
+          onRefresh={fetchMessages}
         />
       )}
     </SafeAreaView>
@@ -218,6 +189,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: 'red',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    padding: 10,
+    borderRadius: 5,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   header: {
     flexDirection: "row",

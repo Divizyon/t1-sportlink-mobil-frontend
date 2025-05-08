@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -7,131 +7,67 @@ import {
   Image,
   ScrollView,
   TextInput,
+  ActivityIndicator
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, router } from "expo-router";
 import { Text } from "@/components/ui/text";
 import { ChevronLeft, Send } from "lucide-react-native";
-
-// Mesaj tipi tanımlama
-interface MessageItem {
-  id: number;
-  text: string;
-  time: string;
-  isIncoming: boolean;
-}
-
-// Kullanıcı tipi tanımlama
-interface User {
-  id: number;
-  name: string;
-  avatar: string;
-}
-
-// Örnek kullanıcı verileri
-const mockUsers: Record<string, User> = {
-  "1": {
-    id: 1,
-    name: "Ahmet Yılmaz",
-    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-  },
-  "2": {
-    id: 2,
-    name: "Zeynep Kaya",
-    avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-  },
-  "3": {
-    id: 3,
-    name: "Mehmet Demir",
-    avatar: "https://randomuser.me/api/portraits/men/22.jpg",
-  },
-  "4": {
-    id: 4,
-    name: "Ayşe Yıldız",
-    avatar: "https://randomuser.me/api/portraits/women/26.jpg",
-  },
-  "5": {
-    id: 5,
-    name: "Murat Öztürk",
-    avatar: "https://randomuser.me/api/portraits/men/45.jpg",
-  },
-};
-
-// Örnek mesaj konuşmaları
-const generateConversation = (userId: number): MessageItem[] => {
-  switch (userId) {
-    case 1:
-      return [
-        {
-          id: 1,
-          text: "Merhaba, bugünkü basketbol antrenmanına gelecek misin?",
-          time: "10:30",
-          isIncoming: true,
-        },
-        {
-          id: 2,
-          text: "Evet, gelirim. Saat kaçta başlıyor?",
-          time: "10:35",
-          isIncoming: false,
-        },
-        {
-          id: 3,
-          text: "18:00'da başlıyor. Erken gelirsen ısınma yapabiliriz.",
-          time: "10:40",
-          isIncoming: true,
-        },
-      ];
-    case 2:
-      return [
-        {
-          id: 1,
-          text: "Koşu etkinliği için kayıt oldun mu?",
-          time: "Dün",
-          isIncoming: true,
-        },
-        {
-          id: 2,
-          text: "Henüz kayıt olmadım. Son kayıt tarihi ne zaman?",
-          time: "Dün",
-          isIncoming: false,
-        },
-      ];
-    default:
-      return [
-        {
-          id: 1,
-          text: "Merhaba, nasılsın?",
-          time: "12:00",
-          isIncoming: true,
-        },
-      ];
-  }
-};
+import { apiClient } from "@/services/api/client";
 
 export default function MessageDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const userId = id ? parseInt(id as string) : 0;
-  
-  const [user, setUser] = useState<User | null>(
-    userId && mockUsers[userId.toString()] 
-      ? mockUsers[userId.toString()] 
-      : null
-  );
-  
-  const [messages, setMessages] = useState<MessageItem[]>(
-    userId ? generateConversation(userId) : []
-  );
-  
-  const handleBackPress = () => {
-    router.back();
+  const { id, name, avatar } = useLocalSearchParams();
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Mesajları çek
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    apiClient
+      .get(`/mobile/messages/${id}?limit=50&offset=0`)
+      .then(res => {
+        setMessages(res.data.data.messages);
+      })
+      .catch(() => setMessages([]))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  // Mesaj gönder
+  const sendMessage = async () => {
+    if (!input.trim() || !id) return;
+    setSending(true);
+    try {
+      const res = await apiClient.post(`/mobile/messages/${id}`,
+        {
+          content: input,
+          content_type: "text",
+        }
+      );
+      setMessages(prev => [
+        ...prev,
+        res.data.data
+      ]);
+      setInput("");
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch (e) {
+      alert("Mesaj gönderilemedi");
+    } finally {
+      setSending(false);
+    }
   };
 
-  if (!user) {
+  if (!name) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar style="dark" />
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <ChevronLeft size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Mesaj</Text>
@@ -146,38 +82,45 @@ export default function MessageDetailScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft size={24} color="#333" />
         </TouchableOpacity>
         <View style={styles.userInfo}>
-          <Image source={{ uri: user.avatar }} style={styles.avatar} />
-          <Text style={styles.userName}>{user.name}</Text>
+          <Image source={{ uri: avatar as string || 'https://via.placeholder.com/100' }} style={styles.avatar} />
+          <Text style={styles.userName}>{name}</Text>
         </View>
       </View>
-      
-      <ScrollView style={styles.messagesContainer}>
-        {messages.map(message => (
-          <View 
-            key={message.id}
-            style={[
-              styles.messageBubble,
-              message.isIncoming ? styles.incomingMessage : styles.outgoingMessage
-            ]}
-          >
-            <Text style={styles.messageText}>{message.text}</Text>
-            <Text style={styles.messageTime}>{message.time}</Text>
-          </View>
-        ))}
-      </ScrollView>
-      
+      {loading ? (
+        <ActivityIndicator size="large" color="#4dabf7" style={{ marginTop: 40 }} />
+      ) : (
+        <ScrollView style={styles.messagesContainer} ref={scrollViewRef}
+          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
+          {messages.map(msg => (
+            <View
+              key={msg.id}
+              style={[
+                styles.messageBubble,
+                msg.sender_id === id ? styles.incomingMessage : styles.outgoingMessage
+              ]}
+            >
+              <Text style={styles.messageText}>{msg.content}</Text>
+              <Text style={styles.messageTime}>
+                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
+      )}
       <View style={styles.inputContainer}>
-        <TextInput 
+        <TextInput
           style={styles.textInput}
           placeholder="Mesaj yazın..."
+          value={input}
+          onChangeText={setInput}
+          editable={!sending}
         />
-        <TouchableOpacity style={styles.sendButton}>
+        <TouchableOpacity style={styles.sendButton} onPress={sendMessage} disabled={sending}>
           <Send size={20} color="#fff" />
         </TouchableOpacity>
       </View>
