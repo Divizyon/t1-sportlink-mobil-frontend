@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { friendshipsApi, Friend } from '@/services/api/friendships';
 import { useRouter } from 'expo-router';
-import { MessageCircle } from 'lucide-react-native';
+import { MessageCircle, RefreshCw } from 'lucide-react-native';
 
 export default function FriendsListScreen() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -18,13 +19,28 @@ export default function FriendsListScreen() {
     try {
       setLoading(true);
       setError(null);
-      const data = await friendshipsApi.getFriends();
-      setFriends(data);
+      const response = await friendshipsApi.getFriends();
+      
+      if (response.status === 'error') {
+        console.log('Arkadaş listesi getirme hatası:', response.message);
+        setError(response.message || 'Arkadaşlar yüklenirken bir hata oluştu');
+        setFriends([]);
+      } else {
+        setFriends(response.data || []);
+      }
     } catch (err: any) {
+      console.error('Beklenmeyen hata:', err);
       setError('Arkadaşlar yüklenirken bir hata oluştu');
+      setFriends([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadFriends();
   };
 
   const handleSendMessage = (friend: Friend) => {
@@ -65,15 +81,25 @@ export default function FriendsListScreen() {
     </View>
   );
 
+  const renderErrorState = () => (
+    <View style={styles.errorContainer}>
+      <Text style={styles.error}>{error}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={loadFriends}>
+        <RefreshCw size={18} color="#fff" />
+        <Text style={styles.retryButtonText}>Tekrar Dene</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Arkadaşlarım</Text>
       </View>
-      {loading ? (
+      {loading && !refreshing ? (
         <ActivityIndicator size="large" color="#4dabf7" style={{ marginTop: 40 }} />
       ) : error ? (
-        <Text style={styles.error}>{error}</Text>
+        renderErrorState()
       ) : (
         <FlatList
           data={friends}
@@ -81,6 +107,13 @@ export default function FriendsListScreen() {
           keyExtractor={item => item.id}
           contentContainerStyle={{ padding: 16 }}
           ListEmptyComponent={<Text style={styles.empty}>Hiç arkadaşın yok.</Text>}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#4dabf7"]}
+            />
+          }
         />
       )}
     </View>
@@ -175,10 +208,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
   error: {
     color: '#ff6b6b',
     textAlign: 'center',
     marginTop: 20,
+    marginBottom: 20,
+    fontSize: 16,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    backgroundColor: '#4dabf7',
+    padding: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 8,
   },
   empty: {
     color: '#888',

@@ -10,7 +10,7 @@ let API_URL = "";
 if (__DEV__) {
   // Android Emülatör için özel IP
   if (Platform.OS === "android") {
-    API_URL = "http://10.0.2.2:3000/api"; // Android emülatör için localhost karşılığı
+    API_URL = "http://192.168.1.137:3000/api"; // Android emülatör için localhost karşılığı
   }
   // iOS Simülatör için localhost
   else if (Platform.OS === "ios") {
@@ -18,7 +18,7 @@ if (__DEV__) {
   }
   // Gerçek cihaz için kendi bilgisayarınızın IP'si
   else {
-    API_URL = "http://192.168.1.100:3000/api"; // Kendi ağınıza göre değiştirin
+    API_URL = "http://192.168.1.137:3000/api"; // Kendi ağınıza göre değiştirin
   }
 } else {
   // Üretim ortamı için

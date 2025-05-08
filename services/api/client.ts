@@ -1,10 +1,30 @@
 import axios from "axios";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 // API URL'ini environment'tan al, yoksa gerçek IP'yi kullan
-const API_URL =
-  Constants.expoConfig?.extra?.apiUrl || "http://localhost:3000/api" || "http://10.5.48.138:3000/api";
+// Android emülatör için 10.0.2.2, iOS emülatör için localhost özel durumdur
+const getBaseUrl = () => {
+  const configUrl = Constants.expoConfig?.extra?.apiUrl;
+  if (configUrl) return configUrl;
+  
+  // Platformlara göre özel URL'ler
+  if (__DEV__) {
+    if (Platform.OS === 'android') {
+      // Android emülatör için özel IP (localhost yerine)
+      return "http://10.0.2.2:3000/api";
+    } else if (Platform.OS === 'ios') {
+      // iOS emülatör için localhost çalışır
+      return "http://localhost:3000/api";
+    }
+  }
+  
+  // Gerçek cihaz için IP adresini kullan
+  return "http://192.168.1.137:3000/api";
+};
+
+const API_URL = getBaseUrl();
 
 // Debug modu aktif
 const DEBUG = true;
@@ -30,13 +50,21 @@ export const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
+    "Accept": "application/json",
   },
+  timeout: 10000, // 10 saniye timeout ekle
 });
 
 // Request interceptor - token ekleme
 apiClient.interceptors.request.use(
   async (config) => {
     try {
+      // Çift /api/ öneki sorununu gider
+      if (config.url && config.url.startsWith("/api/")) {
+        config.url = config.url.replace(/^\/api\//, "/");
+        debugLog("URL düzeltildi:", config.url);
+      }
+      
       debugLog("İstek başlatılıyor:", {
         url: config.url,
         method: config.method,

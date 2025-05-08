@@ -1,5 +1,6 @@
 import { apiClient } from "./client";
 import { showToast } from "../../utils/toastHelper";
+import NetInfo from "@react-native-community/netinfo";
 
 export interface FriendRequest {
   id: string;
@@ -26,59 +27,102 @@ export interface Friend {
   last_seen_at: string;
 }
 
+// API isteği için ağ bağlantısını kontrol et
+const checkNetwork = async () => {
+  const netInfo = await NetInfo.fetch();
+  return netInfo.isConnected && netInfo.isInternetReachable;
+};
+
+// Ağ bağlantısı kontrol edilerek API isteği atma yardımcı fonksiyonu
+const safeApiCall = async (apiFunc: Function, fallback: any = null) => {
+  try {
+    const isConnected = await checkNetwork();
+    if (!isConnected) {
+      console.log("Ağ bağlantısı yok, istek yapılamıyor");
+      showToast("İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.", "error");
+      return { status: "error", data: fallback, message: "İnternet bağlantısı yok" };
+    }
+    
+    return await apiFunc();
+  } catch (error: any) {
+    console.log("API çağrısı sırasında hata:", error.message);
+    return { 
+      status: "error", 
+      data: fallback, 
+      message: error.message || "API isteği sırasında bir hata oluştu" 
+    };
+  }
+};
+
 export const friendshipsApi = {
   // Arkadaşlık isteği gönder
   sendRequest: async (receiverId: string) => {
-    const response = await apiClient.post("/mobile/friendships/requests", {
-      receiver_id: receiverId,
+    return safeApiCall(async () => {
+      const response = await apiClient.post("/mobile/friendships/requests", {
+        receiver_id: receiverId,
+      });
+      return response.data;
     });
-    return response.data;
   },
 
   // Gelen arkadaşlık isteklerini getir
   getIncomingRequests: async () => {
-    const response = await apiClient.get(
-      "/mobile/friendships/requests/incoming"
-    );
-    return response.data.data as FriendRequest[];
+    return safeApiCall(async () => {
+      const response = await apiClient.get(
+        "/mobile/friendships/requests/incoming"
+      );
+      return response.data.data as FriendRequest[];
+    }, []);
   },
 
   // Gönderilen arkadaşlık isteklerini getir
   getOutgoingRequests: async () => {
-    const response = await apiClient.get(
-      "/mobile/friendships/requests/outgoing"
-    );
-    return response.data.data as FriendRequest[];
+    return safeApiCall(async () => {
+      const response = await apiClient.get(
+        "/mobile/friendships/requests/outgoing"
+      );
+      return response.data.data as FriendRequest[];
+    }, []);
   },
 
   // Arkadaşlık isteğini kabul et
   acceptRequest: async (requestId: string) => {
-    const response = await apiClient.put(
-      `/mobile/friendships/requests/${requestId}/accept`
-    );
-    return response.data;
+    return safeApiCall(async () => {
+      const response = await apiClient.put(
+        `/mobile/friendships/requests/${requestId}/accept`
+      );
+      return response.data;
+    });
   },
 
   // Arkadaşlık isteğini reddet
   rejectRequest: async (requestId: string) => {
-    const response = await apiClient.put(
-      `/mobile/friendships/requests/${requestId}/reject`
-    );
-    return response.data;
+    return safeApiCall(async () => {
+      const response = await apiClient.put(
+        `/mobile/friendships/requests/${requestId}/reject`
+      );
+      return response.data;
+    });
   },
 
   // Arkadaşlık isteğini iptal et
   cancelRequest: async (requestId: string) => {
-    const response = await apiClient.delete(
-      `/mobile/friendships/requests/${requestId}`
-    );
-    return response.data;
+    return safeApiCall(async () => {
+      const response = await apiClient.delete(
+        `/mobile/friendships/requests/${requestId}`
+      );
+      return response.data;
+    });
   },
 
   // Arkadaş listesini getir
   getFriends: async () => {
-    const response = await apiClient.get("/mobile/friendships");
-    return response.data.data as Friend[];
+    return safeApiCall(async () => {
+      console.log("Arkadaş listesi getiriliyor...");
+      const response = await apiClient.get("/mobile/friendships");
+      console.log("Arkadaş listesi alındı:", response.data.data);
+      return response.data.data as Friend[];
+    }, []);
   },
 };
 
@@ -87,6 +131,16 @@ export const friendshipsApi = {
  */
 export const getIncomingFriendshipRequests = async () => {
   try {
+    const isConnected = await checkNetwork();
+    if (!isConnected) {
+      showToast("İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.", "error");
+      return {
+        status: "error",
+        data: [],
+        message: "İnternet bağlantısı yok"
+      };
+    }
+
     const response = await apiClient.get(
       "/mobile/friendships/requests/incoming"
     );
@@ -114,6 +168,15 @@ export const getIncomingFriendshipRequests = async () => {
  */
 export const acceptFriendshipRequest = async (requestId: string) => {
   try {
+    const isConnected = await checkNetwork();
+    if (!isConnected) {
+      showToast("İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.", "error");
+      return {
+        status: "error",
+        message: "İnternet bağlantısı yok"
+      };
+    }
+
     // PUT metodunu kullan ve status olarak accepted gönder
     const response = await apiClient.put(
       `/mobile/friendships/requests/${requestId}`,
@@ -153,6 +216,15 @@ export const acceptFriendshipRequest = async (requestId: string) => {
  */
 export const rejectFriendshipRequest = async (requestId: string) => {
   try {
+    const isConnected = await checkNetwork();
+    if (!isConnected) {
+      showToast("İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.", "error");
+      return {
+        status: "error",
+        message: "İnternet bağlantısı yok"
+      };
+    }
+
     // PUT metodunu kullan ve status olarak rejected gönder
     const response = await apiClient.put(
       `/mobile/friendships/requests/${requestId}`,
