@@ -1,7 +1,7 @@
 import { Platform, ToastAndroid } from "react-native";
 import { Alert } from "react-native";
 
-type ToastType = "success" | "error" | "info";
+type ToastType = "success" | "error" | "info" | "warning";
 
 /**
  * Tüm platformlarda çalışan toast bildirimi gösterir
@@ -15,6 +15,8 @@ export const showToast = (message: string, type: ToastType = "info") => {
     title = "Başarılı";
   } else if (type === "error") {
     title = "Hata";
+  } else if (type === "warning") {
+    title = "Uyarı";
   }
 
   if (Platform.OS === "android") {
