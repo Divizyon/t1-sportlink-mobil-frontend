@@ -1,22 +1,20 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
-  Image,
-  ScrollView,
+  Text,
   TextInput,
-  ActivityIndicator,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Dimensions
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { useLocalSearchParams, router } from "expo-router";
-import { Text } from "@/components/ui/text";
-import { ChevronLeft, Send } from "lucide-react-native";
-import { apiClient } from "@/services/api/client";
+  ActivityIndicator,
+} from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Send } from 'lucide-react-native';
+import { useAuth } from '@/providers/AuthProvider';
+import { initializeSocket, sendMessage, onNewMessage, onMessagesRead, markMessagesAsRead } from '@/services/socketService';
+import { messageApi } from '@/services/api/messages';
 
 interface Message {
   id: number;
@@ -26,223 +24,149 @@ interface Message {
   content_type: string;
   is_read: boolean;
   created_at: string;
-  updated_at: string;
 }
 
-interface Peer {
-  id: string;
-  first_name: string;
-  last_name: string;
-  profile_picture: string;
-  is_online: boolean;
-  last_seen_at: string;
-}
-
-export default function MessageDetailScreen() {
-  const { id } = useLocalSearchParams();
+export default function ChatScreen() {
+  const { id, name, avatar } = useLocalSearchParams();
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [peer, setPeer] = useState<Peer | null>(null);
-  const [input, setInput] = useState("");
+  const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
-
-  // Mesajları çek
-  const fetchMessages = useCallback(async (showLoading = false) => {
-    if (!id) return;
-    if (showLoading) setLoading(true);
-    try {
-      const res = await apiClient.get(`/mobile/messages/${id}?limit=50&offset=0`);
-      if (res.data?.data) {
-        // Mesajları tarihe göre artan sırada sırala (eskiden yeniye)
-        const sortedMessages = [...res.data.data.messages].sort((a, b) => 
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
-        setMessages(sortedMessages);
-        setPeer(res.data.data.peer);
-        // İlk yüklemede veya yeni mesaj varsa scroll en alta
-        if (isFirstLoad || messages.length < sortedMessages.length) {
-          setTimeout(() => {
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-          }, 100);
-        }
-        setIsFirstLoad(false);
-        // Mesajları okundu olarak işaretle
-        await apiClient.put(`/mobile/messages/${id}/read`);
-      }
-    } catch (error) {
-      console.error('Mesajlar alınırken hata:', error);
-      setError('Mesajlar yüklenirken bir hata oluştu');
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  }, [id, messages.length, isFirstLoad]);
+  const flatListRef = useRef<FlatList>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    fetchMessages(true);
-    // Her 15 saniyede bir sessizce güncelle
-    const interval = setInterval(() => {
-      fetchMessages(false);
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [fetchMessages]);
+    const setupChat = async () => {
+      if (!user?.id) return;
 
-  const sendMessage = async () => {
-    if (!input.trim() || !id || sending) return;
-    setSending(true);
-    try {
-      const res = await apiClient.post(`/mobile/messages/${id}`, {
-        content: input.trim(),
-        content_type: "text"
-      });
-      
-      if (res.data?.data) {
-        // Yeni mesajı en alta ekle
-        setMessages(prev => [...prev, res.data.data]);
-      setInput("");
-        // Scroll en alta
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      try {
+        // Socket.IO bağlantısını başlat
+        await initializeSocket(user.id);
+
+        // Mesaj dinleyicilerini ekle
+        onNewMessage((message) => {
+          if (message.sender_id === id || message.sender_id === user.id) {
+            setMessages(prev => [message, ...prev]);
+            if (message.sender_id === id) {
+              markMessagesAsRead(id as string);
+            }
+          }
+        });
+
+        onMessagesRead((data) => {
+          if (data.by === id) {
+            setMessages(prev =>
+              prev.map(msg => ({
+                ...msg,
+                is_read: msg.sender_id === user.id ? true : msg.is_read
+              }))
+            );
+          }
+        });
+
+        // Geçmiş mesajları yükle
+        const conversation = await messageApi.getConversation(id as string);
+        setMessages(conversation.messages.reverse());
+        
+        // Okunmamış mesajları işaretle
+        if (conversation.messages.some(m => !m.is_read && m.sender_id === id)) {
+          markMessagesAsRead(id as string);
+        }
+      } catch (error) {
+        console.error('Chat kurulum hatası:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error: any) {
-      console.error('Mesaj gönderme hatası:', error);
-      setError('Mesaj gönderilemedi');
-    } finally {
-      setSending(false);
-    }
+    };
+
+    setupChat();
+  }, [user?.id, id]);
+
+  const handleSend = () => {
+    if (!newMessage.trim() || !user?.id) return;
+
+    sendMessage(id as string, newMessage);
+    setNewMessage('');
   };
 
-  if (!peer && !loading) {
+  const renderMessage = ({ item }: { item: Message }) => {
+    const isMyMessage = item.sender_id === user?.id;
+
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar style="dark" />
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ChevronLeft size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Mesaj</Text>
-        </View>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Kullanıcı bulunamadı</Text>
-        </View>
-      </SafeAreaView>
+      <View style={[
+        styles.messageContainer,
+        isMyMessage ? styles.myMessage : styles.theirMessage
+      ]}>
+        <Text style={[
+          styles.messageText,
+          isMyMessage ? styles.myMessageText : styles.theirMessageText
+        ]}>
+          {item.content}
+        </Text>
+        {isMyMessage && (
+          <Text style={styles.readStatus}>
+            {item.is_read ? '✓✓' : '✓'}
+          </Text>
+        )}
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4dabf7" />
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-      >
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ChevronLeft size={24} color="#333" />
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backButton}>← Geri</Text>
         </TouchableOpacity>
-          {peer && (
-        <View style={styles.userInfo}>
-              <Image 
-                source={{ uri: peer.profile_picture || 'https://via.placeholder.com/100' }} 
-                style={styles.avatar} 
-              />
-              <View>
-                <Text style={styles.userName}>{`${peer.first_name} ${peer.last_name}`}</Text>
-                <Text style={[styles.userStatus, peer.is_online && styles.userStatusOnline]}>
-                  {peer.is_online ? 'Çevrimiçi' : 'Çevrimdışı'}
-                </Text>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#4dabf7" />
-          </View>
-        ) : (
-          <ScrollView 
-            style={styles.messagesContainer}
-            ref={scrollViewRef}
-            onContentSizeChange={() => {
-              if (isFirstLoad) {
-                scrollViewRef.current?.scrollToEnd({ animated: false });
-              }
-            }}
-            maintainVisibleContentPosition={{
-              minIndexForVisible: 0,
-              autoscrollToTopThreshold: 10
-            }}
-          >
-            {messages.length === 0 ? (
-              <View style={styles.emptyMessagesContainer}>
-                <Text style={styles.emptyMessagesText}>Henüz mesaj yok</Text>
+        <Text style={styles.headerTitle}>{name}</Text>
+        <View style={styles.placeholder} />
       </View>
-      ) : (
-              messages.map((msg, index) => (
-            <View
-                  key={`${msg.id}-${index}`}
-              style={[
-                styles.messageBubble,
-                msg.sender_id === id ? styles.incomingMessage : styles.outgoingMessage
-              ]}
-            >
-                  <Text style={[
-                    styles.messageText,
-                    msg.sender_id === id ? styles.incomingMessageText : styles.outgoingMessageText
-                  ]}>
-                    {msg.content}
-                  </Text>
-                  <Text style={[
-                    styles.messageTime,
-                    msg.sender_id === id ? styles.incomingMessageTime : styles.outgoingMessageTime
-                  ]}>
-                    {new Date(msg.created_at).toLocaleTimeString('tr-TR', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-              </Text>
-            </View>
-              ))
-            )}
-        </ScrollView>
-      )}
+
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        renderItem={renderMessage}
+        keyExtractor={item => item.id.toString()}
+        inverted
+        contentContainerStyle={styles.messagesList}
+      />
 
       <View style={styles.inputContainer}>
         <TextInput
-          style={styles.textInput}
-          placeholder="Mesaj yazın..."
-          value={input}
-          onChangeText={setInput}
-          editable={!sending}
-            multiline
-            maxLength={1000}
+          style={styles.input}
+          value={newMessage}
+          onChangeText={setNewMessage}
+          placeholder="Mesajınızı yazın..."
+          multiline
         />
-          <TouchableOpacity 
-            style={[styles.sendButton, (!input.trim() || sending) && styles.sendButtonDisabled]} 
-            onPress={sendMessage}
-            disabled={!input.trim() || sending}
-          >
-            {sending ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-          <Send size={20} color="#fff" />
-            )}
+        <TouchableOpacity
+          style={[styles.sendButton, !newMessage.trim() && styles.sendButtonDisabled]}
+          onPress={handleSend}
+          disabled={!newMessage.trim()}
+        >
+          <Send size={20} color={newMessage.trim() ? '#fff' : '#A0AEC0'} />
         </TouchableOpacity>
       </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#F7FAFC',
   },
   loadingContainer: {
     flex: 1,
@@ -250,135 +174,86 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 16,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    backgroundColor: "#fff",
+    borderBottomColor: '#E2E8F0',
   },
   backButton: {
-    marginRight: 16,
-    padding: 4,
-  },
-  userInfo: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  userName: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-  userStatus: {
-    fontSize: 12,
-    color: "#95a5a6",
-    marginTop: 2,
-  },
-  userStatusOnline: {
-    color: "#2ecc71",
+    color: '#4A5568',
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
+    color: '#2D3748',
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+  placeholder: {
+    width: 50,
   },
-  emptyText: {
-    fontSize: 16,
-    color: "#95a5a6",
-  },
-  messagesContainer: {
-    flex: 1,
+  messagesList: {
     padding: 16,
   },
-  messageBubble: {
-    maxWidth: "80%",
+  messageContainer: {
+    maxWidth: '80%',
+    marginVertical: 4,
     padding: 12,
     borderRadius: 16,
-    marginBottom: 8,
   },
-  incomingMessage: {
-    alignSelf: "flex-start",
-    backgroundColor: "#f0f0f0",
-    borderBottomLeftRadius: 4,
-  },
-  outgoingMessage: {
-    alignSelf: "flex-end",
-    backgroundColor: "#3498db",
+  myMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#4dabf7',
     borderBottomRightRadius: 4,
+  },
+  theirMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#fff',
+    borderBottomLeftRadius: 4,
   },
   messageText: {
     fontSize: 16,
-    lineHeight: 20,
   },
-  incomingMessageText: {
-    color: "#333",
+  myMessageText: {
+    color: '#fff',
   },
-  outgoingMessageText: {
-    color: "#fff",
+  theirMessageText: {
+    color: '#2D3748',
   },
-  messageTime: {
+  readStatus: {
     fontSize: 12,
+    color: '#E2E8F0',
+    alignSelf: 'flex-end',
     marginTop: 4,
-    alignSelf: "flex-end",
-  },
-  incomingMessageTime: {
-    color: "#95a5a6",
-  },
-  outgoingMessageTime: {
-    color: "rgba(255, 255, 255, 0.7)",
   },
   inputContainer: {
-    flexDirection: "row",
+    flexDirection: 'row',
     padding: 16,
+    backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: "#eee",
-    alignItems: "flex-end",
-    backgroundColor: "#fff",
+    borderTopColor: '#E2E8F0',
   },
-  textInput: {
+  input: {
     flex: 1,
-    minHeight: 40,
-    maxHeight: 100,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#F7FAFC',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingVertical: 8,
     marginRight: 8,
     fontSize: 16,
+    maxHeight: 100,
   },
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#3498db",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sendButtonDisabled: {
-    backgroundColor: "#95a5a6",
-  },
-  emptyMessagesContainer: {
-    flex: 1,
+    backgroundColor: '#4dabf7',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
   },
-  emptyMessagesText: {
-    fontSize: 16,
-    color: '#95a5a6',
-    textAlign: 'center',
+  sendButtonDisabled: {
+    backgroundColor: '#E2E8F0',
   },
 }); 
