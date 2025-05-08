@@ -4,10 +4,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // API URL'ini environment'tan al, yoksa gerçek IP'yi kullan
 const API_URL =
-  Constants.expoConfig?.extra?.apiUrl || "http://10.5.48.138:3000/api";
+  Constants.expoConfig?.extra?.apiUrl || "http://192.168.56.1:3000/api";
 
 // Debug modu aktif
 const DEBUG = true;
+
+// API istemcisi için varsayılan zaman aşımı süresi (ms)
+const DEFAULT_TIMEOUT = 10000; // 10 saniye
 
 // Debug log fonksiyonu
 const debugLog = (...args: any[]) => {
@@ -31,6 +34,7 @@ export const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: DEFAULT_TIMEOUT, // İstek zaman aşımı süresi
 });
 
 // Request interceptor - token ekleme
@@ -74,6 +78,23 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error) => {
+    // Zaman aşımı hatası kontrolü
+    if (
+      error.code === "ECONNABORTED" &&
+      error.message &&
+      error.message.includes("timeout")
+    ) {
+      errorLog("API İstek zaman aşımı:", {
+        url: error.config?.url,
+        timeout: error.config?.timeout,
+      });
+      return Promise.reject({
+        status: "error",
+        message: "Sunucudan yanıt alınamadı: İstek zaman aşımı",
+        data: null,
+      });
+    }
+
     errorLog("API Hatası:", {
       url: error.config?.url,
       status: error.response?.status,
