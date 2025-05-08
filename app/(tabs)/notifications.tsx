@@ -10,14 +10,23 @@ import {
   ThumbsUp,
   User,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FlatList,
   SafeAreaView,
   StyleSheet,
   TouchableOpacity,
   View,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
+import {
+  getIncomingFriendshipRequests,
+  acceptFriendshipRequest,
+  rejectFriendshipRequest,
+} from "../../services/api/friendships";
+import { FriendshipRequest } from "../../types/friendships";
+import FriendshipRequestItem from "../../components/notifications/FriendshipRequestItem";
 
 // Bildirim tipi tanımlama
 interface Notification {
@@ -117,6 +126,98 @@ export default function NotificationsScreen() {
   const [notifications, setNotifications] =
     useState<Notification[]>(notificationsData);
   const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
+  const [friendRequests, setFriendRequests] = useState<FriendshipRequest[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [processingRequestIds, setProcessingRequestIds] = useState<string[]>(
+    []
+  );
+
+  // Arkadaşlık isteklerini getir
+  const fetchFriendshipRequests = async () => {
+    try {
+      setLoading(true);
+      const response = await getIncomingFriendshipRequests();
+      if (response.status === "success" && response.data) {
+        console.log("Gelen arkadaşlık istekleri:", response.data.length);
+        console.log("İstek detayları:", JSON.stringify(response.data, null, 2));
+        // Sadece geçerli verileri al
+        const validRequests = response.data.filter(
+          (req: FriendshipRequest) => req && req.id
+        );
+        setFriendRequests(validRequests);
+      }
+    } catch (error) {
+      console.error("Arkadaşlık istekleri getirilirken hata:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Sayfa yüklendiğinde ve yenilendiğinde istekleri getir
+  useEffect(() => {
+    fetchFriendshipRequests();
+  }, []);
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    fetchFriendshipRequests();
+  }, []);
+
+  // Arkadaşlık isteği kabul et
+  const handleAcceptRequest = async (requestId: string) => {
+    try {
+      // İşlem başladı
+      setProcessingRequestIds((prev) => [...prev, requestId.toString()]);
+
+      const response = await acceptFriendshipRequest(requestId.toString());
+      if (response.status === "success") {
+        // İstek kabul edildikten sonra listeden kaldır
+        setFriendRequests((prevRequests) =>
+          prevRequests.filter(
+            (request) => request.id.toString() !== requestId.toString()
+          )
+        );
+        console.log("Arkadaşlık isteği kabul edildi:", requestId);
+      }
+    } catch (error) {
+      console.error("Arkadaşlık isteği kabul edilirken hata:", error);
+    } finally {
+      // İşlem tamamlandı
+      setProcessingRequestIds((prev) =>
+        prev.filter((id) => id !== requestId.toString())
+      );
+      setLoading(false);
+    }
+  };
+
+  // Arkadaşlık isteği reddet
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      // İşlem başladı
+      setProcessingRequestIds((prev) => [...prev, requestId.toString()]);
+
+      const response = await rejectFriendshipRequest(requestId.toString());
+      if (response.status === "success") {
+        // İstek reddedildikten sonra listeden kaldır
+        setFriendRequests((prevRequests) =>
+          prevRequests.filter(
+            (request) => request.id.toString() !== requestId.toString()
+          )
+        );
+        console.log("Arkadaşlık isteği reddedildi:", requestId);
+      }
+    } catch (error) {
+      console.error("Arkadaşlık isteği reddedilirken hata:", error);
+    } finally {
+      // İşlem tamamlandı
+      setProcessingRequestIds((prev) =>
+        prev.filter((id) => id !== requestId.toString())
+      );
+      setLoading(false);
+    }
+  };
 
   const handleTabChange = (tab: "all" | "unread") => {
     setActiveTab(tab);
@@ -162,7 +263,7 @@ export default function NotificationsScreen() {
         break;
       case "friend":
         // Arkadaşlık istekleri sayfasına yönlendir
-        router.push("/friend-requests/index" as any);
+        router.push("/friend-requests" as any);
         break;
       case "like":
         // Beğeni bildirimleri için şimdilik profil sayfasına yönlendir
@@ -180,6 +281,11 @@ export default function NotificationsScreen() {
       default:
         break;
     }
+  };
+
+  // Arkadaşlık isteğine tıklandığında
+  const handleFriendRequestPress = () => {
+    router.push("/friend-requests" as any);
   };
 
   const handleClearAll = () => {
@@ -249,83 +355,106 @@ export default function NotificationsScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
 
-      <View style={{ padding: 16 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 16,
-          }}
-        >
-          <Text style={styles.screenTitle}>Bildirimler</Text>
+      {/* Üst bilgi çubuğu */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Bildirimler</Text>
 
-          {unreadCount > 0 && (
-            <TouchableOpacity
-              style={styles.clearAllButton}
-              onPress={handleClearAll}
-            >
-              <Text style={styles.clearAllText}>Tümünü Okundu İşaretle</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={[styles.tabContainer, { marginBottom: 16 }]}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "all" && styles.activeTab]}
-            onPress={() => handleTabChange("all")}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "all" && styles.activeTabText,
-              ]}
-            >
-              Tümü ({notifications.length})
-            </Text>
+        {activeTab === "all" && notifications.length > 0 && (
+          <TouchableOpacity onPress={handleClearAll}>
+            <Text style={styles.clearText}>Tümünü Okundu İşaretle</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "unread" && styles.activeTab]}
-            onPress={() => handleTabChange("unread")}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "unread" && styles.activeTabText,
-                unreadCount > 0 && styles.boldText,
-              ]}
-            >
-              Okunmamış ({unreadCount})
-            </Text>
-          </TouchableOpacity>
-        </View>
+        )}
       </View>
 
-      {getFilteredNotifications().length === 0 ? (
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 24,
-          }}
+      {/* Sekmeler */}
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "all" && styles.activeTab]}
+          onPress={() => handleTabChange("all")}
         >
-          <Bell size={60} color="#d5d5d5" />
-          <Text style={styles.emptyText}>Bildirim Yok</Text>
-          <Text style={styles.emptySubText}>
-            {activeTab === "all"
-              ? "Henüz bildiriminiz bulunmuyor."
-              : "Okunmamış bildiriminiz bulunmuyor."}
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "all" && styles.activeTabText,
+            ]}
+          >
+            Tümü ({notifications.length})
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "unread" && styles.activeTab]}
+          onPress={() => handleTabChange("unread")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "unread" && styles.activeTabText,
+            ]}
+          >
+            Okunmamış ({unreadCount})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Arkadaşlık İstekleri Başlığı */}
+      {friendRequests.length > 0 && (
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Arkadaşlık İstekleri</Text>
         </View>
-      ) : (
-        <FlatList
-          data={getFilteredNotifications()}
-          renderItem={renderNotificationItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-        />
+      )}
+
+      {/* Arkadaşlık İstekleri Listesi */}
+      {friendRequests.length > 0 && (
+        <View style={styles.friendRequestsContainer}>
+          {friendRequests.map((request) =>
+            request && request.id ? (
+              <FriendshipRequestItem
+                key={request.id.toString()}
+                request={request}
+                onAccept={handleAcceptRequest}
+                onReject={handleRejectRequest}
+                onPress={handleFriendRequestPress}
+                isProcessing={processingRequestIds.includes(
+                  request.id.toString()
+                )}
+              />
+            ) : null
+          )}
+        </View>
+      )}
+
+      {/* Bildirimler Başlığı */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Bildirimler</Text>
+      </View>
+
+      {/* Bildirimler Listesi */}
+      <FlatList
+        data={getFilteredNotifications()}
+        keyExtractor={(item) => item.id}
+        renderItem={renderNotificationItem}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              {activeTab === "all"
+                ? "Hiç bildiriminiz bulunmuyor."
+                : "Okunmamış bildiriminiz bulunmuyor."}
+            </Text>
+          </View>
+        }
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      />
+
+      {/* Yükleniyor göstergesi */}
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+        </View>
       )}
     </SafeAreaView>
   );
@@ -419,11 +548,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
   emptyText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#95a5a6",
-    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
   },
   emptySubText: {
     fontSize: 14,
@@ -431,5 +565,48 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: 32,
     marginTop: 8,
+  },
+  header: {
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  clearText: {
+    fontSize: 12,
+    color: "#666",
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#f5f5f5",
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#666",
+  },
+  friendRequestsContainer: {
+    padding: 16,
+    backgroundColor: "white",
+  },
+  loadingContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
   },
 });
