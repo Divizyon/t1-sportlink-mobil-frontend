@@ -44,4 +44,9 @@ export interface UserProfile {
   last_name: string;
   total_events: number;
   friend_count: number;
+  sports?: Array<{
+    id: number;
+    name: string;
+    icon?: string;
+  }>;
 }

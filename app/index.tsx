@@ -99,16 +99,6 @@ export default function Index() {
                       Giriş Yap
                     </ButtonText>
                   </Button>
-
-                  <Button
-                    size="lg"
-                    style={styles.demoButton}
-                    onPress={() => router.navigate("/(tabs)/dashboard")}
-                  >
-                    <ButtonText style={styles.demoButtonText}>
-                      Demo Giriş
-                    </ButtonText>
-                  </Button>
                 </>
               )}
             </VStack>
@@ -236,18 +226,6 @@ const styles = StyleSheet.create({
     height: 55,
   },
   secondaryButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  demoButton: {
-    backgroundColor: "rgba(16, 185, 129, 0.2)",
-    borderWidth: 1,
-    borderColor: "#10b981",
-    borderRadius: 12,
-    height: 55,
-  },
-  demoButtonText: {
     color: "white",
     fontWeight: "bold",
     fontSize: 16,
