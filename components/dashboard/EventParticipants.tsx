@@ -1,18 +1,16 @@
 import React from "react";
-import { StyleSheet, Image, ScrollView } from "react-native";
+import { StyleSheet } from "react-native";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { Users } from "lucide-react-native";
 
 interface EventParticipantsProps {
-  participants: string[];
   participantCount: number;
   maxParticipants: number;
 }
 
 const EventParticipants: React.FC<EventParticipantsProps> = ({
-  participants,
   participantCount,
   maxParticipants,
 }) => {
@@ -41,26 +39,6 @@ const EventParticipants: React.FC<EventParticipantsProps> = ({
           {maxParticipants - participantCount} kişilik yer kaldı
         </Text>
       </Box>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.participantsScroll}
-      >
-        {participants.map((avatar, index) => (
-          <Box key={index} style={styles.participantContainer}>
-            <Image source={{ uri: avatar }} style={styles.participantAvatar} />
-          </Box>
-        ))}
-
-        {participants.length < participantCount && (
-          <Box style={styles.moreParticipants}>
-            <Text style={styles.moreText}>
-              +{participantCount - participants.length}
-            </Text>
-          </Box>
-        )}
-      </ScrollView>
     </Box>
   );
 };
@@ -105,32 +83,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#64748B",
     textAlign: "right",
-  },
-  participantsScroll: {
-    flexDirection: "row",
-  },
-  participantContainer: {
-    marginRight: 12,
-  },
-  participantAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: "white",
-  },
-  moreParticipants: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  moreText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#64748B",
   },
 });
 

@@ -23,74 +23,31 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
+import { friendshipsApi } from '@/services/api/friendships';
+import { usersApi } from '@/services/api/users';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Kullanıcı tipi tanımlama
 interface User {
-  id: number;
-  name: string;
-  age: number;
-  location: string;
-  sportsInterested: string[];
-  avatarUrl: string;
-  isOnline: boolean;
+  id: string;
+  first_name: string;
+  last_name: string;
+  avatar_url?: string;
+  age?: number;
+  location?: string;
+  sportsInterested?: string[];
+  isOnline?: boolean;
 }
 
 // Spor kategorisi tipi tanımlama
 interface SportCategory {
   id: string;
   name: string;
-  icon: string; // Bu bir icon adı veya URL olabilir
+  icon: string;
 }
-
-// Örnek kullanıcı verileri
-const usersData: User[] = [
-  {
-    id: 1,
-    name: "Ahmet Yılmaz",
-    age: 28,
-    location: "Kadıköy, İstanbul",
-    sportsInterested: ["Futbol", "Basketbol", "Koşu"],
-    avatarUrl: "https://randomuser.me/api/portraits/men/32.jpg",
-    isOnline: true,
-  },
-  {
-    id: 2,
-    name: "Zeynep Kaya",
-    age: 25,
-    location: "Beşiktaş, İstanbul",
-    sportsInterested: ["Tenis", "Yüzme", "Pilates"],
-    avatarUrl: "https://randomuser.me/api/portraits/women/44.jpg",
-    isOnline: false,
-  },
-  {
-    id: 3,
-    name: "Burak Demir",
-    age: 32,
-    location: "Ataşehir, İstanbul",
-    sportsInterested: ["Fitness", "Yoga", "Bisiklet"],
-    avatarUrl: "https://randomuser.me/api/portraits/men/67.jpg",
-    isOnline: true,
-  },
-  {
-    id: 4,
-    name: "Elif Şahin",
-    age: 27,
-    location: "Üsküdar, İstanbul",
-    sportsInterested: ["Pilates", "Koşu", "Dağ Yürüyüşü"],
-    avatarUrl: "https://randomuser.me/api/portraits/women/28.jpg",
-    isOnline: true,
-  },
-  {
-    id: 5,
-    name: "Mert Öztürk",
-    age: 30,
-    location: "Şişli, İstanbul",
-    sportsInterested: ["Basketbol", "Futbol", "Fitness"],
-    avatarUrl: "https://randomuser.me/api/portraits/men/22.jpg",
-    isOnline: false,
-  },
-];
 
 // Spor Kategorileri
 const sportsCategories: SportCategory[] = [
@@ -109,8 +66,12 @@ const sportsCategories: SportCategory[] = [
 export default function FindFriendsScreen() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>(usersData);
-  const [pendingRequests, setPendingRequests] = useState<number[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<string[]>([]);
+  const [friends, setFriends] = useState<string[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Age filter states
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -118,34 +79,65 @@ export default function FindFriendsScreen() {
   const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([18, 60]);
   const [isAgeFilterActive, setIsAgeFilterActive] = useState(false);
 
+  // Arkadaşları yükle ve ardından kullanıcıları yükle
+  useEffect(() => {
+    loadFriends();
+  }, []);
+
+  useEffect(() => {
+    if (friends !== null) {
+      loadUsers();
+    }
+  }, [friends]);
+
+  const loadFriends = async () => {
+    try {
+      const friendsList = await friendshipsApi.getFriends();
+      const friendIds = friendsList.map(friend => friend.id);
+      setFriends(friendIds);
+    } catch (error) {
+      setFriends([]);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await usersApi.getUsersByRole();
+      const allUsers = response.data.users;
+      // Arkadaş olan kullanıcıları filtrele (tip ve trim farkı olmadan)
+      const nonFriendUsers = allUsers.filter(user =>
+        !(friends ?? []).some(fid => String(fid).trim() === String(user.id).trim())
+      );
+      setUsers(nonFriendUsers);
+      setFilteredUsers(nonFriendUsers);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Kullanıcılar yüklenirken bir hata oluştu');
+      Alert.alert('Hata', err.response?.data?.message || 'Kullanıcılar yüklenirken bir hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     filterUsers();
-  }, [searchQuery, selectedCategories, ageRange, isAgeFilterActive]);
+  }, [searchQuery, selectedCategories, ageRange, isAgeFilterActive, users]);
 
   const filterUsers = () => {
-    let result = usersData;
+    let result = users;
 
     // Arama sorgusuna göre filtrele
     if (searchQuery.trim() !== "") {
       result = result.filter((user) =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase())
+        `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     // Seçili kategorilere göre filtrele
     if (selectedCategories.length > 0) {
-      result = result.filter((user) =>
-        user.sportsInterested.some((sport) =>
-          selectedCategories.includes(sport)
-        )
-      );
-    }
-
-    // Yaş aralığına göre filtrele
-    if (isAgeFilterActive) {
-      result = result.filter(
-        (user) => user.age >= ageRange[0] && user.age <= ageRange[1]
-      );
+      // Burada kullanıcının spor ilgi alanlarını API'den almalıyız
+      // Şimdilik bu filtreyi devre dışı bırakıyoruz
     }
 
     setFilteredUsers(result);
@@ -174,90 +166,77 @@ export default function FindFriendsScreen() {
     setIsFilterModalVisible(false);
   };
 
-  const renderUserItem = ({ item }: { item: User }) => (
-    <View style={styles.userCard}>
-      <View style={styles.userHeader}>
-        <View style={styles.userAvatarContainer}>
-          <Image source={{ uri: item.avatarUrl }} style={styles.userAvatar} />
-          {item.isOnline && <View style={styles.onlineIndicator} />}
-        </View>
-
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>{item.name}</Text>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <MapPin size={14} color="#888" />
-            <Text style={styles.userLocation}>{item.location}</Text>
+  const renderUserItem = ({ item }: { item: User }) => {
+    const isFriend = friends?.some(fid => String(fid).trim() === String(item.id).trim());
+    console.log('Kullanıcı render ediliyor:', item.id, 'Arkadaş mı:', isFriend);
+    return (
+      <View style={styles.userCard}>
+        <View style={styles.userHeader}>
+          <View style={styles.userAvatarContainer}>
+            <Image 
+              source={{ uri: item.avatar_url || 'https://via.placeholder.com/150' }} 
+              style={styles.userAvatar} 
+            />
+            <View style={styles.onlineIndicator} />
           </View>
-          <View
-            style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}
-          >
-            <Calendar size={14} color="#888" />
-            <Text style={styles.userLocation}>{item.age} yaşında</Text>
-          </View>
-        </View>
-      </View>
 
-      <View style={styles.userBody}>
-        <View style={styles.sportTagsContainer}>
-          {item.sportsInterested.map((sport, index) => (
-            <View
-              key={index}
-              style={[
-                styles.sportTag,
-                selectedCategories.includes(sport) && styles.selectedSportTag,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.sportTagText,
-                  selectedCategories.includes(sport) &&
-                    styles.selectedSportTagText,
-                ]}
-              >
-                {sport}
-              </Text>
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{`${item.first_name} ${item.last_name}`}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MapPin size={14} color="#888" />
+              <Text style={styles.userLocation}>İstanbul</Text>
             </View>
-          ))}
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+              <Calendar size={14} color="#888" />
+              <Text style={styles.userLocation}>25 yaşında</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.buttonContainer}>
+          {isFriend ? (
+            <View style={[styles.friendRequestButton, styles.friendButton]}>
+              <Text style={styles.friendRequestButtonText}>Arkadaş</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.friendRequestButton,
+                pendingRequests.includes(item.id) && styles.requestSentButton,
+              ]}
+              onPress={() =>
+                pendingRequests.includes(item.id)
+                  ? handleCancelRequest(item.id)
+                  : handleFriendRequest(item.id)
+              }
+            >
+              {pendingRequests.includes(item.id) ? (
+                <>
+                  <X size={16} color="#fff" />
+                  <Text style={styles.friendRequestButtonText}>
+                    İsteği İptal Et
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <UserPlus size={16} color="#fff" />
+                  <Text style={styles.friendRequestButtonText}>Takip Et</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={styles.messageButton}
+            onPress={() => handleSendMessage(item.id)}
+          >
+            <MessageCircle size={16} color="#fff" />
+            <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[
-            styles.friendRequestButton,
-            pendingRequests.includes(item.id) && styles.requestSentButton,
-          ]}
-          onPress={() =>
-            pendingRequests.includes(item.id)
-              ? handleCancelRequest(item.id)
-              : handleFriendRequest(item.id)
-          }
-        >
-          {pendingRequests.includes(item.id) ? (
-            <>
-              <X size={16} color="#fff" />
-              <Text style={styles.friendRequestButtonText}>
-                İsteği İptal Et
-              </Text>
-            </>
-          ) : (
-            <>
-              <UserPlus size={16} color="#fff" />
-              <Text style={styles.friendRequestButtonText}>Takip Et</Text>
-            </>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.messageButton}
-          onPress={() => handleSendMessage(item.id)}
-        >
-          <MessageCircle size={16} color="#fff" />
-          <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   const renderCategoryItem = ({ item }: { item: SportCategory }) => (
     <TouchableOpacity
@@ -280,21 +259,57 @@ export default function FindFriendsScreen() {
   );
 
   // Add these functions to handle button presses
-  const handleFriendRequest = (userId: number) => {
-    console.log(`Arkadaşlık isteği gönderildi: ${userId}`);
-    setPendingRequests((prev) => [...prev, userId]);
-    // Friend request logic will be implemented here
+  const handleFriendRequest = async (userId: string) => {
+    try {
+      // Kendine istek göndermeyi engelle
+      const currentUser = await AsyncStorage.getItem('user');
+      if (currentUser) {
+        const { id } = JSON.parse(currentUser);
+        if (id === userId) {
+          Alert.alert('Hata', 'Kendinize arkadaşlık isteği gönderemezsiniz.');
+          return;
+        }
+      }
+
+      await friendshipsApi.sendRequest(userId);
+      setPendingRequests(prev => [...prev, userId]);
+      Alert.alert('Başarılı', 'Arkadaşlık isteği gönderildi.');
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        Alert.alert('Bilgi', 'Bu kullanıcı ile zaten arkadaşsınız veya bekleyen bir isteğiniz var.');
+      } else if (error.response?.status === 400) {
+        Alert.alert('Hata', 'Geçersiz istek. Lütfen tekrar deneyin.');
+      } else {
+        Alert.alert('Hata', 'Arkadaşlık isteği gönderilirken bir hata oluştu.');
+      }
+    }
   };
 
-  const handleCancelRequest = (userId: number) => {
-    console.log(`Arkadaşlık isteği iptal edildi: ${userId}`);
-    setPendingRequests((prev) => prev.filter((id) => id !== userId));
-    // Request cancellation logic will be implemented here
+  const handleCancelRequest = async (userId: string) => {
+    try {
+      // Burada giden istekleri getirip, ilgili isteğin ID'sini bulup iptal etmemiz gerekiyor
+      const outgoingRequests = await friendshipsApi.getOutgoingRequests();
+      const request = outgoingRequests.find(req => req.receiver_id === userId);
+      
+      if (request) {
+        await friendshipsApi.cancelRequest(request.id);
+        setPendingRequests(prev => prev.filter(id => id !== userId));
+        Alert.alert('Başarılı', 'Arkadaşlık isteği iptal edildi.');
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'Arkadaşlık isteği iptal edilirken bir hata oluştu.');
+    }
   };
 
-  const handleSendMessage = (userId: number) => {
+  const handleSendMessage = (userId: string) => {
     console.log(`Mesaj gönderilecek: ${userId}`);
-    // Message sending logic will be implemented here
+    router.push({
+      pathname: `/messages/${userId}`,
+      params: {
+        name: users.find(user => user.id === userId)?.first_name + ' ' + users.find(user => user.id === userId)?.last_name,
+        avatar: users.find(user => user.id === userId)?.avatar_url,
+      }
+    });
   };
 
   return (
@@ -469,13 +484,28 @@ export default function FindFriendsScreen() {
           </Text>
         </View>
 
-        <FlatList
-          data={filteredUsers}
-          renderItem={renderUserItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.usersList}
-          showsVerticalScrollIndicator={false}
-        />
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4dabf7" />
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadUsers}>
+              <Text style={styles.retryButtonText}>Tekrar Dene</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredUsers}
+            renderItem={renderUserItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.usersList}
+            showsVerticalScrollIndicator={false}
+            refreshing={loading}
+            onRefresh={loadUsers}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -809,5 +839,37 @@ const styles = StyleSheet.create({
     color: "#4dabf7",
     fontSize: 14,
     marginRight: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#ff6b6b',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#4dabf7',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  friendButton: {
+    backgroundColor: '#4dabf7',
+    opacity: 0.8,
   },
 });

@@ -19,7 +19,10 @@ import {
   Text,
   TouchableOpacity,
   View,
+  StatusBar,
+  PermissionsAndroid,
 } from "react-native";
+import CreateEventButton from "@/components/dashboard/CreateEventButton";
 
 // Renk teması - fotoğraftaki açık yeşil
 const theme = {
@@ -571,8 +574,7 @@ const sportCategories = [
   { id: 7, name: "Koşu", icon: "🏃" },
   { id: 8, name: "Yoga", icon: "🧘" },
   { id: 9, name: "Bisiklet", icon: "🚴" },
-  { id: 10, name: "Okçuluk", icon: "🏹" },
-  { id: 11, name: "Akıl Oyunları", icon: "♟️" },
+  { id: 10, name: "Yürüyüş", icon: "🚶" },
 ];
 
 // Haftanın günleri
@@ -700,15 +702,11 @@ export default function DashboardScreen() {
       console.log("Aynı tab tekrar seçildi - etkinlikler yeniden yükleniyor");
     }
 
+    // Just update the tab - the useEffect will handle filtering
     setActiveTab(tab);
-
-    try {
-      // Tab değişikliği sonrası filtreleri tekrar uygula
-      console.log(`${tab} tabı için filtreler yeniden uygulanıyor`);
-      applyActiveFilters();
-    } catch (error) {
-      console.error("Tab değişimi sonrası filtreleme hatası:", error);
-    }
+    
+    // No need to call applyActiveFilters directly as the useEffect will handle it
+    // This prevents duplicate filter operations
   };
 
   const handleNearbyPress = () => {
@@ -778,8 +776,14 @@ export default function DashboardScreen() {
         `>> FİLTRELEME: Tab=${activeTab}, Kategori=${selectedCategory}, Mesafe=${distanceFilter}km`
       );
 
-      // Filtreleme uygula
-      applyActiveFilters();
+      // Debounce implementation to prevent rapid consecutive updates
+      const debounceTimer = setTimeout(() => {
+        // Filtreleme uygula
+        applyActiveFilters();
+      }, 300);
+      
+      // Clean up timer on next effect run
+      return () => clearTimeout(debounceTimer);
     }
   }, [
     activeTab,
@@ -931,7 +935,11 @@ export default function DashboardScreen() {
       }
 
       // Kategori filtrelemesi
-      if (selectedCategory !== null) {
+      if (selectedCategory !== null && selectedCategory !== "Tümü") {
+        // Log tüm kategorileri (debug için)
+        const availableCategories = [...new Set(eventsWithDistance.map(event => event.category))];
+        console.log(`Mevcut etkinlik kategorileri: ${availableCategories.join(', ')}`);
+        
         eventsWithDistance = eventsWithDistance.filter((event) => {
           const matchesCategory = event.category === selectedCategory;
           console.log(
@@ -946,6 +954,8 @@ export default function DashboardScreen() {
         console.log(
           `Filtreleme sonrası ${eventsWithDistance.length} etkinlik (kategori filtresi)`
         );
+      } else {
+        console.log(`Tümü kategorisi seçili, tüm kategoriler gösteriliyor (${eventsWithDistance.length} etkinlik)`);
       }
     }
 
@@ -1227,6 +1237,8 @@ export default function DashboardScreen() {
           )}
         </View>
       </ScrollView>
+
+      <CreateEventButton onPress={handleCreateEvent} />
     </SafeAreaView>
   );
 }

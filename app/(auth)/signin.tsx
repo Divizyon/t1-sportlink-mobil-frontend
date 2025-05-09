@@ -7,6 +7,7 @@ import {
   Platform,
   Image,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { Button, ButtonText } from "../../components/ui/button";
 import {
@@ -38,9 +39,12 @@ import {
   Chrome,
   Apple,
 } from "lucide-react-native";
+import { useAuth } from "../../src/store/AuthContext";
 
 export default function SignInPage() {
+  const { login } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -88,11 +92,40 @@ export default function SignInPage() {
     return isValid;
   };
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     if (validateForm()) {
-      console.log("Giriş formu:", form);
-      // @ts-ignore
-      router.navigate("/(tabs)/dashboard");
+      setLoading(true);
+      try {
+        const user = await login(form.email, form.password);
+        console.log("Giriş başarılı:", user);
+
+        // Başarılı giriş sonrası ana sayfaya yönlendir
+        router.navigate("/(tabs)/dashboard");
+      } catch (error: any) {
+        console.error("Giriş hatası:", error);
+
+        // Kullanıcıya hata mesajı göster
+        if (error.response?.data?.message) {
+          Alert.alert("Giriş Hatası", error.response.data.message);
+        } else if (error.message === "Network Error") {
+          Alert.alert(
+            "Bağlantı Hatası",
+            "Sunucuya bağlanırken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin veya daha sonra tekrar deneyin."
+          );
+        } else if (error.code === "ECONNABORTED") {
+          Alert.alert(
+            "Bağlantı Zaman Aşımı",
+            "Sunucuya bağlanırken zaman aşımı oluştu. Lütfen daha sonra tekrar deneyin."
+          );
+        } else {
+          Alert.alert(
+            "Giriş Hatası",
+            "Giriş yapılırken bir hata oluştu. Lütfen tekrar deneyin."
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -152,7 +185,7 @@ export default function SignInPage() {
             >
               <FormControlLabel>
                 <FormControlLabelText className="text-emerald-700">
-                  E-posta veya kullanıcı adı
+                  E-posta
                 </FormControlLabelText>
               </FormControlLabel>
               <Input
@@ -227,37 +260,15 @@ export default function SignInPage() {
               </Link>
             </Box>
 
-            <FormControl>
-              <Box
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginTop: 8,
-                }}
-              >
-                <Box
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderWidth: 2,
-                    borderColor: "#047857",
-                    borderRadius: 4,
-                    marginRight: 8,
-                  }}
-                />
-                <Text className="text-emerald-700" size="sm">
-                  Beni hatırla
-                </Text>
-              </Box>
-            </FormControl>
-
             <Button
-              className="bg-emerald-600 rounded-lg"
               size="lg"
+              className="bg-emerald-600 mt-6 rounded-lg"
               onPress={handleSignIn}
-              style={{ marginTop: 24 }}
+              disabled={loading}
             >
-              <ButtonText style={{ fontWeight: "bold" }}>Giriş Yap</ButtonText>
+              <ButtonText className="text-white">
+                {loading ? "Giriş Yapılıyor..." : "Giriş Yap"}
+              </ButtonText>
             </Button>
 
             <Center style={{ marginTop: 24, marginBottom: 24 }}>

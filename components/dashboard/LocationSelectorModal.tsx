@@ -20,11 +20,18 @@ interface Location {
   address: string;
   distance?: string;
   image?: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 interface LocationSelectorModalProps {
   visible: boolean;
-  onSelect: (location: string) => void;
+  onSelect: (
+    location: string,
+    coordinates: { latitude: number; longitude: number }
+  ) => void;
   onClose: () => void;
 }
 
@@ -36,6 +43,10 @@ const mockLocations: Location[] = [
     address: "Selçuklu, Konya",
     distance: "1.2 km",
     image: "https://picsum.photos/600/200",
+    coordinates: {
+      latitude: 37.8651,
+      longitude: 32.4932,
+    },
   },
   {
     id: 2,
@@ -43,6 +54,10 @@ const mockLocations: Location[] = [
     address: "Meram, Konya",
     distance: "2.5 km",
     image: "https://picsum.photos/600/201",
+    coordinates: {
+      latitude: 37.8583,
+      longitude: 32.4482,
+    },
   },
   {
     id: 3,
@@ -50,6 +65,10 @@ const mockLocations: Location[] = [
     address: "Selçuklu, Konya",
     distance: "3.7 km",
     image: "https://picsum.photos/600/202",
+    coordinates: {
+      latitude: 37.874,
+      longitude: 32.4921,
+    },
   },
   {
     id: 4,
@@ -57,6 +76,10 @@ const mockLocations: Location[] = [
     address: "Selçuklu, Konya",
     distance: "4.1 km",
     image: "https://picsum.photos/600/203",
+    coordinates: {
+      latitude: 37.8691,
+      longitude: 32.4862,
+    },
   },
 ];
 
@@ -84,7 +107,11 @@ const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
 
   const handleConfirm = () => {
     if (selectedLocation) {
-      onSelect(selectedLocation.name);
+      const coordinates = selectedLocation.coordinates || {
+        latitude: 0,
+        longitude: 0,
+      };
+      onSelect(selectedLocation.name, coordinates);
     }
     onClose();
   };

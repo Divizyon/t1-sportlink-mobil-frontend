@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -7,168 +7,167 @@ import {
   SafeAreaView,
   Image,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { router } from "expo-router";
 import { Text } from "@/components/ui/text";
-import { 
-  ChevronLeft, 
-  MessageCircle, 
+import {
+  ChevronLeft,
+  MessageCircle,
   Search,
-  Circle,
   Clock,
   MoreVertical,
 } from "lucide-react-native";
+import { messagesApi } from "@/app/services/api/messagesApi";
 
-// Mesaj arayüzü
-interface Message {
-  id: number;
-  senderId: number;
-  senderName: string;
-  senderAvatar: string;
-  lastMessage: string;
-  time: string;
-  unreadCount: number;
-  isOnline: boolean;
+interface Friend {
+  id: string;
+  first_name: string;
+  last_name: string;
+  profile_picture: string;
+  is_online: boolean;
+  last_seen_at: string;
 }
 
-// Örnek mesaj verileri
-const MESSAGES: Message[] = [
-  {
-    id: 1,
-    senderId: 101,
-    senderName: "Ahmet Yılmaz",
-    senderAvatar: "https://randomuser.me/api/portraits/men/32.jpg",
-    lastMessage: "Merhaba, yarın basketbol maçına katılacak mısın?",
-    time: "10 dk önce",
-    unreadCount: 2,
-    isOnline: true,
-  },
-  {
-    id: 2,
-    senderId: 102,
-    senderName: "Zeynep Kaya",
-    senderAvatar: "https://randomuser.me/api/portraits/women/44.jpg",
-    lastMessage: "Voleybol antrenmanına bekliyoruz. Unutma!",
-    time: "30 dk önce",
-    unreadCount: 0,
-    isOnline: true,
-  },
-  {
-    id: 3,
-    senderId: 103,
-    senderName: "Mehmet Öztürk",
-    senderAvatar: "https://randomuser.me/api/portraits/men/68.jpg",
-    lastMessage: "Futbol turnuvası için takım oluşturuyorum. İlgilenir misin?",
-    time: "2 saat önce",
-    unreadCount: 1,
-    isOnline: false,
-  },
-  {
-    id: 4,
-    senderId: 104,
-    senderName: "Ayşe Demir",
-    senderAvatar: "https://randomuser.me/api/portraits/women/65.jpg",
-    lastMessage: "Yüzme etkinliğinin yeri değişti, haberiniz olsun.",
-    time: "Dün",
-    unreadCount: 0,
-    isOnline: false,
-  },
-  {
-    id: 5,
-    senderId: 105,
-    senderName: "Can Yıldız",
-    senderAvatar: "https://randomuser.me/api/portraits/men/22.jpg",
-    lastMessage: "Geçen haftaki tenis maçı çok güzeldi, tekrar ne zaman oynayalım?",
-    time: "2 gün önce",
-    unreadCount: 0,
-    isOnline: true,
-  },
-  {
-    id: 6,
-    senderId: 106,
-    senderName: "Selin Arslan",
-    senderAvatar: "https://randomuser.me/api/portraits/women/90.jpg",
-    lastMessage: "Bisiklet turu için hazırlıklar tamam mı?",
-    time: "1 hafta önce",
-    unreadCount: 0,
-    isOnline: false,
-  },
-];
+interface LastMessage {
+  id: number;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  content_type: string;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ChatItem {
+  friend: Friend;
+  last_message: LastMessage;
+  unread_count: number;
+  last_activity: string;
+}
 
 export default function MessagesScreen() {
-  const [messages, setMessages] = useState<Message[]>(MESSAGES);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [chats, setChats] = useState<ChatItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const fetchMessages = async () => {
+    try {
+      setLoading(true);
+      const response = await messagesApi.getMessages();
+      if (response?.data?.data) {
+        setChats(response.data.data);
+      }
+    } catch (err) {
+      setError('Mesajlar yüklenirken bir hata oluştu');
+      console.error('Mesajlar yüklenirken hata:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBackPress = () => {
     router.back();
   };
 
-  const handleMessagePress = (messageId: number, senderId: number) => {
-    // Gerçek uygulamada okunmamış mesaj sayısını sıfırla
-    setMessages(prev => 
-      prev.map(msg => 
-        msg.id === messageId 
-          ? { ...msg, unreadCount: 0 } 
-          : msg
-      )
-    );
-    
-    // Mesaj detay sayfasına yönlendir
-    // @ts-ignore - Expo Router tip sorununu geçici olarak görmezden geliyoruz
-    router.push(`/chat/${senderId}`);
+  const handleMessagePress = (friendId: string) => {
+    router.push({
+      pathname: "/messages/[id]",
+      params: { 
+        id: friendId,
+      }
+    });
   };
 
-  const filteredMessages = searchQuery
-    ? messages.filter(message => 
-        message.senderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        message.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredChats = searchQuery
+    ? chats.filter(
+        (chat) =>
+          `${chat.friend.first_name} ${chat.friend.last_name}`
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          chat.last_message.content.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : messages;
+    : chats;
 
-  const renderMessageItem = ({ item }: { item: Message }) => (
-    <TouchableOpacity 
-      style={[styles.messageItem, item.unreadCount > 0 && styles.unreadItem]}
-      onPress={() => handleMessagePress(item.id, item.senderId)}
+  const renderChatItem = ({ item }: { item: ChatItem }) => (
+    <TouchableOpacity
+      style={[styles.messageItem, item.unread_count > 0 && styles.unreadItem]}
+      onPress={() => handleMessagePress(item.friend.id)}
     >
       <View style={styles.avatarContainer}>
         <Image 
-          source={{ uri: item.senderAvatar }} 
+          source={{ uri: item.friend.profile_picture || 'https://via.placeholder.com/100' }} 
           style={styles.avatar} 
         />
-        {item.isOnline && <View style={styles.onlineIndicator} />}
+        {item.friend.is_online && <View style={styles.onlineIndicator} />}
       </View>
-      
+
       <View style={styles.messageContent}>
         <View style={styles.messageHeader}>
-          <Text style={styles.senderName}>{item.senderName}</Text>
+          <Text style={styles.senderName}>
+            {`${item.friend.first_name} ${item.friend.last_name}`}
+          </Text>
           <View style={styles.timeContainer}>
             <Clock size={12} color="#95a5a6" />
-            <Text style={styles.messageTime}>{item.time}</Text>
+            <Text style={styles.messageTime}>
+              {new Date(item.last_activity).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </Text>
           </View>
         </View>
-        
-        <Text 
-          style={[styles.messageText, item.unreadCount > 0 && styles.unreadText]}
+
+        <Text
+          style={[
+            styles.messageText,
+            item.unread_count > 0 && styles.unreadText,
+          ]}
           numberOfLines={1}
           ellipsizeMode="tail"
         >
-          {item.lastMessage}
+          {item.last_message.content}
         </Text>
       </View>
-      
-      {item.unreadCount > 0 && (
+
+      {item.unread_count > 0 && (
         <View style={styles.unreadBadge}>
-          <Text style={styles.unreadCount}>{item.unreadCount}</Text>
+          <Text style={styles.unreadCount}>{item.unread_count}</Text>
         </View>
       )}
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchMessages}>
+          <Text style={styles.retryButtonText}>Tekrar Dene</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      
+
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <ChevronLeft size={24} color="#333" />
@@ -178,11 +177,11 @@ export default function MessagesScreen() {
           <MoreVertical size={24} color="#333" />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Search size={18} color="#95a5a6" style={styles.searchIcon} />
-          <TextInput 
+          <TextInput
             style={styles.searchInput}
             placeholder="Mesajlarda ara..."
             value={searchQuery}
@@ -190,23 +189,25 @@ export default function MessagesScreen() {
           />
         </View>
       </View>
-      
-      {filteredMessages.length === 0 ? (
+
+      {filteredChats.length === 0 ? (
         <View style={styles.emptyContainer}>
           <MessageCircle size={64} color="#d5d5d5" />
           <Text style={styles.emptyText}>Mesaj Bulunamadı</Text>
           <Text style={styles.emptySubText}>
-            {searchQuery 
+            {searchQuery
               ? "Arama kriterlerine uygun mesaj bulunamadı."
               : "Henüz mesajınız bulunmuyor."}
           </Text>
         </View>
       ) : (
         <FlatList
-          data={filteredMessages}
-          renderItem={renderMessageItem}
-          keyExtractor={(item) => item.id.toString()}
+          data={filteredChats}
+          renderItem={renderChatItem}
+          keyExtractor={(item) => item.friend.id}
           contentContainerStyle={styles.listContent}
+          refreshing={loading}
+          onRefresh={fetchMessages}
         />
       )}
     </SafeAreaView>
@@ -217,6 +218,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: 'red',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    padding: 10,
+    borderRadius: 5,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   header: {
     flexDirection: "row",
@@ -364,4 +390,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     marginTop: 8,
   },
-}); 
+});

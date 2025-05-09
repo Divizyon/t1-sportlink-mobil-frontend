@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -6,186 +6,247 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Image,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { router } from "expo-router";
 import { Text } from "@/components/ui/text";
-import { 
-  ChevronLeft, 
-  User, 
-  Check, 
-  X, 
+import {
+  ChevronLeft,
+  User,
+  Check,
+  X,
   Clock,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react-native";
-
-// Arkadaşlık isteği arayüzü
-interface FriendRequest {
-  id: number;
-  name: string;
-  username: string;
-  avatar: string;
-  mutualFriends: number;
-  time: string;
-  status?: "pending" | "accepted" | "rejected";
-}
-
-// Örnek arkadaşlık istekleri verisi
-const FRIEND_REQUESTS: FriendRequest[] = [
-  {
-    id: 1,
-    name: "Zeynep Şahin",
-    username: "zeynepshn",
-    avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-    mutualFriends: 3,
-    time: "2 saat önce",
-    status: "pending"
-  },
-  {
-    id: 2,
-    name: "Mehmet Yılmaz",
-    username: "mehmetyilmaz",
-    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-    mutualFriends: 5,
-    time: "1 gün önce",
-    status: "pending"
-  },
-  {
-    id: 3,
-    name: "Ayşe Kaya",
-    username: "aysekaya",
-    avatar: "https://randomuser.me/api/portraits/women/68.jpg",
-    mutualFriends: 2,
-    time: "2 gün önce",
-    status: "pending"
-  },
-  {
-    id: 4,
-    name: "Can Demir",
-    username: "candemir",
-    avatar: "https://randomuser.me/api/portraits/men/75.jpg",
-    mutualFriends: 8,
-    time: "3 gün önce",
-    status: "pending"
-  },
-  {
-    id: 5,
-    name: "Elif Yıldız",
-    username: "elifyildiz",
-    avatar: "https://randomuser.me/api/portraits/women/90.jpg",
-    mutualFriends: 1,
-    time: "5 gün önce",
-    status: "pending"
-  }
-];
+import { FriendshipRequest } from "../../types/friendships";
+import {
+  getIncomingFriendshipRequests,
+  acceptFriendshipRequest,
+  rejectFriendshipRequest,
+} from "../../services/api/friendships";
 
 export default function FriendRequestsScreen() {
-  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>(FRIEND_REQUESTS);
+  const [friendRequests, setFriendRequests] = useState<FriendshipRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [processingRequestIds, setProcessingRequestIds] = useState<string[]>(
+    []
+  );
+
+  // Arkadaşlık isteklerini getir
+  const fetchFriendRequests = async () => {
+    try {
+      setLoading(true);
+      const response = await getIncomingFriendshipRequests();
+      if (response.status === "success" && response.data) {
+        console.log("Gelen arkadaşlık istekleri:", response.data.length);
+        console.log(
+          "Arkadaşlık isteği detayları:",
+          JSON.stringify(response.data, null, 2)
+        );
+        setFriendRequests(response.data);
+      }
+    } catch (error) {
+      console.error("Arkadaşlık istekleri getirilirken hata:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Sayfa yüklendiğinde arkadaşlık isteklerini getir
+  useEffect(() => {
+    fetchFriendRequests();
+  }, []);
+
+  // Yenile fonksiyonu
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchFriendRequests();
+  };
 
   const handleBackPress = () => {
     router.back();
   };
 
-  const handleViewProfile = (userId: number) => {
+  const handleViewProfile = (userId: string) => {
     router.push({
       pathname: "/(tabs)/profile",
-      params: { id: userId }
+      params: { id: userId },
     });
   };
 
-  const handleAcceptRequest = (id: number) => {
-    // Burada normalde bir API isteği yapılır
-    // Artık listeden kaldırmak yerine durumu güncelliyoruz
-    setFriendRequests(prev => 
-      prev.map(request => 
-        request.id === id 
-          ? { ...request, status: "accepted" } 
-          : request
-      )
-    );
+  const handleAcceptRequest = async (requestId: string) => {
+    try {
+      // İşlem başladı durumunu kaydet
+      setProcessingRequestIds((prev) => [...prev, requestId.toString()]);
+
+      const response = await acceptFriendshipRequest(requestId.toString());
+
+      if (response.status === "success") {
+        // İstek listeden kaldırılıyor
+        setFriendRequests((prev) =>
+          prev.filter(
+            (request) => request.id.toString() !== requestId.toString()
+          )
+        );
+        console.log("Arkadaşlık isteği kabul edildi:", requestId);
+      }
+    } catch (error) {
+      console.error("Arkadaşlık isteği kabul edilirken hata:", error);
+    } finally {
+      // İşlemi tamamlandı durumunu kaydet
+      setProcessingRequestIds((prev) =>
+        prev.filter((id) => id !== requestId.toString())
+      );
+      setLoading(false);
+    }
   };
 
-  const handleRejectRequest = (id: number) => {
-    // Burada normalde bir API isteği yapılır
-    // Artık listeden kaldırmak yerine durumu güncelliyoruz
-    setFriendRequests(prev => 
-      prev.map(request => 
-        request.id === id 
-          ? { ...request, status: "rejected" } 
-          : request
-      )
-    );
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      // İşlem başladı durumunu kaydet
+      setProcessingRequestIds((prev) => [...prev, requestId.toString()]);
+
+      const response = await rejectFriendshipRequest(requestId.toString());
+
+      if (response.status === "success") {
+        // İstek listeden kaldırılıyor
+        setFriendRequests((prev) =>
+          prev.filter(
+            (request) => request.id.toString() !== requestId.toString()
+          )
+        );
+        console.log("Arkadaşlık isteği reddedildi:", requestId);
+      }
+    } catch (error) {
+      console.error("Arkadaşlık isteği reddedilirken hata:", error);
+    } finally {
+      // İşlemi tamamlandı durumunu kaydet
+      setProcessingRequestIds((prev) =>
+        prev.filter((id) => id !== requestId.toString())
+      );
+      setLoading(false);
+    }
   };
 
-  const renderFriendRequestItem = ({ item }: { item: FriendRequest }) => (
-    <View style={styles.requestItem}>
-      <TouchableOpacity 
-        style={styles.profileSection}
-        onPress={() => handleViewProfile(item.id)}
-      >
-        <Image 
-          source={{ uri: item.avatar }} 
-          style={styles.avatar} 
-        />
-        <View style={styles.userInfo}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.username}>@{item.username}</Text>
-          {item.mutualFriends > 0 && (
-            <Text style={styles.mutualFriends}>
-              {item.mutualFriends} ortak arkadaş
-            </Text>
-          )}
-          <View style={styles.timeContainer}>
-            <Clock size={12} color="#95a5a6" />
-            <Text style={styles.time}>{item.time}</Text>
+  const renderFriendRequestItem = ({ item }: { item: FriendshipRequest }) => {
+    // Kullanıcı adını güvenli bir şekilde alalım
+    const getRequesterName = () => {
+      // Requester undefined ise güvenli bir değer döndür
+      if (!item.requester) {
+        return "Bilinmeyen Kullanıcı";
+      }
+
+      // First_name ve last_name birleştir
+      if (item.requester.first_name || item.requester.last_name) {
+        return `${item.requester.first_name || ""} ${
+          item.requester.last_name || ""
+        }`.trim();
+      }
+
+      // Hiçbir isim bilgisi yoksa
+      return "Bilinmeyen Kullanıcı";
+    };
+
+    const requesterName = getRequesterName();
+
+    // Kullanıcı adından avatar oluştur
+    const avatarLetter = requesterName.charAt(0).toUpperCase();
+
+    // İsteğin işlem durumunu kontrol et
+    const isProcessing = processingRequestIds.includes(item.id.toString());
+
+    return (
+      <View style={styles.requestItem}>
+        <TouchableOpacity
+          style={styles.profileSection}
+          onPress={() =>
+            item.requester ? handleViewProfile(item.requester.id) : null
+          }
+        >
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatarText}>{avatarLetter}</Text>
           </View>
-        </View>
-      </TouchableOpacity>
-      
-      {item.status === "accepted" ? (
-        <View style={styles.statusContainer}>
-          <Check size={18} color="#2ecc71" />
-          <Text style={styles.acceptedText}>Kabul edildi</Text>
-        </View>
-      ) : item.status === "rejected" ? (
-        <View style={styles.statusContainer}>
-          <X size={18} color="#e74c3c" />
-          <Text style={styles.rejectedText}>Reddedildi</Text>
-        </View>
-      ) : (
+
+          <View style={styles.userInfo}>
+            <Text style={styles.name}>{requesterName}</Text>
+            <View style={styles.timeContainer}>
+              <Clock size={12} color="#95a5a6" />
+              <Text style={styles.time}>
+                {item.created_at
+                  ? new Date(item.created_at).toLocaleDateString("tr-TR")
+                  : ""}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.acceptButton]}
-            onPress={() => handleAcceptRequest(item.id)}
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              styles.acceptButton,
+              isProcessing && styles.disabledButton,
+            ]}
+            onPress={() =>
+              !isProcessing && handleAcceptRequest(item.id.toString())
+            }
+            disabled={isProcessing}
           >
-            <Check size={18} color="#fff" />
-            <Text style={styles.acceptButtonText}>Kabul Et</Text>
+            {isProcessing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Check size={18} color="#fff" />
+                <Text style={styles.acceptButtonText}>Kabul Et</Text>
+              </>
+            )}
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.rejectButton]}
-            onPress={() => handleRejectRequest(item.id)}
+
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              styles.rejectButton,
+              isProcessing && styles.disabledButton,
+            ]}
+            onPress={() =>
+              !isProcessing && handleRejectRequest(item.id.toString())
+            }
+            disabled={isProcessing}
           >
-            <X size={18} color="#666" />
-            <Text style={styles.rejectButtonText}>Reddet</Text>
+            {isProcessing ? (
+              <ActivityIndicator size="small" color="#666" />
+            ) : (
+              <>
+                <X size={18} color="#666" />
+                <Text style={styles.rejectButtonText}>Reddet</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
-      )}
-    </View>
-  );
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      
+
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <ChevronLeft size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Arkadaşlık İstekleri</Text>
       </View>
-      
-      {friendRequests.length === 0 ? (
+
+      {loading && !refreshing ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+        </View>
+      ) : friendRequests.length === 0 ? (
         <View style={styles.emptyContainer}>
           <User size={64} color="#d5d5d5" />
           <Text style={styles.emptyText}>Arkadaşlık İsteği Yok</Text>
@@ -199,6 +260,9 @@ export default function FriendRequestsScreen() {
           renderItem={renderFriendRequestItem}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         />
       )}
     </SafeAreaView>
@@ -225,6 +289,11 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   listContent: {
     padding: 16,
   },
@@ -243,20 +312,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginBottom: 16,
   },
-  avatar: {
+  avatarContainer: {
     width: 60,
     height: 60,
     borderRadius: 30,
+    backgroundColor: "#4CAF50",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 16,
+  },
+  avatarText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "white",
   },
   userInfo: {
     flex: 1,
     justifyContent: "center",
   },
   name: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 2,
+    marginBottom: 4,
   },
   username: {
     fontSize: 14,
@@ -264,8 +341,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   mutualFriends: {
-    fontSize: 13,
-    color: "#3498db",
+    fontSize: 12,
+    color: "#666",
     marginBottom: 4,
   },
   timeContainer: {
@@ -279,39 +356,51 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
   },
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 8,
-    flex: 1,
-    marginHorizontal: 4,
+    marginLeft: 8,
   },
   acceptButton: {
-    backgroundColor: "#2ecc71",
-  },
-  rejectButton: {
-    backgroundColor: "#f1f1f1",
+    backgroundColor: "#4CAF50",
   },
   acceptButtonText: {
     color: "#fff",
-    fontWeight: "600",
-    marginLeft: 6,
+    fontWeight: "bold",
+    marginLeft: 4,
+  },
+  rejectButton: {
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#ddd",
   },
   rejectButtonText: {
     color: "#666",
-    fontWeight: "600",
-    marginLeft: 6,
+    marginLeft: 4,
+  },
+  statusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  acceptedText: {
+    color: "#2ecc71",
+    marginLeft: 4,
+  },
+  rejectedText: {
+    color: "#e74c3c",
+    marginLeft: 4,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
+    padding: 20,
   },
   emptyText: {
     fontSize: 18,
@@ -326,25 +415,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     marginTop: 8,
   },
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: "#f9f9f9",
-    marginTop: 8
+  disabledButton: {
+    opacity: 0.5,
   },
-  acceptedText: {
-    color: "#2ecc71",
-    fontWeight: "600",
-    marginLeft: 8,
-    fontSize: 16
-  },
-  rejectedText: {
-    color: "#e74c3c",
-    fontWeight: "600",
-    marginLeft: 8,
-    fontSize: 16
-  },
-}); 
+});

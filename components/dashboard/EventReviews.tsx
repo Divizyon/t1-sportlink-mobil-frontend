@@ -1,176 +1,297 @@
-import React from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useState } from "react";
+import {
+  StyleSheet,
+  View,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from "react-native";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
-import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
-import { Star } from "lucide-react-native";
+import { VStack } from "@/components/ui/vstack";
+import { MessageSquare, Send, Star } from "lucide-react-native";
 
 interface Review {
   id: number;
-  userName: string;
+  user: {
+    name: string;
+    avatar: string;
+  };
   rating: number;
-  comment: string;
+  content: string;
+  date: string;
 }
 
 interface EventReviewsProps {
-  reviews: Review[];
-  averageRating: number;
+  eventId: number;
+  reviews?: Review[];
 }
 
-const EventReviews: React.FC<EventReviewsProps> = ({
-  reviews,
-  averageRating,
+const StarRating = ({
+  rating,
+  maxRating = 5,
+  size = 18,
+  color = "#F59E0B",
+  onRatingChange,
+}: {
+  rating: number;
+  maxRating?: number;
+  size?: number;
+  color?: string;
+  onRatingChange?: (rating: number) => void;
 }) => {
-  const renderStars = (rating: number) => {
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-      stars.push(
-        <Star
-          key={i}
-          size={16}
-          color={i <= rating ? "#F59E0B" : "#E2E8F0"}
-          fill={i <= rating ? "#F59E0B" : "none"}
-          style={{ marginRight: 4 }}
-        />
-      );
+  return (
+    <HStack style={styles.starContainer}>
+      {Array.from({ length: maxRating }).map((_, index) => (
+        <TouchableOpacity
+          key={index}
+          onPress={() => onRatingChange && onRatingChange(index + 1)}
+          style={{ padding: 2 }}
+        >
+          <Star
+            size={size}
+            color={color}
+            fill={index < rating ? color : "transparent"}
+          />
+        </TouchableOpacity>
+      ))}
+    </HStack>
+  );
+};
+
+const EventReviews: React.FC<EventReviewsProps> = ({
+  eventId,
+  reviews: initialReviews = [],
+}) => {
+  const [reviews, setReviews] = useState<Review[]>(initialReviews);
+  const [comment, setComment] = useState("");
+  const [rating, setRating] = useState(0);
+
+  const handleSubmitReview = () => {
+    if (comment.trim() === "") {
+      Alert.alert("Uyarı", "Lütfen bir yorum yazınız.");
+      return;
     }
-    return stars;
+
+    if (rating === 0) {
+      Alert.alert("Uyarı", "Lütfen bir puan veriniz.");
+      return;
+    }
+
+    // Gerçek uygulamada, burada API çağrısı yapılır
+    const newReview: Review = {
+      id: reviews.length + 1,
+      user: {
+        name: "Sen",
+        avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+      },
+      rating,
+      content: comment,
+      date: new Date().toLocaleDateString("tr-TR"),
+    };
+
+    setReviews([newReview, ...reviews]);
+    setComment("");
+    setRating(0);
   };
 
   return (
-    <Box style={styles.section}>
-      <Text style={styles.sectionTitle}>Değerlendirmeler</Text>
+    <Box style={styles.container}>
+      {/* Yorum Başlığı */}
 
-      <HStack style={styles.ratingOverview}>
-        <VStack style={styles.averageRating}>
-          <Text style={styles.ratingValue}>{averageRating.toFixed(1)}</Text>
-          <HStack>{renderStars(Math.round(averageRating))}</HStack>
-          <Text style={styles.ratingCount}>{reviews.length} değerlendirme</Text>
-        </VStack>
+      {/* Yorum Ekleme */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={100}
+      >
+        <Box style={styles.addCommentContainer}>
+          <Text style={styles.ratingLabel}>Puan Ver</Text>
+          <StarRating rating={rating} onRatingChange={setRating} />
 
-        <VStack style={styles.ratingBars}>
-          {[5, 4, 3, 2, 1].map((star) => {
-            const count = reviews.filter((r) => r.rating === star).length;
-            const percentage = reviews.length
-              ? (count / reviews.length) * 100
-              : 0;
+          <HStack style={styles.commentInputContainer}>
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Yorumunuzu yazın..."
+              placeholderTextColor="#A1A1AA"
+              value={comment}
+              onChangeText={setComment}
+              multiline
+            />
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+                comment.trim() === "" || rating === 0
+                  ? styles.sendButtonDisabled
+                  : null,
+              ]}
+              disabled={comment.trim() === "" || rating === 0}
+              onPress={handleSubmitReview}
+            >
+              <Send
+                size={18}
+                color={
+                  comment.trim() === "" || rating === 0 ? "#A1A1AA" : "#FFFFFF"
+                }
+              />
+            </TouchableOpacity>
+          </HStack>
+        </Box>
+      </KeyboardAvoidingView>
 
-            return (
-              <HStack key={star} style={styles.ratingBarRow}>
-                <Text style={styles.ratingBarLabel}>{star}</Text>
-                <Star size={12} color="#F59E0B" fill="#F59E0B" />
-                <View style={styles.ratingBarContainer}>
-                  <View
-                    style={[styles.ratingBar, { width: `${percentage}%` }]}
+      {/* Yorum Listesi */}
+      <Box style={styles.reviewsContainer}>
+        {reviews.length === 0 ? (
+          <Text style={styles.noReviews}>
+            Henüz yorum yapılmamış. İlk yorumu sen yap!
+          </Text>
+        ) : (
+          reviews.map((review, index) => (
+            <Box
+              key={review.id}
+              style={[
+                styles.reviewItem,
+                index !== reviews.length - 1 && styles.reviewItemBorder,
+              ]}
+            >
+              <HStack style={styles.reviewHeader}>
+                <HStack style={styles.userInfo}>
+                  <Image
+                    source={{ uri: review.user.avatar }}
+                    style={styles.avatar}
                   />
-                </View>
-                <Text style={styles.ratingBarCount}>{count}</Text>
+                  <Text style={styles.username}>{review.user.name}</Text>
+                </HStack>
+                <Text style={styles.date}>{review.date}</Text>
               </HStack>
-            );
-          })}
-        </VStack>
-      </HStack>
 
-      <VStack style={styles.reviewsContainer}>
-        {reviews.map((review) => (
-          <Box key={review.id} style={styles.reviewItem}>
-            <HStack style={styles.reviewHeader}>
-              <Text style={styles.reviewerName}>{review.userName}</Text>
-              <HStack>{renderStars(review.rating)}</HStack>
-            </HStack>
-            <Text style={styles.reviewComment}>{review.comment}</Text>
-          </Box>
-        ))}
-      </VStack>
+              <StarRating rating={review.rating} size={14} />
+
+              <Text style={styles.reviewContent}>{review.content}</Text>
+            </Box>
+          ))
+        )}
+      </Box>
     </Box>
   );
 };
 
 const styles = StyleSheet.create({
-  section: {
-    borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
-    padding: 16,
+  container: {
+    marginVertical: 10,
   },
-  sectionTitle: {
-    fontSize: 18,
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  header: {
+    fontSize: 16,
     fontWeight: "600",
     color: "#0F172A",
-    marginBottom: 16,
   },
-  ratingOverview: {
-    marginBottom: 24,
+  addCommentContainer: {
+    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
-  averageRating: {
-    alignItems: "center",
-    width: 100,
-    marginRight: 16,
-  },
-  ratingValue: {
-    fontSize: 36,
-    fontWeight: "700",
-    color: "#0F172A",
-    marginBottom: 4,
-  },
-  ratingCount: {
-    fontSize: 12,
+  ratingLabel: {
+    fontSize: 14,
+    fontWeight: "500",
     color: "#64748B",
-    marginTop: 8,
-  },
-  ratingBars: {
-    flex: 1,
-    gap: 6,
-  },
-  ratingBarRow: {
-    alignItems: "center",
-  },
-  ratingBarLabel: {
-    width: 16,
-    fontSize: 12,
-    color: "#64748B",
-    textAlign: "right",
-    marginRight: 4,
-  },
-  ratingBarContainer: {
-    flex: 1,
-    height: 8,
-    backgroundColor: "#F1F5F9",
-    borderRadius: 4,
-    marginHorizontal: 8,
-    overflow: "hidden",
-  },
-  ratingBar: {
-    height: "100%",
-    backgroundColor: "#F59E0B",
-    borderRadius: 4,
-  },
-  ratingBarCount: {
-    width: 20,
-    fontSize: 12,
-    color: "#64748B",
-  },
-  reviewsContainer: {
-    gap: 16,
-  },
-  reviewItem: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 10,
-    padding: 12,
-  },
-  reviewHeader: {
-    justifyContent: "space-between",
     marginBottom: 8,
   },
-  reviewerName: {
+  starContainer: {
+    flexDirection: "row",
+    marginBottom: 16,
+  },
+  commentInputContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+  },
+  commentInput: {
+    flex: 1,
+    minHeight: 40,
+    maxHeight: 80,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: 12,
+    fontSize: 14,
+    color: "#0F172A",
+  },
+  sendButton: {
+    backgroundColor: "#10B981",
+    borderRadius: 12,
+    padding: 12,
+    marginLeft: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  sendButtonDisabled: {
+    backgroundColor: "#E2E8F0",
+  },
+  reviewsContainer: {
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+  },
+  noReviews: {
+    fontSize: 14,
+    color: "#64748B",
+    textAlign: "center",
+    padding: 20,
+  },
+  reviewItem: {
+    paddingVertical: 12,
+  },
+  reviewItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    marginBottom: 12,
+  },
+  reviewHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  userInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  avatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  username: {
     fontSize: 14,
     fontWeight: "600",
     color: "#0F172A",
   },
-  reviewComment: {
+  date: {
+    fontSize: 12,
+    color: "#94A3B8",
+  },
+  rating: {
+    marginBottom: 8,
+  },
+  reviewContent: {
     fontSize: 14,
-    color: "#334155",
     lineHeight: 20,
+    color: "#64748B",
+    marginTop: 8,
   },
 });
 

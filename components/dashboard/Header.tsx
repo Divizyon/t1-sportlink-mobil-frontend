@@ -23,24 +23,19 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({
   userName,
   userAvatar,
-  isPro,
   unreadMessages = 0,
 }) => {
   const handleMessagesPress = () => {
-    router.push("/messages");
+    router.push("/(tabs)/profile/friends-list", {
+      withAnchor:true,
+    });
   };
-
   return (
     <Box style={styles.header}>
       <HStack style={styles.userInfo}>
         <Image source={{ uri: userAvatar }} style={styles.avatar} />
         <VStack style={{ marginLeft: 8 }}>
           <Text style={styles.userName}>{userName}</Text>
-          {isPro && (
-            <Box style={styles.proBadge}>
-              <Text style={styles.proText}>PRO</Text>
-            </Box>
-          )}
         </VStack>
       </HStack>
       <HStack>
