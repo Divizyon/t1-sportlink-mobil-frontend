@@ -119,9 +119,25 @@ export const friendshipsApi = {
   getFriends: async () => {
     return safeApiCall(async () => {
       console.log("Arkadaş listesi getiriliyor...");
-      const response = await apiClient.get("/mobile/friendships");
-      console.log("Arkadaş listesi alındı:", response.data.data);
-      return response.data.data as Friend[];
+      try {
+        const response = await apiClient.get("/mobile/friendships");
+        console.log("Ham API yanıtı:", JSON.stringify(response, null, 2));
+        console.log("Arkadaş listesi alındı, status:", response.status);
+        console.log("Arkadaş listesi data:", JSON.stringify(response.data, null, 2));
+        console.log("Arkadaş listesi data.data:", JSON.stringify(response.data.data, null, 2));
+        
+        if (response.data && response.data.data) {
+          const friends = response.data.data;
+          console.log(`${friends.length} arkadaş bulundu`);
+          return friends as Friend[];
+        } else {
+          console.log("Arkadaş listesi boş veya tanımsız");
+          return [];
+        }
+      } catch (error) {
+        console.error("Arkadaş listesi getirme hatası:", error);
+        throw error;
+      }
     }, []);
   },
 };
