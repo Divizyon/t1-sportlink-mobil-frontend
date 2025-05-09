@@ -1,27 +1,76 @@
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+import { router } from "expo-router";
+import { showToast } from "../utils/toastHelper";
+
+// Track auth state
+let isRefreshingToken = false;
+let tokenRefreshPromise: Promise<string | null> | null = null;
+let failedQueue: Array<{
+  resolve: (value: unknown) => void;
+  reject: (reason?: any) => void;
+  config: any;
+}> = [];
+
+// Process queued requests
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((request) => {
+    if (error) {
+      request.reject(error);
+    } else if (token) {
+      // Clone the original request but update the Authorization header
+      const newRequest = { ...request.config };
+      newRequest.headers.Authorization = `Bearer ${token}`;
+      request.resolve(axios(newRequest));
+    }
+  });
+  
+  // Reset the queue
+  failedQueue = [];
+};
+
+// Force logout function
+const forceLogout = async () => {
+  console.log("API Client: Force logout due to authentication failure");
+  try {
+    // Clear all storage items related to auth
+    await AsyncStorage.removeItem("authToken");
+    await AsyncStorage.removeItem("refreshToken");
+    await AsyncStorage.removeItem("userData");
+    
+    // Show toast notification
+    showToast("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.", "error");
+    
+    // Navigate to login screen
+    setTimeout(() => {
+      router.replace("/auth/login");
+    }, 500);
+  } catch (error) {
+    console.error("Force logout error:", error);
+  }
+};
 
 // API adresini yapılandırma
 // Farklı ortamlar için doğru IP adresi
 let API_URL = "";
 
-// Emülatör/Simülatör için
+// Platform-specific URLs for development
 if (__DEV__) {
-  // Android Emülatör için özel IP
-  if (Platform.OS === "android") {
-    API_URL = "http://192.168.1.137:3000/api"; // Android emülatör için localhost karşılığı
+  // Android emulator needs special IP to access host
+  if (Platform.OS === 'android') {
+    API_URL = "http://10.0.2.2:3000/api";
   }
-  // iOS Simülatör için localhost
-  else if (Platform.OS === "ios") {
+  // iOS simulator can access localhost
+  else if (Platform.OS === 'ios') {
     API_URL = "http://localhost:3000/api";
   }
-  // Gerçek cihaz için kendi bilgisayarınızın IP'si
+  // Real device - use the host machine network IP
   else {
-    API_URL = "http://192.168.1.137:3000/api"; // Kendi ağınıza göre değiştirin
+    API_URL = "http://192.168.1.137:3000/api";
   }
 } else {
-  // Üretim ortamı için
+  // Production environment
   API_URL = "https://api.sportlink.com/api";
 }
 
@@ -34,15 +83,20 @@ const apiClient = axios.create({
     "Content-Type": "application/json",
   },
   timeout: 15000, // 15 saniyelik timeout
-});
+}) as AxiosInstance & { checkToken: () => Promise<boolean> };
 
 // Add a request interceptor to add auth token to requests
 apiClient.interceptors.request.use(
   async (config) => {
+    // Debug log the request
+    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    
     // Get token from AsyncStorage
     const token = await AsyncStorage.getItem("authToken");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      console.log("Token bulunamadı, istek yetkisiz olarak gönderiliyor");
     }
 
     // URL yolunda çift '/api' olup olmadığını kontrol et
@@ -55,6 +109,7 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error("Request interceptor error:", error);
     return Promise.reject(error);
   }
 );
@@ -62,10 +117,16 @@ apiClient.interceptors.request.use(
 // Add a response interceptor for error handling and token refresh
 apiClient.interceptors.response.use(
   (response) => {
+    // Debug log the successful response
+    console.log(`API Response Success: ${response.config.url} - Status: ${response.status}`);
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
+    
+    // Debug log the error
+    console.error(`API Response Error: ${originalRequest?.url} - Status: ${error.response?.status}`);
+    console.error(`Error message: ${error.message}`);
 
     // Network veya server hatalarını işle
     if (error.message === "Network Error") {
@@ -96,6 +157,16 @@ apiClient.interceptors.response.use(
       }
 
       originalRequest._retry = true;
+      
+      // If token refresh is already in progress, queue this request
+      if (isRefreshingToken) {
+        console.log("Token yenileme zaten devam ediyor, istek kuyruğa alınıyor");
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject, config: originalRequest });
+        });
+      }
+      
+      isRefreshingToken = true;
 
       try {
         // Token yenileme işlemi burada yapılacak
@@ -104,9 +175,9 @@ apiClient.interceptors.response.use(
 
         if (!refreshToken) {
           // Refresh token yoksa, kullanıcıyı çıkış yapmaya yönlendir
-          await AsyncStorage.removeItem("authToken");
-          await AsyncStorage.removeItem("refreshToken");
-          await AsyncStorage.removeItem("userData");
+          console.log("Refresh token bulunamadı, oturum kapatılıyor");
+          await forceLogout();
+          processQueue(new Error("Oturum süresi doldu"));
           return Promise.reject(
             new Error("Oturum süresi doldu, tekrar giriş yapın")
           );
@@ -124,40 +195,41 @@ apiClient.interceptors.response.use(
             response.data.data.session
           ) {
             // Yeni tokenları kaydet
-            await AsyncStorage.setItem(
-              "authToken",
-              response.data.data.session.access_token
-            );
-            await AsyncStorage.setItem(
-              "refreshToken",
-              response.data.data.session.refresh_token
-            );
-
+            const newToken = response.data.data.session.access_token;
+            const newRefreshToken = response.data.data.session.refresh_token;
+            
+            await AsyncStorage.setItem("authToken", newToken);
+            await AsyncStorage.setItem("refreshToken", newRefreshToken);
+            
+            console.log("Token başarıyla yenilendi");
+            
+            // Process all queued requests with the new token
+            processQueue(null, newToken);
+            
             // Orijinal isteği yeni token ile tekrarla
-            originalRequest.headers.Authorization = `Bearer ${response.data.data.session.access_token}`;
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return axios(originalRequest);
+          } else {
+            console.log("Token yenileme yanıtı geçersiz format");
+            await forceLogout();
+            processQueue(new Error("Token yenileme başarısız - geçersiz yanıt"));
+            return Promise.reject(new Error("Token yenileme başarısız - geçersiz yanıt"));
           }
-
-          // Token yenileme başarısız olursa sessionı temizle
-          await AsyncStorage.removeItem("authToken");
-          await AsyncStorage.removeItem("refreshToken");
-          await AsyncStorage.removeItem("userData");
-          return Promise.reject(new Error("Token yenileme başarısız"));
-        } catch (error) {
+        } catch (refreshError) {
+          console.error("Token yenileme isteği hatası:", refreshError);
           // Token yenileme isteği sırasında hata olursa sessionı temizle
-          await AsyncStorage.removeItem("authToken");
-          await AsyncStorage.removeItem("refreshToken");
-          await AsyncStorage.removeItem("userData");
-          return Promise.reject(new Error("Token yenileme başarısız"));
+          await forceLogout();
+          processQueue(refreshError);
+          return Promise.reject(new Error("Token yenileme başarısız - API hatası"));
         }
       } catch (refreshError) {
-        console.error("Token yenileme hatası:", refreshError);
+        console.error("Token yenileme işlemi hatası:", refreshError);
         // Kullanıcı oturumu kapatılmalı ve giriş sayfasına yönlendirilmeli
-        await AsyncStorage.removeItem("authToken");
-        await AsyncStorage.removeItem("refreshToken");
-        await AsyncStorage.removeItem("userData");
-
+        await forceLogout();
+        processQueue(refreshError);
         return Promise.reject(refreshError);
+      } finally {
+        isRefreshingToken = false;
       }
     }
 
@@ -174,11 +246,36 @@ apiClient.interceptors.response.use(
     }
 
     if (error.response?.status === 500) {
-      console.log("Sunucu hatası");
+      console.log("Sunucu hatası:", error.response.data);
     }
 
     return Promise.reject(error);
   }
 );
+
+// Add auth endpoint to check token validity
+apiClient.checkToken = async (): Promise<boolean> => {
+  try {
+    const token = await AsyncStorage.getItem("authToken");
+    if (!token) {
+      console.log("Token bulunamadı, doğrulama yapılamıyor");
+      return false;
+    }
+    
+    await apiClient.get("/mobile/auth/check");
+    console.log("Token doğrulandı");
+    return true;
+  } catch (error) {
+    console.error("Token doğrulama hatası:", error);
+    
+    // Check if it's an auth error
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      console.log("Token geçersiz, oturum kapatılıyor");
+      await forceLogout();
+    }
+    
+    return false;
+  }
+};
 
 export default apiClient;

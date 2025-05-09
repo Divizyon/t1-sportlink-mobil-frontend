@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import { showToast } from "../../utils/toastHelper";
+import { showToast } from "../../src/utils/toastHelper";
 import NetInfo from "@react-native-community/netinfo";
 
 export interface FriendRequest {

@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import { showToast } from "../../utils/toastHelper";
+import { showToast } from "../../src/utils/toastHelper";
 import NetInfo from "@react-native-community/netinfo";
 
 // Event interface
@@ -76,33 +76,62 @@ export const eventsApi = {
   // Generic method to fetch events from any endpoint
   getAllEvents: async (page: number = 1, limit: number = 10, endpoint: string = "events", additionalParams: any = {}) => {
     return safeApiCall(async () => {
-      const params = {
+      // Create a copy of additionalParams to avoid modifying the original
+      let params = {
         page,
         limit,
         ...additionalParams
       };
       
+      // If this is a nearby events request, add required parameter names
+      if (endpoint.includes('nearby') && params.lat && params.lng) {
+        params = {
+          ...params,
+          latitude: params.lat,
+          longitude: params.lng,
+          distance: params.radius || 10
+        };
+      }
+      
+      // Debug the parameters being sent
+      console.log(`API Request to ${endpoint} with params:`, params);
+      
       const response = await apiClient.get(endpoint, { params });
       
-      // Handle different response structures
-      if (endpoint.includes('nearby') || endpoint === 'events') {
-        return response.data.data.events as Event[];
-      } else if (endpoint.includes('participated')) {
-        return response.data.data.events as Event[];
-      } else {
-        // Default fallback
-        return response.data.data?.events || [] as Event[];
+      // Handle different response structures based on backend API design
+      if (response.data && response.data.data) {
+        // For /api/events endpoint (events, events with status, or my/created events)
+        if (endpoint === 'events' || endpoint.includes('status/')) {
+          return response.data.data.events || [];
+        } 
+        // For /api/events/my/participated endpoint
+        else if (endpoint.includes('my/participated') || endpoint.includes('my/created')) {
+          return response.data.data.events || [];
+        }
+        // For /api/events/nearby endpoint
+        else if (endpoint.includes('nearby')) {
+          return response.data.data.events || [];
+        }
+        // For /api/events/today endpoint
+        else if (endpoint.includes('today')) {
+          return response.data.data || [];
+        }
       }
+      
+      // Default fallback - just return an empty array to avoid errors
+      console.warn(`Unknown response format from ${endpoint}. Using empty array fallback.`);
+      return [];
     }, []);
   },
   
   // Bugünkü etkinlikleri getir
-  getTodayEvents: async () => {
+  getTodayEvents: async (page: number = 1, limit: number = 10) => {
     return safeApiCall(async () => {
       console.log("Bugünkü etkinlikler getiriliyor...");
-      const response = await apiClient.get("events/today");
-      console.log("Bugünkü etkinlikler alındı:", response.data.data);
-      return response.data.data as Event[];
+      const response = await apiClient.get("events/today", {
+        params: { page, limit }
+      });
+      return response.data.data || [];
     }, []);
   },
   
@@ -117,56 +146,40 @@ export const eventsApi = {
   // Etkinlik detayını getir
   getEventDetail: async (eventId: string) => {
     return safeApiCall(async () => {
-      // Bilinen problem: ID 120 sürekli hata veriyor
-      if (eventId === "120" || eventId === "safe-120") {
-        console.log("Bilinen sorunlu event ID (120) isteği engellendi");
-        throw new Error("Etkinlik bulunamadı");
-      }
-      
       const response = await apiClient.get(`events/${eventId}`);
       return response.data.data.event as Event;
     }, null);
   },
   
   // Yakındaki etkinlikleri getir
-  getNearbyEvents: async (lat: number, lng: number, radius: number = 10, page: number = 1, limit: number = 10) => {
+  getNearbyEvents: async (lat: number, lng: number, distance: number = 10, page: number = 1, limit: number = 10) => {
     return safeApiCall(async () => {
       const response = await apiClient.get(`events/nearby`, {
-        params: { lat, lng, radius, page, limit }
+        params: { 
+          latitude: lat,
+          longitude: lng,
+          distance,
+          page, 
+          limit 
+        }
       });
       return response.data.data.events as Event[];
     }, []);
   },
   
-  // Katıldığım etkinlikleri getir
-  getUserParticipatedEvents: async (page: number = 1, limit: number = 10, status?: string) => {
+  // Belirli duruma sahip etkinlikleri getir
+  getEventsByStatus: async (status: string, page: number = 1, limit: number = 10) => {
     return safeApiCall(async () => {
-      let queryParams: any = { page, limit };
-      if (status) queryParams.status = status;
+      // Normalize status to uppercase to ensure consistent API calls
+      const normalizedStatus = status.toUpperCase();
       
-      const response = await apiClient.get(`events/my/participated`, {
-        params: queryParams
-      });
-      return response.data.data.events as Event[];
-    }, []);
-  },
-  
-  // Kullanıcının oluşturduğu etkinlikleri getir
-  getUserCreatedEvents: async (page: number = 1, limit: number = 10) => {
-    return safeApiCall(async () => {
-      console.log(`Kullanıcının oluşturduğu etkinlikler getiriliyor. Sayfa: ${page}, Limit: ${limit}`);
-      const response = await apiClient.get(`events`, {
-        params: { creator: true, page, limit }
+      console.log(`API Call: getEventsByStatus with status=${normalizedStatus}, page=${page}, limit=${limit}`);
+      
+      const response = await apiClient.get(`events/status/${normalizedStatus}`, {
+        params: { page, limit }
       });
       
-      // Yanıt logu göster (Kısaltılmış log)
-      console.log("Oluşturulan etkinlikler API yanıtı alındı");
-      
-      // events alanı yoksa, [] dön
-      if (!response.data.data.events) {
-        console.log("Oluşturulan etkinlikler API'si boş dizi döndü");
-        return [];
-      }
+      console.log(`API Response: getEventsByStatus returned ${response.data?.data?.events?.length || 0} events`);
       
       return response.data.data.events as Event[];
     }, []);
@@ -184,7 +197,7 @@ export const eventsApi = {
   joinEvent: async (eventId: string) => {
     return safeApiCall(async () => {
       const response = await apiClient.post(`events/${eventId}/join`);
-      return response.data.data;
+      return response.data;
     });
   },
   
@@ -192,7 +205,7 @@ export const eventsApi = {
   leaveEvent: async (eventId: string) => {
     return safeApiCall(async () => {
       const response = await apiClient.post(`events/${eventId}/leave`);
-      return response.data.data;
+      return response.data;
     });
   },
   
@@ -217,6 +230,14 @@ export const eventsApi = {
     return safeApiCall(async () => {
       const response = await apiClient.put(`events/${eventId}`, eventData);
       return response.data.data.event as Event;
+    });
+  },
+
+  // Kullanıcıyı etkinliğe davet et
+  inviteUserToEvent: async (eventId: string, inviteeId: string) => {
+    return safeApiCall(async () => {
+      const response = await apiClient.post(`events/${eventId}/invite`, { inviteeId });
+      return response.data;
     });
   },
 
@@ -272,5 +293,48 @@ export const eventsApi = {
       const response = await apiClient.delete(`event-ratings/rating/${ratingId}`);
       return response.data;
     });
-  }
+  },
+
+  // Kullanıcının katıldığı etkinlikleri getir
+  getUserParticipatedEvents: async (page: number = 1, limit: number = 10, status?: string) => {
+    return safeApiCall(async () => {
+      let queryParams: any = { page, limit };
+      if (status) {
+        // Normalize status to uppercase to ensure consistent API calls
+        queryParams.status = status.toUpperCase();
+      }
+      
+      console.log(`API Call: getUserParticipatedEvents with params:`, queryParams);
+      
+      const response = await apiClient.get(`events/my/participated`, {
+        params: queryParams
+      });
+      
+      console.log(`API Response: getUserParticipatedEvents returned ${response.data?.data?.events?.length || 0} events`);
+      
+      return response.data.data.events as Event[];
+    }, []);
+  },
+  
+  // Kullanıcının oluşturduğu etkinlikleri getir
+  getUserCreatedEvents: async (page: number = 1, limit: number = 10, status?: string) => {
+    return safeApiCall(async () => {
+      console.log(`Kullanıcının oluşturduğu etkinlikler getiriliyor. Sayfa: ${page}, Limit: ${limit}`);
+      let queryParams: any = { page, limit };
+      if (status) {
+        // Normalize status to uppercase to ensure consistent API calls
+        queryParams.status = status.toUpperCase();
+      }
+      
+      console.log(`API Call: getUserCreatedEvents with params:`, queryParams);
+      
+      const response = await apiClient.get(`events/my/created`, {
+        params: queryParams
+      });
+      
+      console.log(`API Response: getUserCreatedEvents returned ${response.data?.data?.events?.length || 0} events`);
+      
+      return response.data.data.events as Event[];
+    }, []);
+  },
 }; 

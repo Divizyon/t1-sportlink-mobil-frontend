@@ -372,6 +372,8 @@ const EventMap = ({
     latitudeDelta: 0.05,
     longitudeDelta: 0.05,
   });
+  // Add debounce timer ref
+  const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const getMarkerColor = (category: string) => {
     return categoryColors[category] || "#34D399"; // Default to theme.primary if category not found
@@ -402,18 +404,27 @@ const EventMap = ({
     // Yerel state'i güncelle
     setLocalDistanceFilter(value);
 
-    // Ana komponentteki filtreleme fonksiyonunu çağır
-    if (onFilterChange) {
-      try {
-        // Tam olarak aynı kategori adını kullanarak çağrı yap
-        onFilterChange(localSelectedCategory, value);
-        console.log(
-          `Filtreleme fonksiyonu çağrıldı: kategori=${localSelectedCategory}, mesafe=${value}`
-        );
-      } catch (error) {
-        console.error("Filtreleme sırasında hata:", error);
-      }
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
     }
+
+    // Set a new timer to actually apply the filter
+    debounceTimerRef.current = setTimeout(() => {
+      // Ana komponentteki filtreleme fonksiyonunu çağır
+      if (onFilterChange) {
+        try {
+          // Tam olarak aynı kategori adını kullanarak çağrı yap
+          onFilterChange(localSelectedCategory, value);
+          console.log(
+            `Filtreleme fonksiyonu çağrıldı: kategori=${localSelectedCategory}, mesafe=${value}`
+          );
+        } catch (error) {
+          console.error("Filtreleme sırasında hata:", error);
+        }
+      }
+    }, 500); // Debounce for 500ms
   };
 
   const handleCategoryChange = (category: string) => {
@@ -424,17 +435,26 @@ const EventMap = ({
     // Yerel durumu güncelle
     setLocalSelectedCategory(category);
 
-    // Ana komponente bildir
-    if (onFilterChange) {
-      try {
-        onFilterChange(category, localDistanceFilter);
-        console.log(
-          `Filtreleme fonksiyonu çağrıldı: kategori=${category}, mesafe=${localDistanceFilter}`
-        );
-      } catch (error) {
-        console.error("Kategori filtreleme sırasında hata:", error);
-      }
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
     }
+
+    // Set a new timer to actually apply the filter with a short delay
+    debounceTimerRef.current = setTimeout(() => {
+      // Ana komponente bildir
+      if (onFilterChange) {
+        try {
+          onFilterChange(category, localDistanceFilter);
+          console.log(
+            `Filtreleme fonksiyonu çağrıldı: kategori=${category}, mesafe=${localDistanceFilter}`
+          );
+        } catch (error) {
+          console.error("Kategori filtreleme sırasında hata:", error);
+        }
+      }
+    }, 300); // Slightly shorter debounce for category changes
   };
 
   // Toggle POI visibility
