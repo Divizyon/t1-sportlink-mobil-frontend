@@ -1,13 +1,10 @@
 import axios from "axios";
-import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Platform } from "react-native";
 import { router } from "expo-router";
 import { showToast } from "../../src/utils/toastHelper";
 
 // API URL'ini environment'tan al, yoksa gerçek IP'yi kullan
-const API_URL =
-  Constants.expoConfig?.extra?.apiUrl || "http://10.5.48.8:3000/api";
+const API_URL = process.env.EXPO_PUBLIC_API;
 
 // Debug modu aktif
 const DEBUG = true;
@@ -31,7 +28,7 @@ const errorLog = (...args: any[]) => {
 
 debugLog("API URL:", API_URL);
 
-// Track auth state 
+// Track auth state
 let isRefreshingToken = false;
 let tokenRefreshPromise: Promise<string | null> | null = null;
 let failedQueue: { resolve: Function; reject: Function }[] = [];
@@ -45,7 +42,7 @@ const processQueue = (error: any, token: string | null = null) => {
       request.resolve(token);
     }
   });
-  
+
   failedQueue = [];
 };
 
@@ -58,29 +55,32 @@ const refreshAuthToken = async (): Promise<string | null> => {
       errorLog("Refresh token bulunamadı");
       return null;
     }
-    
+
     debugLog("Token yenileniyor...");
-    
+
     // Call the refresh endpoint with the refresh token
     const response = await axios.post(`${API_URL}/auth/refresh`, {
-      refresh_token: refreshToken
+      refresh_token: refreshToken,
     });
-    
+
     if (response.data?.data?.token) {
       const newToken = response.data.data.token;
-      
+
       // Save the new token
       await AsyncStorage.setItem("authToken", newToken);
-      
+
       // If refresh token is also returned, save it
       if (response.data.data.refreshToken) {
-        await AsyncStorage.setItem("refreshToken", response.data.data.refreshToken);
+        await AsyncStorage.setItem(
+          "refreshToken",
+          response.data.data.refreshToken
+        );
       }
-      
+
       debugLog("Token başarıyla yenilendi");
       return newToken;
     }
-    
+
     return null;
   } catch (error) {
     errorLog("Token yenileme başarısız:", error);
@@ -93,7 +93,7 @@ export const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
-    "Accept": "application/json",
+    Accept: "application/json",
   },
   timeout: 10000, // 10 saniye timeout ekle
 });
@@ -107,7 +107,7 @@ apiClient.interceptors.request.use(
         config.url = config.url.replace(/^\/api\//, "/");
         debugLog("URL düzeltildi:", config.url);
       }
-      
+
       debugLog("İstek başlatılıyor:", {
         url: config.url,
         method: config.method,
@@ -195,32 +195,35 @@ apiClient.interceptors.response.use(
       try {
         // Try to refresh the token
         const newToken = await refreshAuthToken();
-        
+
         if (newToken) {
           // Set auth header
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          
+
           // Process queued requests
           processQueue(null, newToken);
-          
+
           // Return the original request with the new token
           return apiClient(originalRequest);
         } else {
           // Token refresh failed
           processQueue(error, null);
-          
+
           // Clear tokens if refresh failed
           await AsyncStorage.removeItem("authToken");
           await AsyncStorage.removeItem("refreshToken");
-          
+
           // Notify user about session expiration
-          showToast("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.", "error");
-          
+          showToast(
+            "Oturumunuz sona erdi. Lütfen tekrar giriş yapın.",
+            "error"
+          );
+
           // Redirect to login
           setTimeout(() => {
             router.replace("/auth/login");
           }, 500);
-          
+
           return Promise.reject({
             status: "error",
             message: "Oturumunuz sona erdi. Lütfen tekrar giriş yapın.",
@@ -241,7 +244,7 @@ apiClient.interceptors.response.use(
       message:
         error.response?.data?.message || error.message || "Bir hata oluştu",
       data: error.response?.data || null,
-      status_code: error.response?.status || 500
+      status_code: error.response?.status || 500,
     };
 
     return Promise.reject(errorResponse);
