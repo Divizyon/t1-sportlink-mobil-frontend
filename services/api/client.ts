@@ -6,27 +6,8 @@ import { router } from "expo-router";
 import { showToast } from "../../src/utils/toastHelper";
 
 // API URL'ini environment'tan al, yoksa gerçek IP'yi kullan
-// Android emülatör için 10.0.2.2, iOS emülatör için localhost özel durumdur
-const getBaseUrl = () => {
-  const configUrl = Constants.expoConfig?.extra?.apiUrl;
-  if (configUrl) return configUrl;
-  
-  // Platform specific URLs to connect to the local backend
-  if (__DEV__) {
-    if (Platform.OS === 'android') {
-      // Android emulator needs special IP to access host
-      return "http://10.0.2.2:3000/api";
-    } else if (Platform.OS === 'ios') {
-      // iOS simulator can access localhost
-      return "http://localhost:3000/api";
-    }
-  }
-  
-  // Real device - use the host machine network IP
-  return "http://192.168.1.137:3000/api";
-};
-
-const API_URL = getBaseUrl();
+const API_URL =
+  Constants.expoConfig?.extra?.apiUrl || "http://10.5.48.8:3000/api";
 
 // Debug modu aktif
 const DEBUG = true;

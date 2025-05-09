@@ -303,7 +303,13 @@ export default function FindFriendsScreen() {
 
   const handleSendMessage = (userId: string) => {
     console.log(`Mesaj gönderilecek: ${userId}`);
-    // Message sending logic will be implemented here
+    router.push({
+      pathname: `/messages/${userId}`,
+      params: {
+        name: users.find(user => user.id === userId)?.first_name + ' ' + users.find(user => user.id === userId)?.last_name,
+        avatar: users.find(user => user.id === userId)?.avatar_url,
+      }
+    });
   };
 
   return (

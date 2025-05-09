@@ -57,17 +57,17 @@ let API_URL = "";
 
 // Platform-specific URLs for development
 if (__DEV__) {
-  // Android emulator needs special IP to access host
-  if (Platform.OS === 'android') {
-    API_URL = "http://10.0.2.2:3000/api";
+  // Android Emülatör için özel IP
+  if (Platform.OS === "android") {
+    API_URL = "http://10.5.48.8:3000/api"; // Metro server IP'si 
   }
-  // iOS simulator can access localhost
-  else if (Platform.OS === 'ios') {
-    API_URL = "http://localhost:3000/api";
+  // iOS Simülatör için localhost
+  else if (Platform.OS === "ios") {
+    API_URL = "http://10.5.48.8:3000/api"; // Metro server IP'si
   }
   // Real device - use the host machine network IP
   else {
-    API_URL = "http://192.168.1.137:3000/api";
+    API_URL = "http://10.5.48.8:3000/api"; // Metro server IP'si
   }
 } else {
   // Production environment

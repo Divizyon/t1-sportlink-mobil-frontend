@@ -26,7 +26,9 @@ export default function FriendsListScreen() {
         setError(response.message || 'Arkadaşlar yüklenirken bir hata oluştu');
         setFriends([]);
       } else {
-        setFriends(response.data || []);
+        const friendsData = Array.isArray(response) ? response : response.data || [];
+        console.log('Arkadaşlar yüklendi:', friendsData);
+        setFriends(friendsData);
       }
     } catch (err: any) {
       console.error('Beklenmeyen hata:', err);
