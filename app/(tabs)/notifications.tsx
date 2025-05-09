@@ -390,7 +390,6 @@ export default function NotificationsScreen() {
     if (loading) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
           <Text style={[styles.emptyText, { marginTop: 16 }]}>
             Bildirimler yükleniyor...
           </Text>
@@ -548,13 +547,6 @@ export default function NotificationsScreen() {
           />
         }
       />
-
-      {/* Yükleniyor göstergesi - Artık sadece tam ekranı kaplayan yükleme göstergesi ile değiştirdik */}
-      {loading && !refreshing && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
-        </View>
-      )}
     </SafeAreaView>
   );
 }

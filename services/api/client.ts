@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // API URL'ini environment'tan al, yoksa gerçek IP'yi kullan
 const API_URL =
-  Constants.expoConfig?.extra?.apiUrl || "http://192.168.56.1:3000/api";
+  Constants.expoConfig?.extra?.apiUrl || "http://10.5.48.138:3000/api";
 
 // Debug modu aktif
 const DEBUG = true;
