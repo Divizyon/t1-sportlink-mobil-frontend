@@ -12,6 +12,9 @@ const API_URL =
 // Debug modu aktif
 const DEBUG = true;
 
+// API istemcisi için varsayılan zaman aşımı süresi (ms)
+const DEFAULT_TIMEOUT = 10000; // 10 saniye
+
 // Debug log fonksiyonu
 const debugLog = (...args: any[]) => {
   if (DEBUG) {
@@ -142,6 +145,23 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error) => {
+    // Zaman aşımı hatası kontrolü
+    if (
+      error.code === "ECONNABORTED" &&
+      error.message &&
+      error.message.includes("timeout")
+    ) {
+      errorLog("API İstek zaman aşımı:", {
+        url: error.config?.url,
+        timeout: error.config?.timeout,
+      });
+      return Promise.reject({
+        status: "error",
+        message: "Sunucudan yanıt alınamadı: İstek zaman aşımı",
+        data: null,
+      });
+    }
+
     errorLog("API Hatası:", {
       url: error.config?.url,
       status: error.response?.status,
