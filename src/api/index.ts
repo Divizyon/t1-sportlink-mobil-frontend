@@ -25,7 +25,7 @@ const processQueue = (error: any, token: string | null = null) => {
       request.resolve(axios(newRequest));
     }
   });
-  
+
   // Reset the queue
   failedQueue = [];
 };
@@ -38,10 +38,10 @@ const forceLogout = async () => {
     await AsyncStorage.removeItem("authToken");
     await AsyncStorage.removeItem("refreshToken");
     await AsyncStorage.removeItem("userData");
-    
+
     // Show toast notification
     showToast("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.", "error");
-    
+
     // Navigate to login screen
     setTimeout(() => {
       router.replace("/auth/login");
@@ -51,28 +51,7 @@ const forceLogout = async () => {
   }
 };
 
-// API adresini yapılandırma
-// Farklı ortamlar için doğru IP adresi
-let API_URL = "";
-
-// Platform-specific URLs for development
-if (__DEV__) {
-  // Android Emülatör için özel IP
-  if (Platform.OS === "android") {
-    API_URL = "http://10.5.48.8:3000/api"; // Metro server IP'si 
-  }
-  // iOS Simülatör için localhost
-  else if (Platform.OS === "ios") {
-    API_URL = "http://10.5.48.8:3000/api"; // Metro server IP'si
-  }
-  // Real device - use the host machine network IP
-  else {
-    API_URL = "http://10.5.48.8:3000/api"; // Metro server IP'si
-  }
-} else {
-  // Production environment
-  API_URL = "https://api.sportlink.com/api";
-}
+const API_URL = process.env.EXPO_PUBLIC_API;
 
 console.log("Kullanılan API URL:", API_URL);
 
@@ -90,7 +69,7 @@ apiClient.interceptors.request.use(
   async (config) => {
     // Debug log the request
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
-    
+
     // Get token from AsyncStorage
     const token = await AsyncStorage.getItem("authToken");
     if (token && config.headers) {
@@ -118,14 +97,18 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => {
     // Debug log the successful response
-    console.log(`API Response Success: ${response.config.url} - Status: ${response.status}`);
+    console.log(
+      `API Response Success: ${response.config.url} - Status: ${response.status}`
+    );
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
-    
+
     // Debug log the error
-    console.error(`API Response Error: ${originalRequest?.url} - Status: ${error.response?.status}`);
+    console.error(
+      `API Response Error: ${originalRequest?.url} - Status: ${error.response?.status}`
+    );
     console.error(`Error message: ${error.message}`);
 
     // Network veya server hatalarını işle
@@ -157,15 +140,17 @@ apiClient.interceptors.response.use(
       }
 
       originalRequest._retry = true;
-      
+
       // If token refresh is already in progress, queue this request
       if (isRefreshingToken) {
-        console.log("Token yenileme zaten devam ediyor, istek kuyruğa alınıyor");
+        console.log(
+          "Token yenileme zaten devam ediyor, istek kuyruğa alınıyor"
+        );
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject, config: originalRequest });
         });
       }
-      
+
       isRefreshingToken = true;
 
       try {
@@ -197,30 +182,36 @@ apiClient.interceptors.response.use(
             // Yeni tokenları kaydet
             const newToken = response.data.data.session.access_token;
             const newRefreshToken = response.data.data.session.refresh_token;
-            
+
             await AsyncStorage.setItem("authToken", newToken);
             await AsyncStorage.setItem("refreshToken", newRefreshToken);
-            
+
             console.log("Token başarıyla yenilendi");
-            
+
             // Process all queued requests with the new token
             processQueue(null, newToken);
-            
+
             // Orijinal isteği yeni token ile tekrarla
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return axios(originalRequest);
           } else {
             console.log("Token yenileme yanıtı geçersiz format");
             await forceLogout();
-            processQueue(new Error("Token yenileme başarısız - geçersiz yanıt"));
-            return Promise.reject(new Error("Token yenileme başarısız - geçersiz yanıt"));
+            processQueue(
+              new Error("Token yenileme başarısız - geçersiz yanıt")
+            );
+            return Promise.reject(
+              new Error("Token yenileme başarısız - geçersiz yanıt")
+            );
           }
         } catch (refreshError) {
           console.error("Token yenileme isteği hatası:", refreshError);
           // Token yenileme isteği sırasında hata olursa sessionı temizle
           await forceLogout();
           processQueue(refreshError);
-          return Promise.reject(new Error("Token yenileme başarısız - API hatası"));
+          return Promise.reject(
+            new Error("Token yenileme başarısız - API hatası")
+          );
         }
       } catch (refreshError) {
         console.error("Token yenileme işlemi hatası:", refreshError);
@@ -261,19 +252,19 @@ apiClient.checkToken = async (): Promise<boolean> => {
       console.log("Token bulunamadı, doğrulama yapılamıyor");
       return false;
     }
-    
+
     await apiClient.get("/mobile/auth/check");
     console.log("Token doğrulandı");
     return true;
   } catch (error) {
     console.error("Token doğrulama hatası:", error);
-    
+
     // Check if it's an auth error
     if (axios.isAxiosError(error) && error.response?.status === 401) {
       console.log("Token geçersiz, oturum kapatılıyor");
       await forceLogout();
     }
-    
+
     return false;
   }
 };
