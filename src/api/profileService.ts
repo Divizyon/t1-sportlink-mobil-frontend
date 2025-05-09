@@ -140,6 +140,28 @@ export const profileService = {
       throw error;
     }
   },
+
+  // İlgi alanlarını (sporları) getir
+  async getSports(): Promise<
+    Array<{
+      sport_id: number;
+      sport: { id: number; name: string; icon: string; description: string };
+    }>
+  > {
+    try {
+      console.log("İlgi alanları (sporlar) getiriliyor...");
+      const response = await apiClient.get("/profile/sports");
+
+      if (response.data && response.data.data) {
+        return response.data.data;
+      }
+
+      return response.data || [];
+    } catch (error: any) {
+      console.error("İlgi alanlarını getirme hatası:", error);
+      return [];
+    }
+  },
 };
 
 export default profileService;

@@ -99,16 +99,6 @@ export default function Index() {
                       Giriş Yap
                     </ButtonText>
                   </Button>
-
-                  <Button
-                    size="lg"
-                    style={styles.demoButton}
-                    onPress={() => router.navigate("/(tabs)/dashboard")}
-                  >
-                    <ButtonText style={styles.demoButtonText}>
-                      Demo Giriş
-                    </ButtonText>
-                  </Button>
                 </>
               )}
             </VStack>
