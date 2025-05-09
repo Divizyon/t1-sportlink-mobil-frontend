@@ -26,8 +26,9 @@ export default function TabsLayout() {
             shadowOpacity: 0,
           },
           tabBarLabelStyle: {
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: "500",
+            maxWidth: 80,
           },
         }}
       >
@@ -55,6 +56,20 @@ export default function TabsLayout() {
                 size={24}
               />
             ),
+          }}
+        />
+        <Tabs.Screen
+          name="news"
+          options={{
+            title: "Haberler-Duyurular",
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons
+                name={focused ? "newspaper" : "newspaper-outline"}
+                color={color}
+                size={24}
+              />
+            ),
+            href: "/news"
           }}
         />
         <Tabs.Screen
