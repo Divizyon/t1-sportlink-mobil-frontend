@@ -6,6 +6,19 @@ import { showToast } from "../../src/utils/toastHelper";
 // API URL'ini environment'tan al, yoksa gerçek IP'yi kullan
 const API_URL = process.env.EXPO_PUBLIC_API;
 
+// API URL'i kontrol et ve bazı diagnostik log kayıtları ekle
+console.log(
+  "==================== API CLIENT CONFIGURATION ===================="
+);
+console.log(
+  "Environment variable EXPO_PUBLIC_API:",
+  process.env.EXPO_PUBLIC_API
+);
+console.log("Using API URL:", API_URL || "not set (default will be used)");
+console.log(
+  "==================================================================="
+);
+
 // Debug modu aktif
 const DEBUG = true;
 
