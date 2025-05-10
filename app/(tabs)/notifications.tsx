@@ -233,20 +233,17 @@ export default function NotificationsScreen() {
       ? notification.notification_type
       : notification.notification_type;
 
-    // Bildirime göre ilgili sayfaya yönlendir
-    if (type.includes("event")) {
-      const eventId = isMobileNotification(notification)
-        ? notification.data?.event_id
-        : notification.event_id;
-
-      if (eventId) {
-        router.push(`/events/${eventId}`);
-      }
-    } else if (type.includes("friend")) {
-      router.push("/friends");
-    } else if (type.includes("message")) {
-      router.push("/chat");
-    }
+    // Bildirim tıklaması için yönlendirme yapma - sadece okundu olarak işaretlemek yeterli
+    console.log("Bildirim okundu olarak işaretlendi:", notification.id);
+    
+    // İsteğe bağlı olarak bildirim içeriğiyle ilgili bir mesaj gösterebilirsiniz
+    /*
+    Alert.alert(
+      "Bildirim",
+      "Bildirim okundu olarak işaretlendi",
+      [{ text: "Tamam", style: "default" }]
+    );
+    */
   };
 
   // Arkadaşlık isteği onaylama işlemi
@@ -416,7 +413,13 @@ export default function NotificationsScreen() {
 
   // Arkadaşlık istekleri sayfasına yönlendirme
   const handleFriendRequestPress = () => {
-    router.push("/friends");
+    // Yönlendirmeyi kaldırıyoruz
+    // Kullanıcıya tüm arkadaşlık isteklerini görebileceği bir bilgi verebiliriz
+    Alert.alert(
+      "Bilgi",
+      "Şu anda yönlendirme devre dışı bırakılmıştır. Lütfen daha sonra tekrar deneyiniz.",
+      [{ text: "Tamam", style: "default" }]
+    );
   };
 
   // Boş bildirim durumu
