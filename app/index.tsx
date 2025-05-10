@@ -21,15 +21,15 @@ const { width } = Dimensions.get("window");
 
 // Direk renk tanımları
 const colors = {
-  primary: '#2ecc71',
-  secondary: '#27ae60',
-  background: '#f5f5f5',
-  white: '#ffffff',
-  text: '#333333',
-  darkGray: '#7f8c8d',
-  gray: '#bdc3c7',
-  lightGray: '#ecf0f1',
-  error: '#e74c3c',
+  primary: "#2ecc71",
+  secondary: "#27ae60",
+  background: "#f5f5f5",
+  white: "#ffffff",
+  text: "#333333",
+  darkGray: "#7f8c8d",
+  gray: "#bdc3c7",
+  lightGray: "#ecf0f1",
+  error: "#e74c3c",
 };
 
 export default function Index() {
@@ -117,19 +117,6 @@ export default function Index() {
                 </>
               )}
             </VStack>
-
-            {/* Haberler ekranına erişmek için buton ekleyin */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Diğer</Text>
-              <TouchableOpacity 
-                style={styles.card}
-                onPress={() => router.push('/news')}
-              >
-                <Ionicons name="newspaper-outline" size={24} color={colors.primary} />
-                <Text style={styles.cardTitle}>Haberler</Text>
-                <Text style={styles.cardSubtitle}>Son haberleri görüntüle</Text>
-              </TouchableOpacity>
-            </View>
           </Box>
         </View>
 

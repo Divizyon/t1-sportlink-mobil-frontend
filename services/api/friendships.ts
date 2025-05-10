@@ -39,17 +39,24 @@ const safeApiCall = async (apiFunc: Function, fallback: any = null) => {
     const isConnected = await checkNetwork();
     if (!isConnected) {
       console.log("Ağ bağlantısı yok, istek yapılamıyor");
-      showToast("İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.", "error");
-      return { status: "error", data: fallback, message: "İnternet bağlantısı yok" };
+      showToast(
+        "İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.",
+        "error"
+      );
+      return {
+        status: "error",
+        data: fallback,
+        message: "İnternet bağlantısı yok",
+      };
     }
-    
+
     return await apiFunc();
   } catch (error: any) {
     console.log("API çağrısı sırasında hata:", error.message);
-    return { 
-      status: "error", 
-      data: fallback, 
-      message: error.message || "API isteği sırasında bir hata oluştu" 
+    return {
+      status: "error",
+      data: fallback,
+      message: error.message || "API isteği sırasında bir hata oluştu",
     };
   }
 };
@@ -123,9 +130,15 @@ export const friendshipsApi = {
         const response = await apiClient.get("/mobile/friendships");
         console.log("Ham API yanıtı:", JSON.stringify(response, null, 2));
         console.log("Arkadaş listesi alındı, status:", response.status);
-        console.log("Arkadaş listesi data:", JSON.stringify(response.data, null, 2));
-        console.log("Arkadaş listesi data.data:", JSON.stringify(response.data.data, null, 2));
-        
+        console.log(
+          "Arkadaş listesi data:",
+          JSON.stringify(response.data, null, 2)
+        );
+        console.log(
+          "Arkadaş listesi data.data:",
+          JSON.stringify(response.data.data, null, 2)
+        );
+
         if (response.data && response.data.data) {
           const friends = response.data.data;
           console.log(`${friends.length} arkadaş bulundu`);
@@ -149,11 +162,14 @@ export const getIncomingFriendshipRequests = async () => {
   try {
     const isConnected = await checkNetwork();
     if (!isConnected) {
-      showToast("İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.", "error");
+      showToast(
+        "İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.",
+        "error"
+      );
       return {
         status: "error",
         data: [],
-        message: "İnternet bağlantısı yok"
+        message: "İnternet bağlantısı yok",
       };
     }
 
@@ -186,10 +202,13 @@ export const acceptFriendshipRequest = async (requestId: string) => {
   try {
     const isConnected = await checkNetwork();
     if (!isConnected) {
-      showToast("İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.", "error");
+      showToast(
+        "İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.",
+        "error"
+      );
       return {
         status: "error",
-        message: "İnternet bağlantısı yok"
+        message: "İnternet bağlantısı yok",
       };
     }
 
@@ -234,10 +253,13 @@ export const rejectFriendshipRequest = async (requestId: string) => {
   try {
     const isConnected = await checkNetwork();
     if (!isConnected) {
-      showToast("İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.", "error");
+      showToast(
+        "İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.",
+        "error"
+      );
       return {
         status: "error",
-        message: "İnternet bağlantısı yok"
+        message: "İnternet bağlantısı yok",
       };
     }
 
