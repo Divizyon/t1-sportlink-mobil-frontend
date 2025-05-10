@@ -222,11 +222,16 @@ export default function EventDetailsScreen() {
           notes: "Etkinlik zamanında başlayacaktır, lütfen geç kalmayın.",
           imageUrl: getSportImage(sportCategory),
           participants: participants.map((p) => ({
-            id: p.user_id || p.id,
-            name: p.full_name || p.name,
+            id: p.user_id || p.id || "",
+            user_id: p.user_id || p.id,
+            name: p.full_name || p.name || "İsimsiz Katılımcı",
+            full_name: p.full_name || p.name || "İsimsiz Katılımcı",
             profileImage:
               p.profile_picture ||
+              p.profile_image ||
               "https://randomuser.me/api/portraits/men/32.jpg",
+            profile_image: p.profile_picture || p.profile_image,
+            profile_picture: p.profile_picture,
           })),
           averageRating: avgRating,
         };
@@ -434,24 +439,24 @@ export default function EventDetailsScreen() {
     // Kategori görselleri
     const sportImages: Record<string, string> = {
       Basketbol:
-        "https://images.unsplash.com/photo-1518063319789-7217e6706b04?q=80&w=2069&auto=format&fit=crop",
+        "https://images.pexels.com/photos/358042/pexels-photo-358042.jpeg?auto=compress&cs=tinysrgb&w=1000",
       Futbol:
         "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?q=80&w=2071&auto=format&fit=crop",
       Yüzme:
-        "https://images.unsplash.com/photo-1560089000-7433a4ebbd64?q=80&w=2066&auto=format&fit=crop",
+        "https://images.pexels.com/photos/260598/pexels-photo-260598.jpeg?auto=compress&cs=tinysrgb&w=1000",
       Tenis:
-        "https://images.unsplash.com/photo-1595435934949-5df7ed86e1c0?q=80&w=1974&auto=format&fit=crop",
+        "https://images.pexels.com/photos/209977/pexels-photo-209977.jpeg?auto=compress&cs=tinysrgb&w=1000",
       Voleybol:
-        "https://images.unsplash.com/photo-1588492069485-d05b56b2831d?q=80&w=1974&auto=format&fit=crop",
-      Koşu: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=2070&auto=format&fit=crop",
-      Yoga: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=2070&auto=format&fit=crop",
+        "https://images.pexels.com/photos/6203479/pexels-photo-6203479.jpeg?auto=compress&cs=tinysrgb&w=1000",
+      Koşu: "https://images.pexels.com/photos/3621183/pexels-photo-3621183.jpeg?auto=compress&cs=tinysrgb&w=1000",
+      Yoga: "https://images.pexels.com/photos/317157/pexels-photo-317157.jpeg?auto=compress&cs=tinysrgb&w=1000",
       Bisiklet:
-        "https://images.unsplash.com/photo-1541625602330-2277a4c46182?q=80&w=2070&auto=format&fit=crop",
+        "https://images.pexels.com/photos/5836/road-bicycle-bike-cyclist.jpg?auto=compress&cs=tinysrgb&w=1000",
       Yürüyüş:
-        "https://images.unsplash.com/photo-1501554728187-ce583db33af7?q=80&w=1935&auto=format&fit=crop",
+        "https://images.pexels.com/photos/554609/pexels-photo-554609.jpeg?auto=compress&cs=tinysrgb&w=1000",
 
       Diğer:
-        "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=2070&auto=format&fit=crop",
+        "https://images.pexels.com/photos/364308/pexels-photo-364308.jpeg?auto=compress&cs=tinysrgb&w=1000",
     };
 
     if (sportImages[sportName]) {

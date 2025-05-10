@@ -23,6 +23,7 @@ import FriendshipRequestItem from "../../components/notifications/FriendshipRequ
 import NotificationItem from "../../components/notifications/NotificationItem";
 import notificationsService, {
   NotificationResponse,
+  MobileNotification,
 } from "../../services/api/notifications";
 import { Linking } from "react-native";
 import { AlertTriangle, RefreshCw } from "lucide-react-native";
@@ -31,8 +32,8 @@ import { AlertTriangle, RefreshCw } from "lucide-react-native";
 const API_TIMEOUT = 15000;
 
 export default function NotificationsScreen() {
-  const [apiNotifications, setApiNotifications] = useState<
-    NotificationResponse[]
+  const [notifications, setNotifications] = useState<
+    Array<MobileNotification | NotificationResponse>
   >([]);
   const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
   const [friendRequests, setFriendRequests] = useState<FriendshipRequest[]>([]);
@@ -45,6 +46,13 @@ export default function NotificationsScreen() {
   // Eklenmiş durumlar
   const [isNetworkError, setIsNetworkError] = useState(false);
   const [apiRequestInProgress, setApiRequestInProgress] = useState(false);
+
+  // Bildirim tipini kontrol etmek için yardımcı fonksiyon
+  const isMobileNotification = (
+    notification: MobileNotification | NotificationResponse
+  ): notification is MobileNotification => {
+    return "title" in notification && "body" in notification;
+  };
 
   // Bildirimleri getir - useCallback ile optimize edildi
   const fetchNotifications = useCallback(async () => {
@@ -79,7 +87,9 @@ export default function NotificationsScreen() {
         console.log("Bildirimler başarıyla alındı:", response.data);
 
         // API yanıtı için tüm olası yapıları kontrol et
-        let notificationsData: NotificationResponse[] = [];
+        let notificationsData: Array<
+          MobileNotification | NotificationResponse
+        > = [];
 
         if (Array.isArray(response.data)) {
           // Doğrudan dizi dönüyorsa
@@ -88,35 +98,40 @@ export default function NotificationsScreen() {
           // { data: [...] } formatında dönüyorsa
           notificationsData = response.data.data;
         } else if (
-          response.data.status === "success" &&
+          (response.data.status === "success" || response.data.success) &&
           response.data.data &&
           Array.isArray(response.data.data)
         ) {
-          // { status: "success", data: [...] } formatında dönüyorsa
+          // { status: "success", data: [...] } veya { success: true, data: [...] } formatında dönüyorsa
           notificationsData = response.data.data;
         } else {
           // Hiçbir bilinen format bulunamadıysa
           console.error("Bilinmeyen API yanıt formatı:", response.data);
-          setApiNotifications([]);
+          setNotifications([]);
           setError("Bildirimler alınamadı: Bilinmeyen API yanıt formatı");
           return;
         }
 
         // Verileri tarih sırasına göre sırala (en yeniler üstte)
-        notificationsData.sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+        notificationsData.sort((a, b) => {
+          const dateA = new Date(
+            isMobileNotification(a) ? a.created_at : a.created_at
+          ).getTime();
+          const dateB = new Date(
+            isMobileNotification(b) ? b.created_at : b.created_at
+          ).getTime();
+          return dateB - dateA;
+        });
 
-        setApiNotifications(notificationsData);
+        setNotifications(notificationsData);
       } else {
         console.error("Bildirimler alınırken boş yanıt:", response);
-        setApiNotifications([]);
+        setNotifications([]);
         setError("Bildirimler alınamadı: Boş yanıt");
       }
     } catch (error: any) {
       console.error("Bildirimler getirilirken hata:", error);
-      setApiNotifications([]);
+      setNotifications([]);
 
       // Network hatası mı kontrol et
       if (
@@ -161,6 +176,133 @@ export default function NotificationsScreen() {
       setFriendRequests([]);
     }
   }, []);
+
+  // Bildirimi okundu olarak işaretle
+  const handleMarkNotificationAsRead = async (
+    notification: MobileNotification | NotificationResponse
+  ) => {
+    try {
+      const notificationId = notification.id;
+      const result = await notificationsService.markAsRead(notificationId);
+
+      console.log(
+        `Bildirim #${notificationId} okundu olarak işaretlendi:`,
+        result
+      );
+
+      // Bildirim listesini güncelle
+      setNotifications(
+        notifications.map((item) =>
+          item.id === notificationId ? { ...item, read_status: true } : item
+        )
+      );
+    } catch (error: any) {
+      console.error("Bildirim okundu işaretlenirken hata:", error);
+    }
+  };
+
+  // Bildirimlerin hepsini okundu olarak işaretle
+  const handleMarkAllAsRead = async () => {
+    try {
+      const result = await notificationsService.markAllAsRead();
+      console.log("Tüm bildirimler okundu olarak işaretlendi:", result);
+
+      // Tüm bildirimleri okundu olarak güncelle
+      setNotifications(
+        notifications.map((notification) => ({
+          ...notification,
+          read_status: true,
+        }))
+      );
+    } catch (error: any) {
+      console.error("Bildirimler okundu işaretlenirken hata:", error);
+    }
+  };
+
+  // Notification'a tıklandığında
+  const handleNotificationPress = async (
+    notification: MobileNotification | NotificationResponse
+  ) => {
+    // Eğer bildirim okunmamışsa, okundu olarak işaretle
+    if (!notification.read_status) {
+      await handleMarkNotificationAsRead(notification);
+    }
+
+    // Bildirim tipini ve içeriğini kontrol et
+    const type = isMobileNotification(notification)
+      ? notification.notification_type
+      : notification.notification_type;
+
+    // Bildirime göre ilgili sayfaya yönlendir
+    if (type.includes("event")) {
+      const eventId = isMobileNotification(notification)
+        ? notification.data?.event_id
+        : notification.event_id;
+
+      if (eventId) {
+        router.push(`/events/${eventId}`);
+      }
+    } else if (type.includes("friend")) {
+      router.push("/friends");
+    } else if (type.includes("message")) {
+      router.push("/chat");
+    }
+  };
+
+  // Arkadaşlık isteği onaylama işlemi
+  const handleAcceptRequest = async (requestId: string) => {
+    setProcessingRequestIds((prev) => [...prev, requestId]);
+    try {
+      const response = await acceptFriendshipRequest(requestId);
+      if (response.status === "success") {
+        console.log("Arkadaşlık isteği kabul edildi:", response);
+        // İsteği listeden kaldır
+        setFriendRequests((prev) =>
+          prev.filter((req) => String(req.id) !== requestId)
+        );
+      } else {
+        console.error("Arkadaşlık isteği kabul edilirken hata:", response);
+        Alert.alert(
+          "Hata",
+          "Arkadaşlık isteği kabul edilirken bir sorun oluştu."
+        );
+      }
+    } catch (error) {
+      console.error("Arkadaşlık isteği kabul edilirken hata:", error);
+      Alert.alert(
+        "Hata",
+        "Arkadaşlık isteği kabul edilirken bir sorun oluştu."
+      );
+    } finally {
+      setProcessingRequestIds((prev) => prev.filter((id) => id !== requestId));
+    }
+  };
+
+  // Arkadaşlık isteği reddetme işlemi
+  const handleRejectRequest = async (requestId: string) => {
+    setProcessingRequestIds((prev) => [...prev, requestId]);
+    try {
+      const response = await rejectFriendshipRequest(requestId);
+      if (response.status === "success") {
+        console.log("Arkadaşlık isteği reddedildi:", response);
+        // İsteği listeden kaldır
+        setFriendRequests((prev) =>
+          prev.filter((req) => String(req.id) !== requestId)
+        );
+      } else {
+        console.error("Arkadaşlık isteği reddedilirken hata:", response);
+        Alert.alert(
+          "Hata",
+          "Arkadaşlık isteği reddedilirken bir sorun oluştu."
+        );
+      }
+    } catch (error) {
+      console.error("Arkadaşlık isteği reddedilirken hata:", error);
+      Alert.alert("Hata", "Arkadaşlık isteği reddedilirken bir sorun oluştu.");
+    } finally {
+      setProcessingRequestIds((prev) => prev.filter((id) => id !== requestId));
+    }
+  };
 
   // Sayfa yüklendiğinde ve yenilendiğinde istekleri getir
   useEffect(() => {
@@ -233,7 +375,11 @@ export default function NotificationsScreen() {
         ]);
 
         // If all requests failed
-        if (results.every((result) => result.status === "rejected")) {
+        if (
+          results.every(
+            (result: PromiseSettledResult<any>) => result.status === "rejected"
+          )
+        ) {
           setError(
             "Veriler yenilenemedi. Lütfen internet bağlantınızı kontrol edin."
           );
@@ -249,216 +395,114 @@ export default function NotificationsScreen() {
     };
 
     refreshData();
-  }, [refreshing, apiRequestInProgress]);
+  }, [
+    refreshing,
+    apiRequestInProgress,
+    fetchNotifications,
+    fetchFriendshipRequests,
+  ]);
 
-  // Arkadaşlık isteği kabul et
-  const handleAcceptRequest = async (requestId: string) => {
-    try {
-      // İşlem başladı
-      setProcessingRequestIds((prev) => [...prev, requestId.toString()]);
-
-      const response = await acceptFriendshipRequest(requestId.toString());
-      if (response.status === "success") {
-        // İstek kabul edildikten sonra listeden kaldır
-        setFriendRequests((prevRequests) =>
-          prevRequests.filter(
-            (request) => request.id.toString() !== requestId.toString()
-          )
-        );
-        console.log("Arkadaşlık isteği kabul edildi:", requestId);
-      }
-    } catch (error) {
-      console.error("Arkadaşlık isteği kabul edilirken hata:", error);
-      Alert.alert(
-        "Hata",
-        "Arkadaşlık isteği kabul edilirken bir sorun oluştu. Lütfen tekrar deneyin."
-      );
-    } finally {
-      // İşlem tamamlandı
-      setProcessingRequestIds((prev) =>
-        prev.filter((id) => id !== requestId.toString())
-      );
-    }
-  };
-
-  // Arkadaşlık isteği reddet
-  const handleRejectRequest = async (requestId: string) => {
-    try {
-      // İşlem başladı
-      setProcessingRequestIds((prev) => [...prev, requestId.toString()]);
-
-      const response = await rejectFriendshipRequest(requestId.toString());
-      if (response.status === "success") {
-        // İstek reddedildikten sonra listeden kaldır
-        setFriendRequests((prevRequests) =>
-          prevRequests.filter(
-            (request) => request.id.toString() !== requestId.toString()
-          )
-        );
-        console.log("Arkadaşlık isteği reddedildi:", requestId);
-      }
-    } catch (error) {
-      console.error("Arkadaşlık isteği reddedilirken hata:", error);
-      Alert.alert(
-        "Hata",
-        "Arkadaşlık isteği reddedilirken bir sorun oluştu. Lütfen tekrar deneyin."
-      );
-    } finally {
-      // İşlem tamamlandı
-      setProcessingRequestIds((prev) =>
-        prev.filter((id) => id !== requestId.toString())
-      );
-    }
-  };
-
+  // Sekme değiştirme işlemi
   const handleTabChange = (tab: "all" | "unread") => {
     setActiveTab(tab);
   };
 
-  // Bildirimleri okundu olarak işaretle
-  const handleMarkNotificationAsRead = async (
-    notification: NotificationResponse
-  ) => {
-    try {
-      const response = await notificationsService.markAsRead(notification.id);
-
-      // Backend'den dönen API yanıtı
-      if (
-        response.data &&
-        (response.data.status === "success" || response.data.success)
-      ) {
-        // Bildirimi yerel olarak güncelle
-        setApiNotifications((prevState) =>
-          prevState.map((item) =>
-            item.id === notification.id ? { ...item, read_status: true } : item
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Bildirim okundu işaretlenirken hata:", error);
-    }
-  };
-
-  // Bildirim türüne göre yönlendirme
-  const handleNotificationPress = async (
-    notification: NotificationResponse
-  ) => {
-    // Bildirimi okundu olarak işaretle
-    await handleMarkNotificationAsRead(notification);
-
-    // Sadece okundu olarak işaretle, herhangi bir yönlendirme yapma
-    console.log("Bildirim okundu olarak işaretlendi:", notification.id);
-  };
-
-  // Arkadaşlık isteğine tıklandığında
-  const handleFriendRequestPress = () => {
-    router.push("/friend-requests" as any);
-  };
-
-  // Tüm bildirimleri okundu olarak işaretle
-  const handleMarkAllAsRead = async () => {
-    try {
-      const response = await notificationsService.markAllAsRead();
-
-      // Backend'den dönen API yanıtı
-      if (
-        response.data &&
-        (response.data.status === "success" || response.data.success)
-      ) {
-        // Tüm bildirimleri yerel olarak okundu işaretle
-        setApiNotifications((prevState) =>
-          prevState.map((item) => ({ ...item, read_status: true }))
-        );
-      }
-    } catch (error) {
-      console.error("Tüm bildirimler okundu işaretlenirken hata:", error);
-      Alert.alert(
-        "Hata",
-        "Bildirimler okundu olarak işaretlenirken bir sorun oluştu."
-      );
-    }
-  };
-
+  // Filtrelenmiş bildirimleri getir
   const getFilteredNotifications = () => {
-    return activeTab === "all"
-      ? apiNotifications
-      : apiNotifications.filter((item) => !item.read_status);
+    return activeTab === "unread"
+      ? notifications.filter((notification) => !notification.read_status)
+      : notifications;
   };
 
-  // Boş durum gösterimi
+  // Arkadaşlık istekleri sayfasına yönlendirme
+  const handleFriendRequestPress = () => {
+    router.push("/friends");
+  };
+
+  // Boş bildirim durumu
   const renderEmptyComponent = () => {
-    if (loading) {
-      return (
-        <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { marginTop: 16 }]}>
-            Bildirimler yükleniyor...
-          </Text>
-        </View>
-      );
-    }
-
-    if (error) {
-      return (
-        <View style={styles.emptyContainer}>
-          <AlertTriangle size={48} color="#e74c3c" />
-          <Text style={[styles.emptyText, { marginTop: 16 }]}>{error}</Text>
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={onRefresh}
-            disabled={apiRequestInProgress}
-          >
-            <RefreshCw size={16} color="#fff" />
-            <Text style={styles.retryButtonText}>
-              {apiRequestInProgress ? "Yenileniyor..." : "Tekrar Dene"}
-            </Text>
-          </TouchableOpacity>
-
-          {isNetworkError && (
-            <Text style={styles.networkTip}>
-              İpucu: Ağ ayarlarınızı veya internet bağlantınızı kontrol edin.
-            </Text>
-          )}
-        </View>
-      );
-    }
+    if (loading) return null;
 
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>
+        <Text style={styles.emptyTitle}>
           {activeTab === "all"
-            ? "Hiç bildiriminiz bulunmuyor."
-            : "Okunmamış bildiriminiz bulunmuyor."}
+            ? "Henüz bildiriminiz yok"
+            : "Okunmamış bildiriminiz yok"}
+        </Text>
+        <Text style={styles.emptyDescription}>
+          {activeTab === "all"
+            ? "Yeni etkinlikler oluşturabilir veya mevcut etkinliklere katılabilirsiniz."
+            : "Tüm bildirimlerinizi okudunuz! 👍"}
         </Text>
       </View>
     );
   };
 
+  // Bildirim başlığı - arkadaşlık istekleri
+  const renderHeader = () => {
+    if (friendRequests.length === 0) return null;
+
+    return (
+      <View style={styles.requestsContainer}>
+        <View style={styles.requestsHeader}>
+          <Text style={styles.requestsTitle}>Arkadaşlık İstekleri</Text>
+          {friendRequests.length > 3 && (
+            <TouchableOpacity
+              style={styles.viewAllButton}
+              onPress={handleFriendRequestPress}
+            >
+              <Text style={styles.viewAllText}>Tümünü Gör</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {friendRequests.slice(0, 3).map((request) => (
+          <FriendshipRequestItem
+            key={request.id}
+            request={request}
+            onAccept={handleAcceptRequest}
+            onReject={handleRejectRequest}
+            isProcessing={processingRequestIds.includes(String(request.id))}
+          />
+        ))}
+        <View style={styles.divider} />
+      </View>
+    );
+  };
+
+  // Render fonksiyonları
+  const renderNotification = React.useCallback(
+    ({ item }: { item: MobileNotification | NotificationResponse }) => (
+      <NotificationItem notification={item} onPress={handleNotificationPress} />
+    ),
+    [handleNotificationPress]
+  );
+
+  // keyExtractor fonksiyonu
+  const keyExtractor = React.useCallback(
+    (item: MobileNotification | NotificationResponse): string =>
+      `notification-${item.id}`,
+    []
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
+      <StatusBar style="dark" backgroundColor="#fff" />
 
-      {/* Üst bilgi çubuğu */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Bildirimler</Text>
 
-        {activeTab === "all" && apiNotifications.length > 0 && (
+        {/* Tümünü Okundu Olarak İşaretle Butonu */}
+        {notifications.length > 0 && (
           <TouchableOpacity
+            style={styles.markAllButton}
             onPress={handleMarkAllAsRead}
-            disabled={apiRequestInProgress}
           >
-            <Text
-              style={[
-                styles.clearText,
-                apiRequestInProgress && styles.disabledText,
-              ]}
-            >
-              Tümünü Okundu İşaretle
-            </Text>
+            <Text style={styles.markAllText}>Tümünü Okundu İşaretle</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Sekmeler */}
       <View style={styles.tabsContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === "all" && styles.activeTab]}
@@ -470,10 +514,9 @@ export default function NotificationsScreen() {
               activeTab === "all" && styles.activeTabText,
             ]}
           >
-            Tümü ({apiNotifications.length})
+            Tümü
           </Text>
         </TouchableOpacity>
-
         <TouchableOpacity
           style={[styles.tab, activeTab === "unread" && styles.activeTab]}
           onPress={() => handleTabChange("unread")}
@@ -484,69 +527,56 @@ export default function NotificationsScreen() {
               activeTab === "unread" && styles.activeTabText,
             ]}
           >
-            Okunmamış (
-            {apiNotifications.filter((item) => !item.read_status).length})
+            Okunmamış
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Arkadaşlık İstekleri Başlığı */}
-      {friendRequests.length > 0 && (
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Arkadaşlık İstekleri</Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2ecc71" />
+          <Text style={styles.loadingText}>Bildirimler yükleniyor...</Text>
         </View>
-      )}
-
-      {/* Arkadaşlık İstekleri Listesi */}
-      {friendRequests.length > 0 && (
-        <View style={styles.friendRequestsContainer}>
-          {friendRequests.map((request) =>
-            request && request.id ? (
-              <FriendshipRequestItem
-                key={request.id.toString()}
-                request={request}
-                onAccept={handleAcceptRequest}
-                onReject={handleRejectRequest}
-                onPress={handleFriendRequestPress}
-                isProcessing={processingRequestIds.includes(
-                  request.id.toString()
-                )}
-              />
-            ) : null
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <AlertTriangle size={48} color="#e74c3c" />
+          <Text style={styles.errorTitle}>Bir Sorun Oluştu</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              fetchNotifications();
+              fetchFriendshipRequests();
+            }}
+          >
+            <RefreshCw size={16} color="#fff" />
+            <Text style={styles.retryText}>Tekrar Dene</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={getFilteredNotifications()}
+          renderItem={({ item }) => (
+            <NotificationItem
+              notification={item}
+              onPress={handleNotificationPress}
+            />
           )}
-        </View>
+          keyExtractor={(item) => `notification-${item.id}`}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#2ecc71"]}
+              tintColor="#2ecc71"
+            />
+          }
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={renderEmptyComponent}
+          ListFooterComponent={<View style={{ height: 20 }} />}
+        />
       )}
-
-      {/* Bildirimler Başlığı */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Bildirimler</Text>
-      </View>
-
-      {/* Bildirimler Listesi */}
-      <FlatList
-        data={getFilteredNotifications()}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <NotificationItem
-            notification={item}
-            onPress={handleNotificationPress}
-          />
-        )}
-        contentContainerStyle={[
-          styles.listContent,
-          apiNotifications.length === 0 && styles.emptyListContent,
-        ]}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={renderEmptyComponent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#4CAF50"]} // Android için
-            tintColor={"#4CAF50"} // iOS için
-          />
-        }
-      />
     </SafeAreaView>
   );
 }
@@ -605,12 +635,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
-  emptyText: {
+  emptyTitle: {
     fontSize: 16,
     color: "#666",
     textAlign: "center",
   },
-  emptySubText: {
+  emptyDescription: {
     fontSize: 14,
     color: "#bdc3c7",
     textAlign: "center",
@@ -689,5 +719,73 @@ const styles = StyleSheet.create({
     color: "#7f8c8d",
     textAlign: "center",
     paddingHorizontal: 32,
+  },
+  requestsContainer: {
+    padding: 16,
+    backgroundColor: "white",
+  },
+  requestsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  requestsTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#666",
+  },
+  viewAllButton: {
+    padding: 8,
+    backgroundColor: "#2ecc71",
+    borderRadius: 20,
+  },
+  viewAllText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#e0e0e0",
+    marginVertical: 16,
+  },
+  markAllButton: {
+    padding: 8,
+    backgroundColor: "#2ecc71",
+    borderRadius: 20,
+  },
+  markAllText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: "#666",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 16,
+    color: "#e74c3c",
+    marginBottom: 16,
+  },
+  errorText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#fff",
+    marginLeft: 8,
+  },
+  listContainer: {
+    padding: 16,
   },
 });
