@@ -15,6 +15,7 @@ export { default as EventParticipants } from "./EventParticipants";
 export { default as EventReviews } from "./EventReviews";
 export { default as EventActionButtons } from "./EventActionButtons";
 export { default as RatingModal } from "./RatingModal";
+export { default as EventDetailComponent } from "./EventDetailComponent";
 
 // Etkinlik oluşturma bileşenleri
 export { default as FormHeader } from "./FormHeader";
@@ -30,6 +31,7 @@ export * from "./EventReviews";
 export * from "./EventActionButtons";
 export * from "./EventDetailHeader";
 export * from "./RatingModal";
+export * from "./EventDetailComponent";
 
 // Create Event bileşenleri
 export * from "./FormHeader";

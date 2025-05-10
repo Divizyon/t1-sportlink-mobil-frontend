@@ -704,7 +704,7 @@ export default function DashboardScreen() {
 
     // Just update the tab - the useEffect will handle filtering
     setActiveTab(tab);
-    
+
     // No need to call applyActiveFilters directly as the useEffect will handle it
     // This prevents duplicate filter operations
   };
@@ -781,7 +781,7 @@ export default function DashboardScreen() {
         // Filtreleme uygula
         applyActiveFilters();
       }, 300);
-      
+
       // Clean up timer on next effect run
       return () => clearTimeout(debounceTimer);
     }
@@ -937,9 +937,13 @@ export default function DashboardScreen() {
       // Kategori filtrelemesi
       if (selectedCategory !== null && selectedCategory !== "Tümü") {
         // Log tüm kategorileri (debug için)
-        const availableCategories = [...new Set(eventsWithDistance.map(event => event.category))];
-        console.log(`Mevcut etkinlik kategorileri: ${availableCategories.join(', ')}`);
-        
+        const availableCategories = [
+          ...new Set(eventsWithDistance.map((event) => event.category)),
+        ];
+        console.log(
+          `Mevcut etkinlik kategorileri: ${availableCategories.join(", ")}`
+        );
+
         eventsWithDistance = eventsWithDistance.filter((event) => {
           const matchesCategory = event.category === selectedCategory;
           console.log(
@@ -955,7 +959,9 @@ export default function DashboardScreen() {
           `Filtreleme sonrası ${eventsWithDistance.length} etkinlik (kategori filtresi)`
         );
       } else {
-        console.log(`Tümü kategorisi seçili, tüm kategoriler gösteriliyor (${eventsWithDistance.length} etkinlik)`);
+        console.log(
+          `Tümü kategorisi seçili, tüm kategoriler gösteriliyor (${eventsWithDistance.length} etkinlik)`
+        );
       }
     }
 
@@ -971,8 +977,8 @@ export default function DashboardScreen() {
   };
 
   const handleEventPress = (eventId: number) => {
-    // @ts-ignore
-    router.navigate({
+    // Router.navigate yerine router.push kullanacağız
+    router.push({
       pathname: "/(tabs)/dashboard/event-details",
       params: { id: eventId },
     });

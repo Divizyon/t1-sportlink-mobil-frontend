@@ -27,8 +27,9 @@ import {
   Users,
   X,
   Smartphone,
+  RefreshCw,
 } from "lucide-react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ActionSheetIOS,
   Alert,
@@ -53,6 +54,7 @@ import profileService from "@/src/api/profileService";
 import { UserProfile } from "@/src/types";
 import eventService from "@/src/api/eventService";
 import EventCard from "@/components/profile/EventCard";
+import eventBus from "@/src/utils/EventBus";
 
 // Menü öğesi tipi tanımlama
 interface MenuItem {
@@ -594,6 +596,23 @@ export default function ProfileScreen() {
   useEffect(() => {
     fetchProfileData();
     fetchParticipatedEvents();
+    loadFriendCount();
+
+    // Etkinlik katılım durumu değiştiğinde etkinlikleri yenile
+    const unsubscribe = eventBus.subscribe(
+      "EVENT_PARTICIPATION_CHANGED",
+      () => {
+        console.log(
+          "Etkinlik katılım değişikliği algılandı, etkinlikler yenileniyor..."
+        );
+        fetchParticipatedEvents();
+      }
+    );
+
+    // Component unmount olduğunda event dinleyicisini temizle
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const handleEditProfile = () => {
@@ -762,11 +781,8 @@ export default function ProfileScreen() {
   const handleEventPress = (eventId: number) => {
     console.log(`Etkinlik detayına yönlendiriliyor: ${eventId}`);
 
-    // // Doğru rotaya yönlendir
-    // router.push({
-    //   pathname: "/(tabs)/events/[id]",
-    //   params: { id: eventId.toString() },
-    // });
+    // Doğru rotaya yönlendir
+    router.push(`/dashboard/event-details?id=${eventId}`);
   };
 
   // Handler for profile picture change
@@ -1604,12 +1620,6 @@ export default function ProfileScreen() {
 
             {/* İstatistikler */}
             <View style={styles.statsContainer}>
-              <View style={[styles.statItem, styles.statDivider]}>
-                <Text style={styles.statNumber}>
-                  {userProfile?.total_events || 0}
-                </Text>
-                <Text style={styles.statLabel}>Etkinlik</Text>
-              </View>
               <TouchableOpacity
                 style={styles.statItem}
                 onPress={() =>
@@ -1656,10 +1666,19 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeaderContainer}>
               <Text style={styles.sectionTitle}>Katıldığım Etkinlikler</Text>
-              <View style={styles.eventCountBadge}>
-                <Text style={styles.eventCountText}>
-                  {participatedEvents.length}
-                </Text>
+              <View style={styles.eventHeaderActions}>
+                <TouchableOpacity
+                  style={styles.refreshButton}
+                  onPress={fetchParticipatedEvents}
+                  disabled={eventsLoading}
+                >
+                  <RefreshCw size={18} color="#3498db" />
+                </TouchableOpacity>
+                <View style={styles.eventCountBadge}>
+                  <Text style={styles.eventCountText}>
+                    {participatedEvents.length}
+                  </Text>
+                </View>
               </View>
             </View>
 
@@ -1806,18 +1825,6 @@ export default function ProfileScreen() {
                   onChangeText={(text) => handleProfileChange("lastName", text)}
                   placeholder="Soyadınız"
                   autoCapitalize="words"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>E-posta</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={editedProfile.email}
-                  onChangeText={(text) => handleProfileChange("email", text)}
-                  placeholder="E-posta adresiniz"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
                 />
               </View>
 
@@ -2480,16 +2487,15 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   eventCountBadge: {
-    backgroundColor: "#e6f7f4",
+    backgroundColor: "#3498db",
+    borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 12,
-    marginLeft: 8,
   },
   eventCountText: {
+    color: "#fff",
     fontSize: 12,
-    fontWeight: "bold",
-    color: "#047857",
+    fontWeight: "600",
   },
   interestsContainer: {
     flexDirection: "row",
@@ -3315,6 +3321,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#1c7ed6",
     justifyContent: "center",
+    alignItems: "center",
+  },
+  refreshButton: {
+    marginRight: 10,
+    padding: 5,
+  },
+  eventHeaderActions: {
+    flexDirection: "row",
     alignItems: "center",
   },
 });
