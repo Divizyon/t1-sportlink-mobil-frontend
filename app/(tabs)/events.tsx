@@ -28,7 +28,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { Event, eventsApi } from "../../services/api/events";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { showToast } from "../../src/utils/toastHelper";
 
 // UI Event interface
@@ -55,20 +55,30 @@ export default function EventsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Tab and filter state
   const [activeTab, setActiveTab] = useState("active");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("Tümü");
   const [selectedDate, setSelectedDate] = useState("Tümü");
-  
+
   // Constants
   const months = [
-    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", 
-    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
+    "Ocak",
+    "Şubat",
+    "Mart",
+    "Nisan",
+    "Mayıs",
+    "Haziran",
+    "Temmuz",
+    "Ağustos",
+    "Eylül",
+    "Ekim",
+    "Kasım",
+    "Aralık",
   ];
-  
+
   // Categories and date filters
   const categories = [
     { id: 1, name: "Tümü", icon: "🏆" },
@@ -78,14 +88,14 @@ export default function EventsScreen() {
     { id: 5, name: "Tenis", icon: "🎾" },
     { id: 6, name: "Voleybol", icon: "🏐" },
   ];
-  
+
   const dateFilters = [
     { id: 1, name: "Tümü" },
     { id: 2, name: "Bugün" },
     { id: 3, name: "Bu Hafta" },
     { id: 4, name: "Bu Ay" },
   ];
-  
+
   // Simple function to map API event to UI event
   const mapEventToUIEvent = (apiEvent: Event, currentTab: string): UIEvent => {
     // Format date
@@ -98,17 +108,23 @@ export default function EventsScreen() {
     } catch (e) {
       // Use defaults
     }
-    
+
     // Format time
     let startTime = "??:??";
     let endTime = "??:??";
     try {
-      startTime = new Date(apiEvent.start_time).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-      endTime = new Date(apiEvent.end_time).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      startTime = new Date(apiEvent.start_time).toLocaleTimeString("tr-TR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      endTime = new Date(apiEvent.end_time).toLocaleTimeString("tr-TR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     } catch (e) {
       // Use defaults
     }
-    
+
     return {
       id: apiEvent.id,
       title: apiEvent.title || "İsimsiz Etkinlik",
@@ -125,35 +141,41 @@ export default function EventsScreen() {
       isCreator: currentTab === "created",
     };
   };
-  
+
   // Fetch events based on active tab
   const fetchEvents = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       console.log(`Fetching events for tab: ${activeTab}`);
       let apiEvents: Event[] = [];
-      
+
       switch (activeTab) {
         case "active":
           apiEvents = await eventsApi.getEventsByStatus("ACTIVE", 1, 10);
           break;
         case "past":
-          apiEvents = await eventsApi.getUserParticipatedEvents(1, 10, "COMPLETED");
+          apiEvents = await eventsApi.getUserParticipatedEvents(
+            1,
+            10,
+            "COMPLETED"
+          );
           break;
         case "created":
           apiEvents = await eventsApi.getUserCreatedEvents(1, 10);
           break;
       }
-      
+
       console.log(`Received ${apiEvents.length} events from API`);
-      
+
       if (!Array.isArray(apiEvents)) {
         apiEvents = [];
       }
-      
-      const uiEvents = apiEvents.map(event => mapEventToUIEvent(event, activeTab));
+
+      const uiEvents = apiEvents.map((event) =>
+        mapEventToUIEvent(event, activeTab)
+      );
       setEvents(uiEvents);
       setFilteredEvents(uiEvents);
     } catch (err: any) {
@@ -163,70 +185,72 @@ export default function EventsScreen() {
       setLoading(false);
     }
   };
-  
+
   // Filter events based on search, category, and date
   const filterEvents = () => {
     if (!events.length) {
       setFilteredEvents([]);
       return;
     }
-    
+
     let filtered = [...events];
-    
+
     // Apply tab filter
     if (activeTab === "active") {
-      filtered = filtered.filter(event => 
-        event.status === "ACTIVE" || 
-        event.status === "active"
+      filtered = filtered.filter(
+        (event) => event.status === "ACTIVE" || event.status === "active"
       );
     }
-    
+
     // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(event => 
-        event.title.toLowerCase().includes(query) || 
-        event.location.toLowerCase().includes(query)
+      filtered = filtered.filter(
+        (event) =>
+          event.title.toLowerCase().includes(query) ||
+          event.location.toLowerCase().includes(query)
       );
     }
-    
+
     // Apply category filter
     if (selectedCategory !== "Tümü") {
-      filtered = filtered.filter(event => event.category === selectedCategory);
+      filtered = filtered.filter(
+        (event) => event.category === selectedCategory
+      );
     }
-    
+
     // Apply date filter
     if (selectedDate !== "Tümü") {
       // Date filtering logic...
       // (simplified for brevity)
     }
-    
+
     setFilteredEvents(filtered);
   };
-  
+
   // Initial fetch on mount
   useEffect(() => {
     fetchEvents();
   }, [activeTab]);
-  
+
   // Apply filters when criteria change
   useEffect(() => {
     filterEvents();
   }, [events, searchQuery, selectedCategory, selectedDate]);
-  
+
   // Handle tab change
   const handleTabChange = (tab: string) => {
     if (tab === activeTab) return;
     setActiveTab(tab);
   };
-  
+
   // Handle refresh
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchEvents();
     setRefreshing(false);
   };
-  
+
   // Toggle search
   const toggleSearch = () => {
     setShowSearch(!showSearch);
@@ -234,12 +258,12 @@ export default function EventsScreen() {
       setSearchQuery("");
     }
   };
-  
+
   // Navigate to event details
   const handleEventPress = (eventId: string) => {
     router.push(`/dashboard/event-details?id=${eventId}`);
   };
-  
+
   // Render event item
   const renderEventItem = ({ item }: { item: UIEvent }) => (
     <TouchableOpacity
@@ -249,9 +273,11 @@ export default function EventsScreen() {
       <HStack style={styles.eventHeader}>
         <Box style={styles.dateBox}>
           <Text style={styles.dateNumber}>{item.date.split(" ")[0]}</Text>
-          <Text style={styles.dateMonth}>{item.date.split(" ")[1].substring(0, 3)}</Text>
+          <Text style={styles.dateMonth}>
+            {item.date.split(" ")[1].substring(0, 3)}
+          </Text>
         </Box>
-        
+
         <VStack style={styles.eventDetails}>
           <HStack style={styles.eventTopInfo}>
             <Text style={styles.eventTime}>{item.time}</Text>
@@ -259,12 +285,16 @@ export default function EventsScreen() {
               <Text style={styles.organizerBadgeText}>
                 {item.isCreator ? "Sizin Etkinliğiniz" : item.organizer}
               </Text>
-              <CheckCircle size={12} color="#047857" style={{ marginLeft: 4 }} />
+              <CheckCircle
+                size={12}
+                color="#047857"
+                style={{ marginLeft: 4 }}
+              />
             </HStack>
           </HStack>
-          
+
           <Text style={styles.eventTitle}>{item.title}</Text>
-          
+
           <HStack style={styles.eventTypeContainer}>
             <Box style={styles.typeTag}>
               <Text style={styles.tagText}>{item.type}</Text>
@@ -272,13 +302,13 @@ export default function EventsScreen() {
           </HStack>
         </VStack>
       </HStack>
-      
+
       <HStack style={styles.eventFooter}>
         <HStack style={styles.locationInfo}>
           <MapPin size={14} color="#6b7280" />
           <Text style={styles.locationText}>{item.location}</Text>
         </HStack>
-        
+
         <HStack style={styles.participantsInfo}>
           <Users size={14} color="#6b7280" />
           <Text style={styles.participantsText}>
@@ -286,7 +316,7 @@ export default function EventsScreen() {
           </Text>
         </HStack>
       </HStack>
-      
+
       {item.isJoined && (
         <Box style={styles.joinedBadge}>
           <HStack style={styles.joinedContent}>
@@ -297,39 +327,42 @@ export default function EventsScreen() {
       )}
     </TouchableOpacity>
   );
-  
+
   // Render empty state
   const renderEmptyState = () => {
     if (loading) return null;
-    
+
     let title = "Etkinlik Bulunamadı";
     let message = "Seçilen filtrelere uygun etkinlik bulunamadı.";
-    
+
     if (error) {
       title = "Bir Hata Oluştu";
       message = error;
     }
-    
+
     return (
       <View style={styles.emptyState}>
         <TrendingUp size={40} color="#9ca3af" />
         <Text style={styles.emptyStateTitle}>{title}</Text>
         <Text style={styles.emptyStateText}>{message}</Text>
-        <TouchableOpacity
-          style={styles.refreshButton}
-          onPress={handleRefresh}
-        >
+        <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
           <Text style={styles.refreshButtonText}>Yenile</Text>
         </TouchableOpacity>
       </View>
     );
   };
-  
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f5f5f5" }}>
       {/* Header with search and filtering */}
       <View style={{ padding: 16, backgroundColor: "#fff" }}>
-        <HStack style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <HStack
+          style={{
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 12,
+          }}
+        >
           <Text style={{ fontSize: 20, fontWeight: "bold", color: "#111827" }}>
             Etkinlikler
           </Text>
@@ -404,7 +437,8 @@ export default function EventsScreen() {
               flex: 1,
               padding: 8,
               borderRadius: 4,
-              backgroundColor: activeTab === "active" ? "#047857" : "transparent",
+              backgroundColor:
+                activeTab === "active" ? "#047857" : "transparent",
               alignItems: "center",
             }}
             onPress={() => handleTabChange("active")}
@@ -442,7 +476,8 @@ export default function EventsScreen() {
               flex: 1,
               padding: 8,
               borderRadius: 4,
-              backgroundColor: activeTab === "created" ? "#047857" : "transparent",
+              backgroundColor:
+                activeTab === "created" ? "#047857" : "transparent",
               alignItems: "center",
             }}
             onPress={() => handleTabChange("created")}
@@ -476,7 +511,9 @@ export default function EventsScreen() {
                   selectedCategory === category.name ? "#e6f7f2" : "#f3f4f6",
                 borderWidth: 1,
                 borderColor:
-                  selectedCategory === category.name ? "#047857" : "transparent",
+                  selectedCategory === category.name
+                    ? "#047857"
+                    : "transparent",
               }}
               onPress={() => setSelectedCategory(category.name)}
             >
@@ -485,7 +522,9 @@ export default function EventsScreen() {
                 <Text
                   style={{
                     color:
-                      selectedCategory === category.name ? "#047857" : "#4b5563",
+                      selectedCategory === category.name
+                        ? "#047857"
+                        : "#4b5563",
                     fontWeight:
                       selectedCategory === category.name ? "bold" : "normal",
                   }}
@@ -496,7 +535,7 @@ export default function EventsScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
-        
+
         {/* Date filter scrolling row */}
         <ScrollView
           horizontal
@@ -546,7 +585,9 @@ export default function EventsScreen() {
           contentContainerStyle={{
             padding: 16,
             paddingBottom: 24,
-            ...(filteredEvents.length === 0 ? { flex: 1, justifyContent: 'center' } : {})
+            ...(filteredEvents.length === 0
+              ? { flex: 1, justifyContent: "center" }
+              : {}),
           }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={renderEmptyState}
@@ -567,25 +608,25 @@ export default function EventsScreen() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#4b5563',
+    color: "#4b5563",
   },
   eventCard: {
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
-    position: 'relative',
+    position: "relative",
   },
   eventHeader: {
     alignItems: "center",
@@ -668,7 +709,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   joinedBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: 12,
     right: 12,
     backgroundColor: "#047857",

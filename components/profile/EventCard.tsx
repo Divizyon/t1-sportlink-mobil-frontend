@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Text } from "@/components/ui/text";
 import { MapPin, Clock, Calendar, Users, Tag } from "lucide-react-native";
+import { router } from "expo-router";
 
 // Tema renkleri
 const theme = {
@@ -184,11 +185,22 @@ const EventCard: React.FC<EventCardProps> = ({ event, onPress, onJoin }) => {
 
   const { day, month } = formatDate(event.event_date);
 
+  const handlePress = () => {
+    if (onPress) {
+      onPress(event.id);
+    } else {
+      router.push({
+        pathname: "/(tabs)/dashboard/event-details",
+        params: { id: event.id },
+      });
+    }
+  };
+
   return (
     <TouchableOpacity
       key={event.id}
       style={cardStyle()}
-      onPress={() => onPress(event.id)}
+      onPress={handlePress}
       activeOpacity={0.9}
     >
       <View style={styles.eventHeader}>
