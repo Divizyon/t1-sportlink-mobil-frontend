@@ -86,6 +86,14 @@ export default function RootLayout() {
                 name="friend-requests/index"
                 options={{ headerShown: false }}
               />
+              <Stack.Screen
+                name="event-details/[id]"
+                options={{
+                  headerShown: false,
+                  presentation: "card",
+                  animation: "slide_from_right",
+                }}
+              />
             </Stack>
           </TokenValidationProvider>
         </AuthenticationGuard>

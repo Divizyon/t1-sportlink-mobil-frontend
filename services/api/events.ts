@@ -332,8 +332,32 @@ export const eventsApi = {
   // Etkinlik katılımcılarını getir
   getEventParticipants: async (eventId: string) => {
     return safeApiCall(async () => {
+      console.log(`Etkinlik katılımcıları getiriliyor, eventId=${eventId}`);
       const response = await apiClient.get(`events/${eventId}/participants`);
-      return response.data.data.participants;
+
+      console.log("Katılımcılar API yanıtı:", JSON.stringify(response.data));
+
+      // API yanıt yapısını kontrol et ve uygun şekilde dön
+      if (
+        response.data &&
+        response.data.status === "success" &&
+        response.data.data &&
+        Array.isArray(response.data.data.participants)
+      ) {
+        console.log(
+          `${response.data.data.participants.length} katılımcı alındı`
+        );
+        return response.data.data.participants;
+      } else if (response.data && Array.isArray(response.data)) {
+        // Bazı eski API yanıtları doğrudan dizi dönebilir
+        return response.data;
+      }
+
+      // Yanıt beklenmeyen formatta ise boş dizi döndür
+      console.warn(
+        `Beklenmeyen API yanıt formatı: ${eventId} için katılımcılar alınamadı`
+      );
+      return [];
     }, []);
   },
 

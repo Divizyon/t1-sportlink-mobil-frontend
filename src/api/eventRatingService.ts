@@ -191,7 +191,7 @@ const eventRatingService = {
    */
   async addRating(
     eventId: string | number,
-    rating: number,
+    rating: number | null,
     comment: string
   ): Promise<EventRating | null> {
     try {
@@ -199,16 +199,21 @@ const eventRatingService = {
 
       // Doğrulama kontrolü
       if (!eventId) throw new Error("Etkinlik ID'si gerekli");
-      if (!rating || rating < 1 || rating > 5)
-        throw new Error("Puan 1-5 arası olmalıdır");
       if (!comment || comment.trim() === "")
         throw new Error("Yorum boş olamaz");
 
       // Doğru formatta veri gönderiyoruz - 'comment' yerine 'review' parametresi
-      const payload = {
-        rating: Number(rating), // Sayı olarak gönder
+      const payload: any = {
         review: comment.trim(), // Trim edilmiş yorum 'review' olarak gönder
       };
+
+      // Rating varsa ekle (COMPLETED etkinlikler için)
+      if (rating !== null && rating !== undefined) {
+        if (rating < 1 || rating > 5) {
+          throw new Error("Puan 1-5 arası olmalıdır");
+        }
+        payload.rating = Number(rating);
+      }
 
       const response = await apiClient.post<RatingResponse>(
         `/event-ratings/${eventId}/ratings`,
@@ -278,7 +283,7 @@ const eventRatingService = {
    */
   async updateRating(
     ratingId: string | number,
-    rating: number,
+    rating: number | null,
     comment: string
   ): Promise<EventRating | null> {
     try {
@@ -286,16 +291,21 @@ const eventRatingService = {
 
       // Doğrulama kontrolü
       if (!ratingId) throw new Error("Yorum ID'si gerekli");
-      if (!rating || rating < 1 || rating > 5)
-        throw new Error("Puan 1-5 arası olmalıdır");
       if (!comment || comment.trim() === "")
         throw new Error("Yorum boş olamaz");
 
       // Doğru formatta veri gönderiyoruz - 'comment' yerine 'review' parametresi
-      const payload = {
-        rating: Number(rating), // Sayı olarak gönder
+      const payload: any = {
         review: comment.trim(), // Trim edilmiş yorum 'review' olarak gönder
       };
+
+      // Rating varsa ekle (tamamlanmış etkinlikler için)
+      if (rating !== null && rating !== undefined) {
+        if (rating < 1 || rating > 5) {
+          throw new Error("Puan 1-5 arası olmalıdır");
+        }
+        payload.rating = Number(rating);
+      }
 
       const response = await apiClient.put<RatingResponse>(
         `/event-ratings/rating/${ratingId}`,
@@ -384,11 +394,17 @@ const eventRatingService = {
   },
 
   /**
-   * Bir etkinliğin ortalama puanını getirir
+   * Etkinliğin ortalama puanını getirir
    */
   async getAverageRating(eventId: string | number): Promise<number> {
     try {
       console.log(`Etkinlik ortalama puanı getiriliyor: ${eventId}`);
+
+      // eventId parametresi için doğrulama kontrolü
+      if (!eventId) {
+        console.error("Geçersiz eventId parametresi:", eventId);
+        return 0;
+      }
 
       const response = await apiClient.get<RatingResponse>(
         `/event-ratings/${eventId}/average`
@@ -396,12 +412,13 @@ const eventRatingService = {
 
       console.log("Average rating yanıtı:", JSON.stringify(response.data));
 
+      // Yanıt yapısına göre doğru değeri çıkar
       if (isSuccessResponse(response.data)) {
         if (response.data.data && !Array.isArray(response.data.data)) {
-          // Average değerini kontrol et
-          const data = response.data.data as any;
-          if (typeof data.average === "number") {
-            return data.average;
+          // { success: true, data: { average: X, count: Y } }
+          const avgData = response.data.data as any;
+          if (typeof avgData.average === "number") {
+            return avgData.average;
           }
         }
       } else if (isStatusResponse(response.data)) {
@@ -409,13 +426,16 @@ const eventRatingService = {
           response.data.data &&
           typeof response.data.data.average === "number"
         ) {
+          // { status: "success", data: { average: X } }
           return response.data.data.average;
         }
       }
 
-      return 0;
+      console.log("Ortalama puan bulunamadı, varsayılan değer döndürülüyor");
+      return 0; // Değer bulunamazsa 0 döndür
     } catch (error) {
       console.error("Ortalama puan alınırken hata oluştu:", error);
+      // Hata durumunda 0 döndür
       return 0;
     }
   },

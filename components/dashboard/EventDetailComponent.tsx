@@ -37,6 +37,7 @@ import {
 } from "lucide-react-native";
 import MapView, { Marker } from "react-native-maps";
 import eventRatingService from "@/src/api/eventRatingService";
+import { eventsApi } from "@/services/api/events";
 
 // Tema renkleri
 const theme = {
@@ -69,9 +70,18 @@ const theme = {
 
 // Katılımcı verisi için interface
 interface Participant {
-  id: number | string;
-  name: string;
-  profileImage: string;
+  id: string | number;
+  user_id?: string;
+  name?: string;
+  full_name?: string;
+  profileImage?: string;
+  profile_image?: string;
+  profile_picture?: string; // Eski API yanıtları için geriye dönük uyumluluk
+  bio?: string;
+  role?: string;
+  user_role?: string;
+  joined_at?: string;
+  email?: string;
 }
 
 // EventDetail arayüzü
@@ -99,7 +109,13 @@ interface EventDetail {
   requirements?: string;
   notes?: string;
   imageUrl: string;
-  participants?: Participant[];
+  participants?:
+    | Participant[]
+    | {
+        id: string | number;
+        name: string;
+        profileImage: string;
+      }[];
   isOwnEvent?: boolean;
   status?: string;
   averageRating?: number;
@@ -120,10 +136,23 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
   onShareEvent,
   onContactOrganizer,
 }) => {
-  const [activeTab, setActiveTab] = useState("info"); // 'info', 'map', 'yorumlar'
+  // Sayfa durumu için state'ler
+  const [activeTab, setActiveTab] = useState<string>("info");
+  const [showParticipantsModal, setShowParticipantsModal] = useState(false);
   const [isJoined, setIsJoined] = useState(event.isJoined || false);
-  const [isParticipantsModalVisible, setIsParticipantsModalVisible] =
-    useState(false);
+  const [participantCount, setParticipantCount] = useState(
+    event.participantCount || 0
+  );
+  const [imageError, setImageError] = useState(false);
+  const [organizerImageError, setOrganizerImageError] = useState(false);
+
+  // Varsayılan resimler
+  const defaultEventImage =
+    "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1000";
+  const defaultProfileImage = "https://randomuser.me/api/portraits/lego/1.jpg";
+
+  // Kategori renkleri ve ikonları için değişkenler
+  const categoryColor = theme.categoryColors[event.category] || theme.primary;
 
   // Yorumlar ve puanlama için state'ler
   const [ratings, setRatings] = useState<any[]>([]);
@@ -135,14 +164,62 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // Modal için state ekleyelim
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingComment, setEditingComment] = useState("");
+  const [editingRating, setEditingRating] = useState(0);
+  const [editingRatingId, setEditingRatingId] = useState<number | null>(null);
+
+  // Yeni state ve kullanıcı ID'si için state ekle
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Katılımcılar için state'ler
+  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+
+  // Uygulama başladığında kullanıcı ID'sini al
+  useEffect(() => {
+    const getUserId = async () => {
+      try {
+        // Eğer zaten varsa, eventsApi'den al
+        const userId = await eventsApi.getCurrentUserId();
+        if (userId) {
+          setCurrentUserId(userId);
+          console.log("Mevcut kullanıcı ID'si alındı:", userId);
+        }
+      } catch (error) {
+        console.error("Kullanıcı ID'si alınırken hata:", error);
+      }
+    };
+
+    getUserId();
+  }, []);
+
+  // Komponent yüklendiğinde etkinlik verilerini getir
+  useEffect(() => {
+    if (event && event.id) {
+      // Yüklendiğinde katılımcıları getir
+      fetchParticipants(event.id);
+    }
+  }, [event.id]);
+
   // event prop'u değiştiğinde isJoined state'ini güncelle
   useEffect(() => {
     if (event && event.isJoined !== undefined) {
+      const oldJoinState = isJoined;
       setIsJoined(event.isJoined);
+      setParticipantCount(event.participantCount || 0);
+
       console.log(
         "EventDetailComponent: isJoined state güncellendi:",
         event.isJoined
       );
+
+      // Sadece katılım durumu değiştiyse katılımcıları güncelle
+      if (oldJoinState !== event.isJoined && event.id) {
+        console.log("Katılım durumu değişti, katılımcılar yenileniyor...");
+        fetchParticipants(event.id);
+      }
     }
   }, [event, event.isJoined]);
 
@@ -171,9 +248,6 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
       }
     }
   }, [averageRating, ratings.length]);
-
-  // Kategori rengini belirle
-  const categoryColor = theme.categoryColors[event.category] || theme.primary;
 
   // Kategori iconu belirle
   const getCategoryIcon = (category: string) => {
@@ -284,8 +358,17 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
 
   // Katıl/Ayrıl butonuna tıklama işlevi
   const handleToggleJoin = () => {
-    if (onJoin) {
+    if (onJoin && event && event.id) {
+      // Katılım butonuna basıldığında
+      console.log(
+        `Etkinlik ${isJoined ? "ayrılma" : "katılma"} durumu değişiyor...`
+      );
       onJoin(event.id);
+
+      // API'nin işlemini tamamlaması için kısa bir gecikme sonrası katılımcıları yenile
+      setTimeout(() => {
+        fetchParticipants(event.id);
+      }, 1500); // API'nin işlemi tamamlaması için yeterli süre
     }
   };
 
@@ -319,46 +402,173 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
 
   // Katılımcıları gösterme modalını aç
   const handleShowParticipants = () => {
-    if (!event.participants || event.participants.length === 0) {
-      Alert.alert("Bilgi", "Bu etkinlik için katılımcı listesi bulunamadı.");
-      return;
+    // Modal açılmadan önce katılımcıları güncelle
+    setIsLoadingParticipants(true);
+    setShowParticipantsModal(true);
+
+    if (event.id) {
+      fetchParticipants(event.id);
     }
-    setIsParticipantsModalVisible(true);
+  };
+
+  // Modal kapatma fonksiyonu
+  const closeParticipantsModal = () => {
+    setShowParticipantsModal(false);
+  };
+
+  // Katılımcıları getir
+  const fetchParticipants = async (eventId: number) => {
+    try {
+      setIsLoadingParticipants(true);
+      console.log("Katılımcılar listesi yenileniyor - Etkinlik ID:", eventId);
+
+      const response = await eventsApi.getEventParticipants(eventId.toString());
+
+      // Yanıt kontrol ediliyor
+      if (!response) {
+        console.warn("Katılımcı verisi alınamadı: API yanıtı boş");
+        setParticipants([]);
+        return;
+      }
+
+      console.log(`${response.length || 0} katılımcı bilgisi alındı`);
+
+      // API yanıtını doğru şekilde işle
+      const formattedParticipants: Participant[] = response.map((p: any) => {
+        console.log("İşlenen katılımcı verisi:", p);
+        return {
+          id: p.user_id || "",
+          user_id: p.user_id || "",
+          full_name: p.full_name || "İsimsiz Katılımcı",
+          name: p.full_name || "İsimsiz Katılımcı",
+          profileImage: p.profile_image || defaultProfileImage,
+          profile_image: p.profile_image || defaultProfileImage,
+        };
+      });
+
+      console.log(
+        "Düzenlenmiş katılımcılar:",
+        JSON.stringify(formattedParticipants)
+      );
+
+      // State'i güncelle
+      setParticipants(formattedParticipants);
+      console.log(
+        "Participants state güncellendi:",
+        formattedParticipants.length
+      );
+
+      // Etkinlik nesnesini güncelle
+      if (event) {
+        event.participants = formattedParticipants;
+        event.participantCount = formattedParticipants.length;
+        console.log(
+          "Etkinlik katılımcı sayısı güncellendi:",
+          formattedParticipants.length
+        );
+      }
+    } catch (error) {
+      console.error("Katılımcılar getirilirken hata:", error);
+      setParticipants([]);
+    } finally {
+      setIsLoadingParticipants(false);
+    }
   };
 
   // Katılımcı Modalı
   const renderParticipantsModal = () => {
-    if (!event.participants || event.participants.length === 0) return null;
+    // Doğrudan state'den aldığımız katılımcıları kullan
+    const currentParticipants = [...participants];
+    console.log("Modal içinde gösterilecek katılımcılar:", currentParticipants);
 
     return (
       <Modal
         animationType="slide"
         transparent={true}
-        visible={isParticipantsModalVisible}
-        onRequestClose={() => setIsParticipantsModalVisible(false)}
+        visible={showParticipantsModal}
+        onRequestClose={closeParticipantsModal}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <HStack style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Katılımcılar</Text>
-              <TouchableOpacity
-                onPress={() => setIsParticipantsModalVisible(false)}
-              >
+              <TouchableOpacity onPress={closeParticipantsModal}>
                 <X size={24} color="#0F172A" />
               </TouchableOpacity>
             </HStack>
 
-            <ScrollView style={styles.participantsList}>
-              {event.participants.map((participant) => (
-                <HStack key={participant.id} style={styles.participantItem}>
-                  <Image
-                    source={{ uri: participant.profileImage }}
-                    style={styles.participantImage}
-                  />
-                  <Text style={styles.participantName}>{participant.name}</Text>
-                </HStack>
-              ))}
-            </ScrollView>
+            {isLoadingParticipants ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.primary} />
+                <Text style={styles.loadingText}>
+                  Katılımcılar yükleniyor...
+                </Text>
+              </View>
+            ) : currentParticipants && currentParticipants.length > 0 ? (
+              <ScrollView style={styles.participantsList}>
+                {currentParticipants.map((participant, index) => {
+                  console.log(
+                    `Katılımcı ${index} render ediliyor:`,
+                    participant.full_name
+                  );
+
+                  // Profil resmini ve ismi güvenli şekilde al
+                  const profileImg =
+                    participant.profileImage && participant.profileImage !== ""
+                      ? participant.profileImage
+                      : participant.profile_image &&
+                        participant.profile_image !== ""
+                      ? participant.profile_image
+                      : defaultProfileImage;
+
+                  const displayName =
+                    participant.full_name ||
+                    participant.name ||
+                    "İsimsiz Katılımcı";
+
+                  return (
+                    <View
+                      key={participant.user_id || `participant-${index}`}
+                      style={styles.participantItem}
+                    >
+                      <HStack
+                        style={{
+                          alignItems: "center",
+                          width: "100%",
+                          minHeight: 60,
+                          paddingVertical: 8,
+                          borderBottomWidth: 1,
+                          borderBottomColor: "#E2E8F0",
+                        }}
+                      >
+                        <Image
+                          source={{ uri: profileImg }}
+                          style={styles.participantImage}
+                          onError={() => {
+                            console.log("Katılımcı resmi yüklenemedi");
+                          }}
+                        />
+                        <Text style={styles.participantName}>
+                          {displayName}
+                        </Text>
+                      </HStack>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            ) : (
+              <View style={styles.emptyParticipantsContainer}>
+                <Users size={40} color="#CBD5E1" />
+                <Text style={styles.emptyParticipantsText}>
+                  Henüz katılımcı bulunmuyor
+                </Text>
+              </View>
+            )}
+
+            <Text style={styles.participantCountText}>
+              {currentParticipants ? currentParticipants.length : 0}/
+              {event.maxParticipants} Katılımcı
+            </Text>
           </View>
         </View>
       </Modal>
@@ -441,15 +651,29 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
       console.log(`Etkinlik ortalama puanı: ${avgRating}`);
       setAverageRating(avgRating);
 
-      // Kullanıcının kendi yorumunu getir
+      // Kullanıcının kendi yorumunu getir - sadece COMPLETED etkinlikleri için isEditMode'u ayarla
       const userRating = await eventRatingService.getMyRating(event.id);
       if (userRating && userRating.id) {
         console.log("Kullanıcının yorumu bulundu:", JSON.stringify(userRating));
-        setMyRating(userRating);
-        // Puan null olabilir, bu durumda 0 olarak ayarla
-        setUserRating(userRating.rating || 0);
-        setUserComment(userRating.review || ""); // review alanını kullan
-        setIsEditMode(true);
+
+        // Tamamlanmış etkinliklerde kullanıcının mevcut yorumunu form alanlarına ata
+        if (event.status === "COMPLETED") {
+          setMyRating(userRating);
+          setUserRating(userRating.rating || 0);
+          setUserComment(userRating.review || "");
+          setIsEditMode(true);
+          console.log("Tamamlanmış etkinliğe zaten bir değerlendirme yapılmış");
+        } else {
+          // Aktif etkinliklerde sadece referans için kaydet, form alanlarına yansıtma
+          setMyRating(userRating);
+          // Form alanlarını boş bırak, kullanıcı her zaman yeni yorum yazabilsin
+          setUserRating(0);
+          setUserComment("");
+          setIsEditMode(false);
+          console.log(
+            "Aktif etkinlik için kullanıcının yorumu var, ancak yeni yorum ekleyebilir"
+          );
+        }
       } else {
         console.log("Kullanıcının yorumu bulunamadı");
         setMyRating(null);
@@ -468,20 +692,17 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
     }
   };
 
-  // Yorum gönderildikten sonra yorumları tekrar getir
-  const refreshRatings = useCallback(() => {
-    console.log("Yorumlar yenileniyor...");
-    fetchRatings();
-  }, [event.id]);
-
   // Yorum gönder
   const handleSubmitRating = async () => {
     if (!event.id) return;
 
     // Form doğrulama
-    if (userRating === 0) {
-      Alert.alert("Uyarı", "Lütfen bir puan seçin (1-5 arası).");
-      return;
+    if (event.status === "COMPLETED") {
+      // Tamamlanmış etkinlikler için rating zorunlu
+      if (userRating === 0) {
+        Alert.alert("Uyarı", "Lütfen bir puan seçin (1-5 arası).");
+        return;
+      }
     }
 
     if (!userComment || userComment.trim() === "") {
@@ -492,11 +713,41 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
     setIsSubmitting(true);
     try {
       console.log(
-        `Yorum gönderiliyor - Etkinlik: ${event.id}, Puan: ${userRating}, Yorum: ${userComment}`
+        `Yorum gönderiliyor - Etkinlik: ${event.id}, Puan: ${userRating}, Yorum: ${userComment}, Durum: ${event.status}`
       );
 
-      if (isEditMode && myRating?.id) {
-        // Yorumu güncelle
+      // Eğer aktif bir etkinlik ise her zaman yeni yorum olarak ekle
+      if (event.status === "ACTIVE") {
+        // Aktif etkinliklerde her zaman yeni yorum olarak ekle
+        const added = await eventRatingService.addRating(
+          event.id,
+          null, // Rating null (ratingsiz)
+          userComment
+        );
+
+        if (added) {
+          console.log("Yeni yorum eklendi:", JSON.stringify(added));
+          Alert.alert("Başarılı", "Yorumunuz eklendi.");
+
+          // Yeni yorumu ratings listesine ekle
+          setRatings((prevRatings) => [added, ...prevRatings]);
+
+          // Form durumunu temizle - aktif etkinlikte yeni yorum ekleyebilmek için
+          setUserComment("");
+
+          // Yorumları yenile
+          setTimeout(() => {
+            refreshRatings();
+          }, 500);
+        } else {
+          console.error("Yorum eklenirken bir hata oluştu, null yanıt döndü");
+          Alert.alert(
+            "Hata",
+            "Yorumunuz eklenirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
+          );
+        }
+      } else if (isEditMode && myRating?.id) {
+        // Tamamlanmış etkinliklerde ise düzenleme modundaysak yorumu güncelle
         const updated = await eventRatingService.updateRating(
           myRating.id,
           userRating,
@@ -518,6 +769,11 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
                 : rating
             );
           });
+
+          // Yorumları yenile
+          setTimeout(() => {
+            refreshRatings();
+          }, 500);
         } else {
           console.error(
             "Yorum güncellenirken bir hata oluştu, null yanıt döndü"
@@ -528,10 +784,10 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
           );
         }
       } else {
-        // Yeni yorum ekle
+        // Tamamlanmış etkinlikler için ilk kez yorum ekleme
         const added = await eventRatingService.addRating(
           event.id,
-          userRating,
+          event.status === "COMPLETED" ? userRating : null,
           userComment
         );
 
@@ -549,6 +805,11 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
           // Ortalama puanı güncelleyerek yenilenmiş veriyi hızlıca göster
           const newAvg = calculateAverageRating([...ratings, added]);
           setAverageRating(newAvg);
+
+          // Yorumları yenile
+          setTimeout(() => {
+            refreshRatings();
+          }, 500);
         } else {
           console.error("Yorum eklenirken bir hata oluştu, null yanıt döndü");
           Alert.alert(
@@ -557,11 +818,6 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
           );
         }
       }
-
-      // Biraz bekleyip yorumları yeniden yükle (backend'in güncellemeleri işlemesi için)
-      setTimeout(() => {
-        refreshRatings();
-      }, 500);
     } catch (error: any) {
       // Backend'den gelen hata mesajı varsa onu göster
       const errorMessage = error.message || "Yorum eklenirken bir hata oluştu.";
@@ -572,9 +828,105 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
     }
   };
 
-  // Yorumu sil
-  const handleDeleteRating = async () => {
-    if (!myRating?.id) return;
+  // Yorum gönderildikten sonra yorumları tekrar getir
+  const refreshRatings = useCallback(() => {
+    console.log("Yorumlar yenileniyor...");
+    fetchRatings();
+  }, [event.id]);
+
+  // Düzenleme modalını aç
+  const openEditModal = (ratingId: number, comment: string, rating: number) => {
+    setEditingRatingId(ratingId);
+    setEditingComment(comment);
+    setEditingRating(rating);
+    setShowEditModal(true);
+  };
+
+  // Düzenleme modalını kapat
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingRatingId(null);
+    setEditingComment("");
+    setEditingRating(0);
+  };
+
+  // Yorumu güncelle
+  const handleUpdateRating = async () => {
+    if (!editingRatingId) return;
+
+    if (!editingComment || editingComment.trim() === "") {
+      Alert.alert("Uyarı", "Lütfen bir yorum yazın.");
+      return;
+    }
+
+    // Tamamlanmış etkinlikler için rating kontrolü yap
+    if (event.status === "COMPLETED" && editingRating === 0) {
+      Alert.alert("Uyarı", "Lütfen bir puan seçin (1-5 arası).");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      console.log(
+        `Yorum güncelleniyor - ID: ${editingRatingId}, Puan: ${editingRating}, Yorum: ${editingComment}, Etkinlik Durumu: ${event.status}`
+      );
+
+      // Etkinlik durumuna göre rating gönder veya gönderme
+      const ratingValue = event.status === "COMPLETED" ? editingRating : null;
+
+      const updated = await eventRatingService.updateRating(
+        editingRatingId,
+        ratingValue,
+        editingComment
+      );
+
+      if (updated) {
+        console.log("Yorum güncellendi:", JSON.stringify(updated));
+        Alert.alert("Başarılı", "Yorumunuz güncellendi.");
+
+        // Yorumlar listesindeki ilgili yorumu da güncelle
+        setRatings((prevRatings) => {
+          return prevRatings.map((rating) =>
+            rating.id === editingRatingId
+              ? { ...rating, rating: updated.rating, review: editingComment }
+              : rating
+          );
+        });
+
+        // Eğer düzenlenen yorum kullanıcının mevcut yorumu ise, myRating da güncelle
+        if (myRating?.id === editingRatingId) {
+          setMyRating({
+            ...myRating,
+            rating: updated.rating,
+            review: editingComment,
+          });
+          setUserRating(updated.rating || 0);
+          setUserComment(editingComment);
+        }
+
+        closeEditModal();
+        refreshRatings();
+      } else {
+        console.error("Yorum güncellenirken bir hata oluştu, null yanıt döndü");
+        Alert.alert(
+          "Hata",
+          "Yorumunuz güncellenirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
+        );
+      }
+    } catch (error: any) {
+      // Backend'den gelen hata mesajı varsa onu göster
+      const errorMessage =
+        error.message || "Yorum güncellenirken bir hata oluştu.";
+      Alert.alert("Hata", errorMessage);
+      console.error("Yorum güncelleme hatası:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Yorumu sil (modal'dan)
+  const handleDeleteRatingFromModal = async () => {
+    if (!editingRatingId) return;
 
     Alert.alert("Yorumu Sil", "Bu yorumu silmek istediğinize emin misiniz?", [
       {
@@ -587,29 +939,34 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
         onPress: async () => {
           setIsSubmitting(true);
           try {
-            const success = await eventRatingService.deleteRating(myRating.id);
+            const success = await eventRatingService.deleteRating(
+              editingRatingId
+            );
 
             if (success) {
               // Yorumu ratings listesinden kaldır
-              const deletedRatingId = myRating.id;
               setRatings((prevRatings) =>
-                prevRatings.filter((r) => r.id !== deletedRatingId)
+                prevRatings.filter((r) => r.id !== editingRatingId)
               );
+
+              // Eğer silinen yorum kullanıcının mevcut yorumu ise, myRating'i temizle
+              if (myRating?.id === editingRatingId) {
+                setMyRating(null);
+                setUserRating(0);
+                setUserComment("");
+                setIsEditMode(false);
+              }
 
               // Ortalama puanı güncelle
               const newRatings = ratings.filter(
-                (r) => r.id !== deletedRatingId
+                (r) => r.id !== editingRatingId
               );
               const newAvg = calculateAverageRating(newRatings);
               setAverageRating(newAvg);
 
-              // Form durumunu temizle
-              setMyRating(null);
-              setUserRating(0);
-              setUserComment("");
-              setIsEditMode(false);
-
+              closeEditModal();
               Alert.alert("Başarılı", "Yorumunuz silindi.");
+              refreshRatings();
             } else {
               Alert.alert(
                 "Hata",
@@ -617,12 +974,25 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
               );
             }
           } catch (error: any) {
-            Alert.alert(
-              "Hata",
-              error.message || "Yorum silinirken bir hata oluştu."
-            );
+            // Backend'den gelen hata mesajını göster
+            let errorMessage = "Yorum silinirken bir hata oluştu.";
+
+            if (error.message && error.message.includes("yetkiniz yok")) {
+              errorMessage = "Bu yorumu silmek için yetkiniz yok.";
+            } else if (error.message && error.message.includes("bulunamadı")) {
+              errorMessage = "Yorum bulunamadı veya daha önce silinmiş.";
+            } else if (error.message) {
+              errorMessage = error.message;
+            }
+
+            Alert.alert("Hata", errorMessage);
+            console.error("Yorum silme hatası:", error);
+
+            // Hata aldığımızda güncel yorumları yenileyelim
+            refreshRatings();
           } finally {
             setIsSubmitting(false);
+            closeEditModal();
           }
         },
       },
@@ -669,8 +1039,7 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
 
           // Kullanıcı bilgilerini güvenli şekilde al
           let userFullName = "Misafir";
-          let userProfileImage =
-            "https://randomuser.me/api/portraits/lego/1.jpg";
+          let userProfileImage = defaultProfileImage;
 
           // Backend'in döndüğü veri yapısı farklı olabilir - iki formatı da kontrol et
           if (rating.users && typeof rating.users === "object") {
@@ -693,7 +1062,19 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
           const ratingValue = !isNaN(Number(rating.rating))
             ? Number(rating.rating)
             : 0;
-          const isOwnRating = myRating?.id === rating.id;
+
+          // Mevcut kullanıcının yorumu mu kontrol et
+          // Eğer şu anki kullanıcı ID'si alınmışsa, o yorumun sahibi olup olmadığını kontrol et
+          const ratingUserId =
+            rating.user_id || (rating.user && rating.user.id);
+          let isOwnRating = false;
+
+          if (currentUserId && ratingUserId) {
+            isOwnRating = currentUserId === ratingUserId;
+          } else {
+            // Kullanıcı kimliği belirlenemiyorsa, sadece myRating ile kontrol et
+            isOwnRating = myRating !== null && myRating.id === rating.id;
+          }
 
           return (
             <Box key={rating.id} style={styles.commentItem}>
@@ -705,12 +1086,19 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
                 <VStack style={{ flex: 1 }}>
                   <Text style={styles.userName}>{userFullName}</Text>
                   <HStack>
-                    <RatingStars
-                      value={ratingValue}
-                      size={16}
-                      disabled={true}
-                    />
-                    <Text style={styles.commentDate}>
+                    {event.status === "COMPLETED" && (
+                      <RatingStars
+                        value={ratingValue}
+                        size={16}
+                        disabled={true}
+                      />
+                    )}
+                    <Text
+                      style={[
+                        styles.commentDate,
+                        event.status !== "COMPLETED" && { marginLeft: 0 },
+                      ]}
+                    >
                       {new Date(rating.created_at).toLocaleDateString("tr-TR")}
                     </Text>
                   </HStack>
@@ -719,9 +1107,7 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
                 {isOwnRating && (
                   <TouchableOpacity
                     onPress={() => {
-                      setUserRating(ratingValue);
-                      setUserComment(commentText);
-                      setIsEditMode(true);
+                      openEditModal(rating.id, commentText, ratingValue);
                     }}
                   >
                     <Edit2 size={18} color="#64748B" />
@@ -894,82 +1280,114 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
 
             {/* Kullanıcı Yorum Formu */}
             {isJoined && (
-              <VStack style={styles.commentFormContainer}>
-                <Text style={styles.sectionTitle}>
-                  {isEditMode ? "Yorumunuzu Düzenleyin" : "Yorum Ekleyin"}
-                </Text>
-
-                <HStack style={styles.ratingInputContainer}>
-                  <Text style={styles.ratingLabel}>Puanınız:</Text>
-                  <RatingStars
-                    value={userRating}
-                    onValueChange={setUserRating}
-                  />
-                  {userRating > 0 && (
-                    <Text style={styles.selectedRatingText}>
-                      {userRating}/5
+              <>
+                {/* Tamamlanmış etkinlikler için kullanıcı daha önce yorum yapmışsa form gösterilmez */}
+                {event.status === "COMPLETED" && myRating?.id ? (
+                  <VStack style={styles.alreadyRatedContainer}>
+                    <Info
+                      size={20}
+                      color="#64748B"
+                      style={{ marginBottom: 8 }}
+                    />
+                    <Text style={styles.alreadyRatedText}>
+                      Bu etkinliği zaten değerlendirdiniz.
                     </Text>
-                  )}
-                </HStack>
+                    <Text style={styles.alreadyRatedSubtext}>
+                      Tamamlanmış etkinlikler için sadece bir değerlendirme
+                      yapabilirsiniz.
+                    </Text>
+                  </VStack>
+                ) : (
+                  <VStack style={styles.commentFormContainer}>
+                    <Text style={styles.sectionTitle}>
+                      {event.status === "ACTIVE"
+                        ? "Yorum Ekleyin"
+                        : isEditMode
+                        ? "Yorumunuzu Düzenleyin"
+                        : "Yorum Ekleyin"}
+                    </Text>
 
-                <TextInput
-                  style={styles.commentInput}
-                  placeholder="Etkinlik hakkında düşüncelerinizi paylaşın..."
-                  value={userComment}
-                  onChangeText={setUserComment}
-                  multiline
-                  numberOfLines={4}
-                  placeholderTextColor="#94A3B8"
-                  maxLength={500}
-                />
-                <Text style={styles.charCountText}>
-                  {userComment.length}/500
-                </Text>
-
-                <HStack style={styles.commentActionsContainer}>
-                  {isEditMode && (
-                    <TouchableOpacity
-                      style={[
-                        styles.commentActionButton,
-                        { backgroundColor: "#EF4444" },
-                      ]}
-                      onPress={handleDeleteRating}
-                      disabled={isSubmitting}
-                    >
-                      <Trash2 size={18} color="#FFFFFF" />
-                      <Text style={styles.actionButtonText}>Sil</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  <TouchableOpacity
-                    style={[
-                      styles.commentActionButton,
-                      { backgroundColor: theme.primary },
-                      (userRating === 0 ||
-                        !userComment ||
-                        userComment.trim() === "") && { opacity: 0.5 },
-                    ]}
-                    onPress={handleSubmitRating}
-                    disabled={
-                      isSubmitting ||
-                      userRating === 0 ||
-                      !userComment ||
-                      userComment.trim() === ""
-                    }
-                  >
-                    {isSubmitting ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <>
-                        <Send size={18} color="#FFFFFF" />
-                        <Text style={styles.actionButtonText}>
-                          {isEditMode ? "Güncelle" : "Gönder"}
-                        </Text>
-                      </>
+                    {/* Puan alanını sadece tamamlanmış etkinlikler için göster */}
+                    {event.status === "COMPLETED" && (
+                      <HStack style={styles.ratingInputContainer}>
+                        <Text style={styles.ratingLabel}>Puanınız:</Text>
+                        <RatingStars
+                          value={userRating}
+                          onValueChange={setUserRating}
+                        />
+                        {userRating > 0 && (
+                          <Text style={styles.selectedRatingText}>
+                            {userRating}/5
+                          </Text>
+                        )}
+                      </HStack>
                     )}
-                  </TouchableOpacity>
-                </HStack>
-              </VStack>
+
+                    <TextInput
+                      style={styles.commentInput}
+                      placeholder="Etkinlik hakkında düşüncelerinizi paylaşın..."
+                      value={userComment}
+                      onChangeText={setUserComment}
+                      multiline
+                      numberOfLines={4}
+                      placeholderTextColor="#94A3B8"
+                      maxLength={500}
+                    />
+                    <Text style={styles.charCountText}>
+                      {userComment.length}/500
+                    </Text>
+
+                    <HStack style={styles.commentActionsContainer}>
+                      {/* Düzenleme ve silme butonlarını sadece COMPLETED etkinlikler için göster */}
+                      {isEditMode && event.status === "COMPLETED" && (
+                        <TouchableOpacity
+                          style={[
+                            styles.commentActionButton,
+                            { backgroundColor: "#EF4444" },
+                          ]}
+                          onPress={handleDeleteRatingFromModal}
+                          disabled={isSubmitting}
+                        >
+                          <Trash2 size={18} color="#FFFFFF" />
+                          <Text style={styles.actionButtonText}>Sil</Text>
+                        </TouchableOpacity>
+                      )}
+
+                      <TouchableOpacity
+                        style={[
+                          styles.commentActionButton,
+                          { backgroundColor: theme.primary },
+                          ((event.status === "COMPLETED" && userRating === 0) ||
+                            !userComment ||
+                            userComment.trim() === "") && { opacity: 0.5 },
+                        ]}
+                        onPress={handleSubmitRating}
+                        disabled={
+                          isSubmitting ||
+                          (event.status === "COMPLETED" && userRating === 0) ||
+                          !userComment ||
+                          userComment.trim() === ""
+                        }
+                      >
+                        {isSubmitting ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <Send size={18} color="#FFFFFF" />
+                            <Text style={styles.actionButtonText}>
+                              {event.status === "ACTIVE"
+                                ? "Gönder"
+                                : isEditMode
+                                ? "Güncelle"
+                                : "Gönder"}
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </HStack>
+                  </VStack>
+                )}
+              </>
             )}
 
             {/* Yorumlar Listesi */}
@@ -1025,9 +1443,115 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
     );
   };
 
+  // Düzenleme Modalı
+  const renderEditModal = () => {
+    return (
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showEditModal}
+        onRequestClose={closeEditModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.editModalContent}>
+            <HStack style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Yorumu Düzenle</Text>
+              <TouchableOpacity onPress={closeEditModal}>
+                <X size={24} color="#0F172A" />
+              </TouchableOpacity>
+            </HStack>
+
+            {/* Tamamlanmış etkinlikler için rating alanı göster */}
+            {event.status === "COMPLETED" && (
+              <VStack style={{ alignItems: "center", marginVertical: 8 }}>
+                <Text style={styles.ratingLabel}>Puanınız:</Text>
+                <RatingStars
+                  value={editingRating}
+                  onValueChange={setEditingRating}
+                  size={30}
+                />
+                {editingRating > 0 && (
+                  <Text style={styles.selectedRatingText}>
+                    {editingRating}/5
+                  </Text>
+                )}
+              </VStack>
+            )}
+
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Etkinlik hakkında düşüncelerinizi paylaşın..."
+              value={editingComment}
+              onChangeText={setEditingComment}
+              multiline
+              numberOfLines={4}
+              placeholderTextColor="#94A3B8"
+              maxLength={500}
+            />
+            <Text style={styles.charCountText}>
+              {editingComment.length}/500
+            </Text>
+
+            <HStack style={styles.modalActionButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.modalActionButton,
+                  { backgroundColor: "#EF4444" },
+                ]}
+                onPress={handleDeleteRatingFromModal}
+                disabled={isSubmitting}
+              >
+                <Trash2 size={18} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Sil</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.modalActionButton,
+                  { backgroundColor: theme.primary },
+                  ((event.status === "COMPLETED" && editingRating === 0) ||
+                    !editingComment ||
+                    editingComment.trim() === "") && { opacity: 0.5 },
+                ]}
+                onPress={handleUpdateRating}
+                disabled={
+                  isSubmitting ||
+                  (event.status === "COMPLETED" && editingRating === 0) ||
+                  !editingComment ||
+                  editingComment.trim() === ""
+                }
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Send size={18} color="#FFFFFF" />
+                    <Text style={styles.actionButtonText}>Güncelle</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </HStack>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  // Yorumu sil
+  const handleDeleteRating = async () => {
+    if (!myRating?.id) return;
+
+    // Modal üzerinden silme fonksiyonunu çağır
+    setEditingRatingId(myRating.id);
+    setEditingComment(myRating.review || "");
+    setEditingRating(myRating.rating || 0);
+    handleDeleteRatingFromModal();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {renderParticipantsModal()}
+      {renderEditModal()}
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -1035,9 +1559,15 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
         {/* Etkinlik Resmi */}
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: event.imageUrl }}
+            source={{
+              uri: imageError ? defaultEventImage : event.imageUrl,
+            }}
             style={styles.eventImage}
             resizeMode="cover"
+            onError={() => {
+              console.log("Etkinlik resmi yüklenemedi:", event.imageUrl);
+              setImageError(true);
+            }}
           />
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Box style={styles.backButtonInner}>
@@ -1091,8 +1621,19 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
 
           <HStack style={styles.organizer}>
             <Image
-              source={{ uri: event.organizer.logoUrl }}
+              source={{
+                uri: organizerImageError
+                  ? defaultProfileImage
+                  : event.organizer.logoUrl,
+              }}
               style={styles.organizerLogo}
+              onError={() => {
+                console.log(
+                  "Organizatör resmi yüklenemedi:",
+                  event.organizer.logoUrl
+                );
+                setOrganizerImageError(true);
+              }}
             />
             <Text style={styles.organizerName}>{event.organizer.name}</Text>
           </HStack>
@@ -1545,10 +2086,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   noMapText: {
-    fontSize: 14,
-    color: "#64748B",
+    fontSize: 16,
+    color: "#94A3B8",
     textAlign: "center",
-    padding: 24,
+    marginTop: 40,
   },
   commentsText: {
     fontSize: 14,
@@ -1566,13 +2107,22 @@ const styles = StyleSheet.create({
     width: "90%",
     maxHeight: "80%",
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   modalHeader: {
+    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
   },
   modalTitle: {
     fontSize: 18,
@@ -1580,33 +2130,47 @@ const styles = StyleSheet.create({
     color: "#0F172A",
   },
   participantsList: {
-    maxHeight: 400,
+    flex: 1,
+    width: "100%",
+    maxHeight: 350,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 8,
+    marginVertical: 8,
+    paddingVertical: 4,
   },
   participantItem: {
+    padding: 8,
+    marginHorizontal: 4,
     alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    backgroundColor: "#FFFFFF",
   },
   participantImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 14,
+    backgroundColor: "#f1f5f9",
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
   },
   participantName: {
     fontSize: 16,
-    color: "#0F172A",
+    fontWeight: "600",
+    color: "#1E293B",
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
+    minHeight: 150,
   },
   loadingText: {
+    marginTop: 16,
     fontSize: 16,
     color: "#64748B",
-    marginTop: 12,
   },
   infoIcon: {
     // İkon için ek stil
@@ -1741,15 +2305,17 @@ const styles = StyleSheet.create({
     color: "#334155",
   },
   noCommentsText: {
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: "500",
     color: "#64748B",
     textAlign: "center",
-    padding: 20,
+    marginTop: 12,
   },
   noCommentsSubtext: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#94A3B8",
     textAlign: "center",
+    marginTop: 8,
   },
   joinToCommentContainer: {
     alignItems: "center",
@@ -1812,6 +2378,83 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 12,
     backgroundColor: "#F1F5F9",
+  },
+  alreadyRatedContainer: {
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 8,
+    marginVertical: 10,
+  },
+  alreadyRatedText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#64748B",
+    marginBottom: 8,
+  },
+  alreadyRatedSubtext: {
+    fontSize: 14,
+    color: "#94A3B8",
+    textAlign: "center",
+  },
+  editModalContent: {
+    width: "90%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    maxHeight: "80%",
+  },
+  modalActionButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    marginTop: 20,
+  },
+  modalActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginLeft: 12,
+  },
+  modalLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0F172A",
+    marginVertical: 8,
+  },
+  modalCommentText: {
+    fontSize: 15,
+    lineHeight: 20,
+    color: "#334155",
+    backgroundColor: "#F8FAFC",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  emptyParticipantsContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+    minHeight: 150,
+  },
+  emptyParticipantsText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#64748B",
+    textAlign: "center",
+  },
+  participantCountText: {
+    textAlign: "center",
+    padding: 12,
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#64748B",
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
+    marginTop: 8,
   },
 });
 
