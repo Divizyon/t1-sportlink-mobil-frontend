@@ -1,119 +1,38 @@
-import { io, Socket } from 'socket.io-client';
-import { API_URL } from '@/constants/config';
-import { store } from '@/store';
-import { addNotification } from '@/store/slices/notificationsSlice';
-import { updateFriendRequest } from '@/store/slices/friendsSlice';
+// NOTE: WebSocket functionality is currently disabled due to pending backend implementation
+// This file is kept as a placeholder for future implementation
 
 class WebSocketService {
-  private socket: Socket | null = null;
   private token: string | null = null;
 
   constructor() {
     this.token = null;
+    console.warn('WebSocket functionality is disabled - waiting for backend implementation');
   }
 
   initialize(token: string) {
-    if (this.socket) {
-      this.disconnect();
-    }
-
     this.token = token;
-    this.socket = io(API_URL, {
-      auth: {
-        token: this.token
-      },
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
-    });
-
-    this.setupListeners();
+    console.warn('WebSocket initialization skipped - feature not yet implemented in backend');
   }
 
-  private setupListeners() {
-    if (!this.socket) return;
-
-    // Bağlantı olayları
-    this.socket.on('connect', () => {
-      console.log('WebSocket bağlantısı kuruldu');
-    });
-
-    this.socket.on('disconnect', () => {
-      console.log('WebSocket bağlantısı kesildi');
-    });
-
-    this.socket.on('connect_error', (error) => {
-      console.error('WebSocket bağlantı hatası:', error);
-    });
-
-    // Arkadaşlık istekleri olayları
-    this.socket.on('friend:request', (data) => {
-      store.dispatch(addNotification({
-        id: Date.now(),
-        type: 'friend',
-        title: 'Yeni Arkadaşlık İsteği',
-        message: `${data.sender.name} size arkadaşlık isteği gönderdi`,
-        data: {
-          requestId: data.id,
-          userId: data.sender.id
-        },
-        isRead: false,
-        createdAt: new Date().toISOString()
-      }));
-    });
-
-    this.socket.on('friend:request:accepted', (data) => {
-      store.dispatch(updateFriendRequest({
-        id: data.requestId,
-        status: 'accepted'
-      }));
-    });
-
-    this.socket.on('friend:request:rejected', (data) => {
-      store.dispatch(updateFriendRequest({
-        id: data.requestId,
-        status: 'rejected'
-      }));
-    });
-
-    this.socket.on('friend:request:cancelled', (data) => {
-      store.dispatch(updateFriendRequest({
-        id: data.requestId,
-        status: 'cancelled'
-      }));
-    });
-  }
-
-  // Arkadaşlık isteği gönderme
+  // Friend request methods - all disabled
   sendFriendRequest(userId: number) {
-    if (!this.socket) return;
-    this.socket.emit('friend:request:send', { userId });
+    console.warn('WebSocket sendFriendRequest skipped - feature not yet implemented in backend');
   }
 
-  // Arkadaşlık isteğini kabul etme
   acceptFriendRequest(requestId: number) {
-    if (!this.socket) return;
-    this.socket.emit('friend:request:accept', { requestId });
+    console.warn('WebSocket acceptFriendRequest skipped - feature not yet implemented in backend');
   }
 
-  // Arkadaşlık isteğini reddetme
   rejectFriendRequest(requestId: number) {
-    if (!this.socket) return;
-    this.socket.emit('friend:request:reject', { requestId });
+    console.warn('WebSocket rejectFriendRequest skipped - feature not yet implemented in backend');
   }
 
-  // Arkadaşlık isteğini iptal etme
   cancelFriendRequest(requestId: number) {
-    if (!this.socket) return;
-    this.socket.emit('friend:request:cancel', { requestId });
+    console.warn('WebSocket cancelFriendRequest skipped - feature not yet implemented in backend');
   }
 
   disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
-    }
+    console.warn('WebSocket disconnect skipped - feature not yet implemented in backend');
   }
 }
 

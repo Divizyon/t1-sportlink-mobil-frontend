@@ -221,7 +221,7 @@ apiClient.interceptors.response.use(
 
           // Redirect to login
           setTimeout(() => {
-            router.replace("/auth/login");
+            router.replace("/(auth)/signin");
           }, 500);
 
           return Promise.reject({

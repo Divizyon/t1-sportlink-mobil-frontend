@@ -5,6 +5,7 @@ export { default as DateSelector } from "./DateSelector";
 export { default as CategorySelector } from "./CategorySelector";
 export { default as LocationSelector } from "./LocationSelector";
 export { default as DistanceFilter } from "./DistanceFilter";
+export { default as SimpleDistanceSlider } from "./SimpleDistanceSlider";
 export { default as TabSelector } from "./TabSelector";
 export { default as EventMap } from "./MapView";
 

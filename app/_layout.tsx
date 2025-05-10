@@ -2,12 +2,15 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState, useRef, useCallback } from "react";
 import React from "react";
 import { ActivityIndicator, View, Text, AppState } from "react-native";
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from "expo-font";
 
 import "@/global.css";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { AuthProvider, useAuth } from "@/src/store/AuthContext";
 import apiClient from "@/src/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { MessageProvider } from '@/src/contexts/MessageContext';
 
 export const unstable_settings = {
   initialRouteName: "index",
@@ -16,21 +19,53 @@ export const unstable_settings = {
   },
 };
 
-// Simplified Token validation check - uses AuthContext's validateToken but doesn't actually do anything
+// Simple TokenValidationProvider to ensure token is regularly checked
 function TokenValidationProvider({ children }: { children: React.ReactNode }) {
-  // Simply render children without any validation checks
+  const { validateToken, isAuthenticated } = useAuth();
+  const appState = useRef(AppState.currentState);
+  
+  // Validate token when app comes to foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active' && isAuthenticated) {
+        validateToken();
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [validateToken, isAuthenticated]);
+
   return <>{children}</>;
 }
 
-// Oturum kontrolü ve yönlendirme için özel bileşen
+// Authentication Guard for navigation control
 function AuthenticationGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const hasCheckedAuthRef = useRef(false);
 
   useEffect(() => {
-    if (isLoading) return; // Yükleme sırasında hiçbir şey yapma
+    if (isLoading) return; // Skip during loading
 
+    // Mark that we've checked authentication
+    hasCheckedAuthRef.current = true;
+
+    // Is user on the welcome page?
+    const isOnWelcomePage = segments.length === 1 && segments[0] === "";
+    const isOnIndexPage = segments.length === 1 && segments[0] === "index";
+    
+    // WELCOME PAGE POLICY: Allow users to stay on the welcome/index page 
+    // regardless of authentication status
+    if (isOnWelcomePage || isOnIndexPage) {
+      console.log("On welcome page, not enforcing redirects");
+      return;
+    }
+
+    // Check if user is in authentication group or protected area
     const inAuthGroup = segments[0] === "(auth)";
     const inProtectedArea =
       segments[0] === "(tabs)" ||
@@ -41,15 +76,14 @@ function AuthenticationGuard({ children }: { children: React.ReactNode }) {
       segments[0] === "messages" ||
       segments[0] === "friend-requests";
 
-    // Giriş yapmış kullanıcılar auth sayfalarına gitmeye çalışırsa ana sayfaya yönlendir
+    // Redirect authenticated users away from auth pages
     if (isAuthenticated && inAuthGroup) {
       router.replace("/(tabs)/dashboard");
     }
 
-    // Giriş yapmamış kullanıcılar korumalı alanlara gitmeye çalışırsa giriş sayfasına yönlendir
-    if (!isAuthenticated && inProtectedArea) {
-      // Make sure to use a route that definitely exists - check if "login" or "signin" is the correct path
-      router.replace("/(auth)/login");
+    // Redirect unauthenticated users away from protected areas
+    else if (!isAuthenticated && inProtectedArea) {
+      router.replace("/(auth)/signin");
     }
   }, [isAuthenticated, segments, isLoading, router]);
 
@@ -57,38 +91,69 @@ function AuthenticationGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [loaded, error] = useFonts({
+    // Add fonts if needed
+  });
+
+  useEffect(() => {
+    if (error) throw error;
+  }, [error]);
+
+  useEffect(() => {
+    const hideSplash = async () => {
+      if (loaded) {
+        try {
+          await SplashScreen.hideAsync();
+        } catch (e) {
+          console.warn('Error hiding splash screen:', e);
+        }
+      }
+    };
+    
+    hideSplash();
+  }, [loaded]);
+
+  if (!loaded) {
+    return null;
+  }
+
   return (
     <GluestackUIProvider mode="light">
       <AuthProvider>
-        <AuthenticationGuard>
-          <TokenValidationProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="upcoming-events"
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="updated-events"
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="event-updates"
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="system-notifications/index"
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen name="messages" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="friend-requests/index"
-                options={{ headerShown: false }}
-              />
-            </Stack>
-          </TokenValidationProvider>
-        </AuthenticationGuard>
+        <MessageProvider>
+          <AuthenticationGuard>
+            <TokenValidationProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="upcoming-events"
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="updated-events"
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="event-updates"
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="system-notifications/index"
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen name="messages" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="friend-requests/index"
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false }} />
+                <Stack.Screen name="register" options={{ headerShown: false }} />
+              </Stack>
+            </TokenValidationProvider>
+          </AuthenticationGuard>
+        </MessageProvider>
       </AuthProvider>
     </GluestackUIProvider>
   );

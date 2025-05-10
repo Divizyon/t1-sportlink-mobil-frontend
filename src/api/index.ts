@@ -44,7 +44,7 @@ const forceLogout = async () => {
 
     // Navigate to login screen
     setTimeout(() => {
-      router.replace("/auth/login");
+      router.replace("/(auth)/signin");
     }, 500);
   } catch (error) {
     console.error("Force logout error:", error);

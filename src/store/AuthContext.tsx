@@ -26,7 +26,7 @@ type AuthContextType = {
     last_name: string
   ) => Promise<User>;
   validateToken: () => Promise<boolean>;
-  forceLogout: () => Promise<void>;
+  forceLogout: (customMessage?: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,9 +44,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const isValidatingRef = useRef(false);
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const validationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const initialLoadCompleteRef = useRef(false);
 
   // Force logout and navigate to login screen
-  const forceLogout = useCallback(async () => {
+  const forceLogout = useCallback(async (customMessage?: string) => {
     console.log("Force logout initiated");
     try {
       // Clear all authentication data
@@ -60,47 +61,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsAuthenticated(false);
       setIsTokenValid(false);
       
-      // Show toast notification
-      showToast("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.", "error");
+      // Show toast notification with custom message if provided
+      if (customMessage) {
+        showToast(customMessage, "error");
+      }
       
       // Force navigation to login after a slight delay to allow state updates
       setTimeout(() => {
         console.log("Redirecting to login page...");
         if (router.canGoBack()) {
-          router.replace("/(auth)/login");
+          router.replace("/(auth)/signin");
         } else {
-          router.navigate("/(auth)/login");
+          router.navigate("/(auth)/signin");
         }
       }, 500);
     } catch (error) {
       console.error("Force logout error:", error);
       // Fallback direct navigation if something fails
-      router.navigate("/(auth)/login");
+      router.navigate("/(auth)/signin");
     }
   }, []);
 
   // Validate token with the API
   const validateToken = useCallback(async (): Promise<boolean> => {
-    // Skip most validations for now to ensure events load properly
+    // Skip validation for non-authenticated users
     if (!isAuthenticated) {
       console.log("Not authenticated, skipping token validation");
       return false;
     }
     
     try {
-      // Just do a basic check if token exists
+      // Check if token exists
       const token = await AsyncStorage.getItem("authToken");
       if (!token) {
-        console.log("No token found, but keeping session active");
-        return true; // Return true to keep session active
+        console.log("No token found, session is invalid");
+        return false;
       }
       
-      // Assume token is valid without API call
+      // For more robust validation, we should ideally check with the server
+      // But for now, just having a token is considered valid
+      
+      // Optional: Add actual token validation with API endpoint if available
+      // const isValid = await apiClient.checkToken();
+      // return isValid;
+      
       return true;
     } catch (error) {
       console.error("Token validation error:", error);
-      // Assume token is valid even if there's an error
-      return true;
+      // In case of error, consider the token invalid to be safe
+      return false;
     }
   }, [isAuthenticated]);
 
@@ -131,41 +140,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         setIsLoading(true);
 
-        // Önce oturum durumunu kontrol et
+        // Check authentication status
         const isAuth = await authService.isAuthenticated();
         setIsAuthenticated(isAuth);
 
         if (isAuth) {
-          // Kullanıcı oturum açmışsa, kullanıcı bilgilerini yükle
+          // If authenticated, load user data
           const userData = await authService.getCurrentUser();
           if (userData) {
             setUser(userData);
             
-            // Validate token immediately after loading user
-            // But don't add validateToken to dependency array to avoid loops
-            const isValid = await validateToken();
-            if (!isValid) {
-              console.log("Token invalid during startup, forcing logout");
-              await forceLogout();
-            }
+            // Skip token validation on startup to prevent redirects from welcome screen
+            // Set the token as valid by default
+            setIsTokenValid(true);
+            initialLoadCompleteRef.current = true;
           } else {
-            // Kullanıcı verileri alınamazsa oturumu kapat
-            console.warn("Kullanıcı verileri alınamadı, oturum kapatılıyor");
-            await forceLogout();
+            // Clear authentication if no user data found but don't force redirect
+            console.warn("No user data found, clearing authentication state");
+            setIsAuthenticated(false);
+            setUser(null);
           }
         }
       } catch (error) {
-        console.error("Kullanıcı yükleme hatası:", error);
-        // Hata durumunda oturumu kapat
+        console.error("Error loading user:", error);
+        // On error, just clear authentication state but don't force redirect
         setIsAuthenticated(false);
         setUser(null);
       } finally {
         setIsLoading(false);
+        initialLoadCompleteRef.current = true;
       }
     };
 
     loadUser();
-  }, [forceLogout]); // Removed validateToken from dependency array
+  }, []); // Removed dependencies to prevent loops
 
   const login = async (email: string, password: string): Promise<User> => {
     setIsLoading(true);
