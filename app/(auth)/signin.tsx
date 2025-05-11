@@ -8,6 +8,7 @@ import {
   Image,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Button, ButtonText } from "../../components/ui/button";
 import {
@@ -40,11 +41,13 @@ import {
   Apple,
 } from "lucide-react-native";
 import { useAuth } from "../../src/store/AuthContext";
+import { authService } from "../../src/api/authService";
 
 export default function SignInPage() {
   const { login } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -92,35 +95,93 @@ export default function SignInPage() {
     return isValid;
   };
 
+  const handleResendVerificationEmail = async (email: string) => {
+    setResendingEmail(true);
+    try {
+      console.log("Doğrulama e-postasını tekrar gönder:", email);
+      await authService.resendVerificationEmail(email);
+      Alert.alert(
+        "Başarılı",
+        "Doğrulama e-postası tekrar gönderildi. Lütfen e-posta kutunuzu kontrol edin."
+      );
+    } catch (error: any) {
+      console.error("Doğrulama e-postası gönderme hatası:", error);
+      Alert.alert(
+        "Hata",
+        error.message || "Doğrulama e-postası gönderilirken bir hata oluştu."
+      );
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
   const handleSignIn = async () => {
     if (validateForm()) {
       setLoading(true);
       try {
+        console.log("Giriş yapılıyor: ", form.email);
         const user = await login(form.email, form.password);
         console.log("Giriş başarılı:", user);
 
         // Başarılı giriş sonrası ana sayfaya yönlendir
-        router.navigate("/(tabs)/dashboard");
+        // router.navigate yerine router.replace kullanarak
+        // geçmiş yığınını temizleyelim, böylece geri tuşuna basınca
+        // giriş sayfasına dönmeyecek
+        router.replace("/(tabs)/dashboard");
       } catch (error: any) {
         console.error("Giriş hatası:", error);
 
         // Kullanıcıya hata mesajı göster
-        if (error.response?.data?.message) {
-          Alert.alert("Giriş Hatası", error.response.data.message);
+        let errorMessage = "Giriş yapılırken bir hata oluştu. Lütfen tekrar deneyin.";
+        let needsEmailVerification = false;
+        
+        if (error.response?.data) {
+          if (error.response.data.message) {
+            errorMessage = error.response.data.message;
+            // Check if the error is related to email verification
+            if (errorMessage.toLowerCase().includes("doğrula") || 
+                errorMessage.toLowerCase().includes("verify") ||
+                errorMessage.toLowerCase().includes("onay")) {
+              needsEmailVerification = true;
+            }
+          } else if (error.response.data.error) {
+            errorMessage = error.response.data.error;
+          }
         } else if (error.message === "Network Error") {
-          Alert.alert(
-            "Bağlantı Hatası",
-            "Sunucuya bağlanırken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin veya daha sonra tekrar deneyin."
-          );
+          errorMessage = "Sunucuya bağlanırken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin veya daha sonra tekrar deneyin.";
         } else if (error.code === "ECONNABORTED") {
+          errorMessage = "Sunucuya bağlanırken zaman aşımı oluştu. Lütfen daha sonra tekrar deneyin.";
+        } else if (error.message) {
+          errorMessage = error.message;
+          
+          // Check if the error is related to email verification
+          if (errorMessage.toLowerCase().includes("doğrula") || 
+              errorMessage.toLowerCase().includes("verify") ||
+              errorMessage.toLowerCase().includes("onay")) {
+            needsEmailVerification = true;
+          }
+        }
+        
+        if (needsEmailVerification) {
           Alert.alert(
-            "Bağlantı Zaman Aşımı",
-            "Sunucuya bağlanırken zaman aşımı oluştu. Lütfen daha sonra tekrar deneyin."
+            "E-posta Doğrulama Gerekli", 
+            "Hesabınıza giriş yapabilmek için lütfen e-posta adresinize gönderilen doğrulama bağlantısına tıklayın.",
+            [
+              { 
+                text: "Tamam", 
+                style: "default" 
+              },
+              {
+                text: "Doğrulama E-postasını Tekrar Gönder",
+                onPress: () => handleResendVerificationEmail(form.email)
+              }
+            ]
           );
         } else {
           Alert.alert(
-            "Giriş Hatası",
-            "Giriş yapılırken bir hata oluştu. Lütfen tekrar deneyin."
+            "Giriş Hatası", 
+            errorMessage,
+            [{ text: "Tamam", style: "cancel" }]
           );
         }
       } finally {
@@ -264,7 +325,7 @@ export default function SignInPage() {
               size="lg"
               className="bg-emerald-600 mt-6 rounded-lg"
               onPress={handleSignIn}
-              disabled={loading}
+              disabled={loading || resendingEmail}
             >
               <ButtonText className="text-white">
                 {loading ? "Giriş Yapılıyor..." : "Giriş Yap"}

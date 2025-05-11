@@ -230,38 +230,55 @@ export default function SignUpPage() {
         birthday_date: form.birthDate, // YYYY-MM-DD formatı zaten uyumlu
       };
 
+      console.log("Kayıt işlemi başlatılıyor...");
+
       // API üzerinden kayıt işlemi
       authService
         .register(userData)
         .then((user) => {
           console.log("Kayıt başarılı:", user);
+          
+          // Show email verification required alert
           Alert.alert(
             "Kayıt Başarılı",
-            "Hesabınız başarıyla oluşturuldu. Giriş yapabilirsiniz.",
+            "Hesabınız başarıyla oluşturuldu. Lütfen e-posta adresinize gönderilen doğrulama bağlantısına tıklayarak hesabınızı aktifleştiriniz.",
             [
               {
                 text: "Tamam",
-                onPress: () => router.navigate("/(auth)/signin"),
+                onPress: () => {
+                  // Geçmiş yığınını temizle ve giriş sayfasına yönlendir
+                  // Bu, geri tuşuna basıldığında kayıt sayfasına dönmeyi engeller
+                  router.replace("/(auth)/signin");
+                },
               },
             ]
           );
         })
         .catch((error) => {
           console.error("Kayıt hatası:", error);
-          let errorMessage = "Kayıt sırasında bir hata oluştu.";
-
-          // Backend'den gelen hata mesajını göster
-          if (
-            error.response &&
-            error.response.data &&
-            error.response.data.message
-          ) {
-            errorMessage = error.response.data.message;
+          
+          // Özel hata mesajları
+          let errorMessage = "Kayıt işlemi sırasında bir hata oluştu.";
+          
+          if (error.response && error.response.data) {
+            if (error.response.data.message) {
+              errorMessage = error.response.data.message;
+            } else if (error.response.data.errors) {
+              // İlk hatayı göster
+              const firstError = Object.values(error.response.data.errors)[0];
+              if (Array.isArray(firstError) && firstError.length > 0) {
+                errorMessage = firstError[0];
+              }
+            }
           } else if (error.message) {
             errorMessage = error.message;
           }
-
-          Alert.alert("Kayıt Hatası", errorMessage);
+          
+          Alert.alert(
+            "Kayıt Hatası",
+            errorMessage,
+            [{ text: "Tamam", style: "cancel" }]
+          );
         })
         .finally(() => {
           setIsLoading(false);

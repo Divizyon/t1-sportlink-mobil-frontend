@@ -34,6 +34,7 @@ import {
   Trash2,
   Send,
   RefreshCw,
+  Flag,
 } from "lucide-react-native";
 import MapView, { Marker } from "react-native-maps";
 import eventRatingService from "@/src/api/eventRatingService";
@@ -176,6 +177,11 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
   // Katılımcılar için state'ler
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
+
+  // Raporlama modal state'leri
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [isReporting, setIsReporting] = useState(false);
 
   // Uygulama başladığında kullanıcı ID'sini al
   useEffect(() => {
@@ -507,11 +513,6 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
             ) : currentParticipants && currentParticipants.length > 0 ? (
               <ScrollView style={styles.participantsList}>
                 {currentParticipants.map((participant, index) => {
-                  console.log(
-                    `Katılımcı ${index} render ediliyor:`,
-                    participant.full_name
-                  );
-
                   // Profil resmini ve ismi güvenli şekilde al
                   const profileImg =
                     participant.profileImage && participant.profileImage !== ""
@@ -535,8 +536,7 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
                         style={{
                           alignItems: "center",
                           width: "100%",
-                          minHeight: 60,
-                          paddingVertical: 8,
+                          paddingVertical: 12,
                           borderBottomWidth: 1,
                           borderBottomColor: "#E2E8F0",
                         }}
@@ -548,9 +548,14 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
                             console.log("Katılımcı resmi yüklenemedi");
                           }}
                         />
-                        <Text style={styles.participantName}>
-                          {displayName}
-                        </Text>
+                        <VStack style={{ flex: 1, marginLeft: 12 }}>
+                          <Text style={styles.participantName}>
+                            {displayName}
+                          </Text>
+                          <Text style={styles.participantRole}>
+                            {participant.role}
+                          </Text>
+                        </VStack>
                       </HStack>
                     </View>
                   );
@@ -1197,6 +1202,67 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
                 <Text style={styles.description}>{event.notes}</Text>
               </VStack>
             )}
+
+            {/* Katılımcılar Bölümü */}
+            <VStack style={styles.infoSection}>
+              <HStack
+                style={{
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 10,
+                }}
+              >
+                <Text style={styles.sectionTitle}>Katılımcılar</Text>
+                <TouchableOpacity onPress={handleShowParticipants}>
+                  <Text style={styles.seeAllText}>Tümünü Gör</Text>
+                </TouchableOpacity>
+              </HStack>
+
+              {participants && participants.length > 0 ? (
+                <HStack style={styles.participantsPreview}>
+                  {participants.slice(0, 5).map((participant, index) => {
+                    const profileImg =
+                      participant.profileImage &&
+                      participant.profileImage !== ""
+                        ? participant.profileImage
+                        : participant.profile_image &&
+                          participant.profile_image !== ""
+                        ? participant.profile_image
+                        : defaultProfileImage;
+
+                    return (
+                      <Image
+                        key={`participant-preview-${index}`}
+                        source={{ uri: profileImg }}
+                        style={[
+                          styles.participantPreviewImage,
+                          { marginLeft: index > 0 ? -10 : 0 },
+                        ]}
+                      />
+                    );
+                  })}
+
+                  {participants.length > 5 && (
+                    <View style={styles.moreParticipants}>
+                      <Text style={styles.moreParticipantsText}>
+                        +{participants.length - 5}
+                      </Text>
+                    </View>
+                  )}
+                </HStack>
+              ) : (
+                <Text style={styles.noParticipantsText}>
+                  Henüz katılımcı bulunmuyor
+                </Text>
+              )}
+
+              <HStack style={styles.participantStatsRow}>
+                <Users size={16} color="#64748B" style={{ marginRight: 6 }} />
+                <Text style={styles.participantStatsText}>
+                  {participantCount}/{event.maxParticipants} Katılımcı
+                </Text>
+              </HStack>
+            </VStack>
           </Box>
         );
 
@@ -1548,6 +1614,125 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
     handleDeleteRatingFromModal();
   };
 
+  // Rapor butonu tıklama fonksiyonu
+  const handleReportButtonClick = () => {
+    setReportReason("");
+    setShowReportModal(true);
+  };
+
+  // Rapor modalını kapat
+  const closeReportModal = () => {
+    setShowReportModal(false);
+    setReportReason("");
+  };
+
+  // Etkinlik raporlama fonksiyonu
+  const handleSubmitReport = async () => {
+    if (!reportReason || reportReason.trim() === "") {
+      Alert.alert("Uyarı", "Lütfen raporlama sebebini belirtin.");
+      return;
+    }
+
+    try {
+      setIsReporting(true);
+      const response = await eventsApi.reportEvent(
+        event.id.toString(),
+        reportReason
+      );
+      setIsReporting(false);
+      setShowReportModal(false);
+
+      Alert.alert(
+        "Başarılı",
+        "Raporunuz başarıyla gönderildi. İnceleme sonrası gerekli işlemler yapılacaktır.",
+        [{ text: "Tamam" }]
+      );
+    } catch (error) {
+      console.error("Raporlama hatası:", error);
+      setIsReporting(false);
+      Alert.alert(
+        "Hata",
+        "Raporlama sırasında bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
+      );
+    }
+  };
+
+  // Rapor modalı
+  const renderReportModal = () => {
+    return (
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showReportModal}
+        onRequestClose={closeReportModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.editModalContent}>
+            <HStack style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Etkinliği Raporla</Text>
+              <TouchableOpacity onPress={closeReportModal}>
+                <X size={24} color="#0F172A" />
+              </TouchableOpacity>
+            </HStack>
+
+            <Text style={styles.modalLabel}>
+              Lütfen raporlama sebebini belirtin:
+            </Text>
+
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Raporlama sebebinizi açıklayın..."
+              value={reportReason}
+              onChangeText={setReportReason}
+              multiline
+              numberOfLines={4}
+              placeholderTextColor="#94A3B8"
+              maxLength={500}
+            />
+            <Text style={styles.charCountText}>{reportReason.length}/500</Text>
+
+            <HStack style={styles.modalActionButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.modalActionButton,
+                  { backgroundColor: "#EF4444" },
+                ]}
+                onPress={closeReportModal}
+                disabled={isReporting}
+              >
+                <X size={18} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>İptal</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.modalActionButton,
+                  { backgroundColor: theme.primary },
+                  (!reportReason || reportReason.trim() === "") && {
+                    opacity: 0.5,
+                  },
+                ]}
+                onPress={handleSubmitReport}
+                disabled={
+                  isReporting || !reportReason || reportReason.trim() === ""
+                }
+              >
+                {isReporting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Send size={18} color="#FFFFFF" />
+                    <Text style={styles.actionButtonText}>Gönder</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </HStack>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {renderParticipantsModal()}
@@ -1636,6 +1821,13 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
               }}
             />
             <Text style={styles.organizerName}>{event.organizer.name}</Text>
+
+            <TouchableOpacity
+              style={styles.reportButton}
+              onPress={handleReportButtonClick}
+            >
+              <Flag size={18} color="#EF4444" />
+            </TouchableOpacity>
           </HStack>
         </Box>
 
@@ -1783,6 +1975,9 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
 
         {/* Sekme İçeriği */}
         {renderTabContent()}
+
+        {/* Raporlama Modal */}
+        {renderReportModal()}
       </ScrollView>
     </SafeAreaView>
   );
@@ -1877,19 +2072,27 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   organizer: {
+    flexDirection: "row",
     alignItems: "center",
+    marginTop: 8,
+    justifyContent: "flex-start",
   },
   organizerLogo: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     marginRight: 8,
-    borderWidth: 2,
-    borderColor: "#E2E8F0",
   },
   organizerName: {
     fontSize: 14,
     color: "#64748B",
+    flex: 1,
+  },
+  reportButton: {
+    padding: 6,
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
   },
   infoContainer: {
     backgroundColor: "#FFFFFF",
@@ -2099,78 +2302,132 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
-    width: "90%",
-    maxHeight: "80%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    minHeight: Dimensions.get("window").height * 0.6,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 20,
+    fontWeight: "700",
     color: "#0F172A",
   },
   participantsList: {
     flex: 1,
-    width: "100%",
-    maxHeight: 350,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 8,
-    marginVertical: 8,
-    paddingVertical: 4,
+    marginBottom: 10,
   },
   participantItem: {
-    padding: 8,
-    marginHorizontal: 4,
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    marginBottom: 4,
   },
   participantImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 14,
-    backgroundColor: "#f1f5f9",
-    borderWidth: 2,
-    borderColor: "#E2E8F0",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
   },
   participantName: {
     fontSize: 16,
     fontWeight: "600",
     color: "#1E293B",
+  },
+  participantRole: {
+    fontSize: 13,
+    color: "#64748B",
+    marginTop: 2,
+  },
+  participantCountText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#64748B",
+    textAlign: "center",
+    marginTop: 10,
+  },
+  emptyParticipantsContainer: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  emptyParticipantsText: {
+    fontSize: 16,
+    color: "#64748B",
+    textAlign: "center",
+    marginTop: 10,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    minHeight: 150,
   },
   loadingText: {
-    marginTop: 16,
     fontSize: 16,
     color: "#64748B",
+    textAlign: "center",
+    marginTop: 10,
+  },
+  participantsPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  participantPreviewImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "white",
+  },
+  moreParticipants: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F1F5F9",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: -10,
+    borderWidth: 2,
+    borderColor: "white",
+  },
+  moreParticipantsText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#64748B",
+  },
+  noParticipantsText: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#64748B",
+    textAlign: "center",
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  participantStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+  },
+  participantStatsText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#64748B",
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#4F46E5",
   },
   infoIcon: {
     // İkon için ek stil
@@ -2432,29 +2689,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
-  },
-  emptyParticipantsContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 30,
-    minHeight: 150,
-  },
-  emptyParticipantsText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#64748B",
-    textAlign: "center",
-  },
-  participantCountText: {
-    textAlign: "center",
-    padding: 12,
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#64748B",
-    borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
-    marginTop: 8,
   },
 });
 

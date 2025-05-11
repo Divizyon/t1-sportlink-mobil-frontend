@@ -28,6 +28,7 @@ import {
   X,
   Smartphone,
   RefreshCw,
+  AlertCircle,
 } from "lucide-react-native";
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -55,6 +56,7 @@ import { UserProfile } from "@/src/types";
 import eventService from "@/src/api/eventService";
 import EventCard from "@/components/profile/EventCard";
 import eventBus from "@/src/utils/EventBus";
+import AccountSettings from "@/components/profile/AccountSettings";
 
 // Menü öğesi tipi tanımlama
 interface MenuItem {
@@ -282,6 +284,16 @@ const menuItems: MenuItem[] = [
     icon: <HelpCircle size={22} color="#9b59b6" />,
   },
   {
+    id: "account",
+    title: "Hesap Ayarları",
+    icon: <Settings size={22} color="#3498db" />,
+  },
+  {
+    id: "reports",
+    title: "Raporlarım",
+    icon: <AlertCircle size={22} color="#e74c3c" />,
+  },
+  {
     id: "logout",
     title: "Çıkış Yap",
     icon: <LogOut size={22} color="#95a5a6" />,
@@ -386,6 +398,8 @@ export default function ProfileScreen() {
     useState(false);
   const [isPrivacyModalVisible, setIsPrivacyModalVisible] = useState(false);
   const [isSportsModalVisible, setIsSportsModalVisible] = useState(false);
+  const [isAccountSettingsVisible, setIsAccountSettingsVisible] =
+    useState(false);
   const [availableSports, setAvailableSports] = useState<
     Array<{ id: number; name: string; icon: string }>
   >([]);
@@ -727,18 +741,29 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleMenuItemPress = (itemId: string) => {
-    console.log(`Menü öğesi tıklandı: ${itemId}`);
-    setIsSettingsVisible(false);
-
-    if (itemId === "notifications") {
-      setIsNotificationsModalVisible(true);
-    } else if (itemId === "privacy") {
-      setIsPrivacyModalVisible(true);
-      // Check permissions when privacy menu is opened
-      checkPermissions();
-    } else if (itemId === "logout") {
-      handleLogout();
+  const handleMenuItemPress = (id: string) => {
+    switch (id) {
+      case "notifications":
+        setIsNotificationsModalVisible(true);
+        break;
+      case "privacy":
+        setIsPrivacyModalVisible(true);
+        break;
+      case "help":
+        // Yardım sayfasına yönlendir veya modal göster
+        break;
+      case "account":
+        setIsAccountSettingsVisible(true);
+        break;
+      case "reports":
+        // Raporlarım sayfasına yönlendir
+        router.push("/(tabs)/profile/user-reports");
+        break;
+      case "logout":
+        handleLogout();
+        break;
+      default:
+        break;
     }
   };
 
@@ -1066,29 +1091,60 @@ export default function ProfileScreen() {
       });
   };
 
-  const handleFreezeAccount = () => {
+  const handleFreezeAccount = async () => {
     Alert.alert(
       "Hesap Dondurma",
-      "Hesabınızı dondurmak istediğinize emin misiniz? Bu işlem gerçekleştiğinde hesabınız gizlenecek ve yeniden aktifleştirene kadar erişilemez olacaktır.",
+      "Hesabınızı dondurmak istediğinize emin misiniz? Bu işlem gerçekleştiğinde hesabınız geçici olarak askıya alınacaktır. 30 gün içinde giriş yapmazsanız hesabınız devre dışı bırakılacaktır.",
       [
         { text: "İptal", style: "cancel" },
         {
           text: "Hesabı Dondur",
           style: "destructive",
-          onPress: () => {
-            // Here you would implement actual account freezing logic
-            Alert.alert(
-              "Hesap Donduruldu",
-              "Hesabınız başarıyla donduruldu. Tekrar giriş yaparak hesabınızı aktifleştirebilirsiniz."
-            );
-            setActivePrivacySection(null);
+          onPress: async () => {
+            try {
+              setLoading(true);
+              // Gerçek API çağrısı
+              const result = await profileService.freezeAccount();
+              setLoading(false);
+
+              if (result.success) {
+                Alert.alert(
+                  "Başarılı",
+                  result.message ||
+                    "Hesabınız başarıyla donduruldu. Tekrar giriş yaparak hesabınızı aktifleştirebilirsiniz.",
+                  [
+                    {
+                      text: "Tamam",
+                      onPress: () => {
+                        logout();
+                        setActivePrivacySection(null);
+                        router.push("/(auth)/signin");
+                      },
+                    },
+                  ]
+                );
+              } else {
+                Alert.alert(
+                  "Hata",
+                  result.message ||
+                    "Hesap dondurma işlemi sırasında bir hata oluştu."
+                );
+              }
+            } catch (error) {
+              setLoading(false);
+              console.error("Hesap dondurma hatası:", error);
+              Alert.alert(
+                "Hata",
+                "Hesap dondurma işlemi sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+              );
+            }
           },
         },
       ]
     );
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     Alert.alert(
       "Hesap Silme",
       "Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm verileriniz kalıcı olarak silinecektir.",
@@ -1097,13 +1153,43 @@ export default function ProfileScreen() {
         {
           text: "Hesabı Sil",
           style: "destructive",
-          onPress: () => {
-            // Here you would implement actual account deletion logic
-            Alert.alert(
-              "Hesap Silindi",
-              "Hesabınız başarıyla silindi. Uygulama kapanacak."
-            );
-            setActivePrivacySection(null);
+          onPress: async () => {
+            try {
+              setLoading(true);
+              // Gerçek API çağrısı
+              const result = await profileService.deleteAccount();
+              setLoading(false);
+
+              if (result.success) {
+                Alert.alert(
+                  "Başarılı",
+                  result.message || "Hesabınız başarıyla devre dışı bırakıldı.",
+                  [
+                    {
+                      text: "Tamam",
+                      onPress: () => {
+                        logout();
+                        setActivePrivacySection(null);
+                        router.push("/(auth)/signin");
+                      },
+                    },
+                  ]
+                );
+              } else {
+                Alert.alert(
+                  "Hata",
+                  result.message ||
+                    "Hesap silme işlemi sırasında bir hata oluştu."
+                );
+              }
+            } catch (error) {
+              setLoading(false);
+              console.error("Hesap silme hatası:", error);
+              Alert.alert(
+                "Hata",
+                "Hesap silme işlemi sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+              );
+            }
           },
         },
       ]
@@ -1660,6 +1746,30 @@ export default function ProfileScreen() {
                 </Text>
               )}
             </View>
+          </View>
+
+          {/* Raporlarım */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderWithAction}>
+              <Text style={styles.sectionTitle}>Raporlarım</Text>
+              <TouchableOpacity
+                style={styles.editInterestsButton}
+                onPress={() => router.push("/(tabs)/profile/user-reports")}
+              >
+                <ChevronRight size={18} color="#3498db" />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.reportsContainer}
+              onPress={() => router.push("/(tabs)/profile/user-reports")}
+            >
+              <View style={styles.reportsInfoContainer}>
+                <AlertCircle size={22} color="#e74c3c" />
+                <Text style={styles.reportsText}>
+                  Gönderdiğiniz raporları görüntülemek için tıklayın
+                </Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Katıldığım Etkinlikler */}
@@ -2289,6 +2399,22 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Hesap Ayarları Modal */}
+      <Modal
+        visible={isAccountSettingsVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsAccountSettingsVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.accountModalContent}>
+            <AccountSettings
+              onClose={() => setIsAccountSettingsVisible(false)}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -2698,9 +2824,8 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingVertical: 20,
-    paddingHorizontal: 15,
-    maxHeight: "70%",
+    height: "80%",
+    paddingBottom: 20,
   },
   modalHeader: {
     flexDirection: "row",
@@ -3330,5 +3455,38 @@ const styles = StyleSheet.create({
   eventHeaderActions: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  accountModalContent: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: "80%",
+    paddingBottom: 20,
+  },
+  reportsContainer: {
+    padding: 16,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    marginTop: 10,
+    marginBottom: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#e74c3c",
+  },
+  reportsInfoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reportsText: {
+    fontSize: 14,
+    color: "#e74c3c",
+    marginLeft: 5,
   },
 });

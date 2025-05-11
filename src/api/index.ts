@@ -4,6 +4,11 @@ import { Platform } from "react-native";
 import { router } from "expo-router";
 import { showToast } from "../utils/toastHelper";
 
+// Extend global object type to include our sportlinkForceLogout method
+declare global {
+  var sportlinkForceLogout: (() => Promise<void>) | undefined;
+}
+
 // Track auth state
 let isRefreshingToken = false;
 let tokenRefreshPromise: Promise<string | null> | null = null;
@@ -38,16 +43,47 @@ const forceLogout = async () => {
     await AsyncStorage.removeItem("authToken");
     await AsyncStorage.removeItem("refreshToken");
     await AsyncStorage.removeItem("userData");
+    await AsyncStorage.removeItem("userInfo");
 
     // Show toast notification
     showToast("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.", "error");
 
-    // Navigate to login screen
+    // Get auth context's forceLogout function if available
+    try {
+      // Try to access auth context's forceLogout via an exposed global method
+      // This is needed because we can't directly import/use the hook in this file
+      if (global.sportlinkForceLogout && typeof global.sportlinkForceLogout === 'function') {
+        console.log("Using AuthContext's forceLogout method");
+        await global.sportlinkForceLogout();
+        return; // If successful, don't continue with our navigation
+      }
+    } catch (authErr) {
+      console.error("Failed to use AuthContext method:", authErr);
+    }
+
+    // Use our own navigation as fallback
+    console.log("Using API client direct navigation to login");
     setTimeout(() => {
-      router.replace("/auth/login");
-    }, 500);
+      try {
+        router.navigate("/(auth)/signin");
+      } catch (navErr) {
+        console.error("API client navigate failed:", navErr);
+        // Final attempt with replace
+        try {
+          router.replace("/(auth)/signin");
+        } catch (replaceErr) {
+          console.error("API client replace also failed:", replaceErr);
+        }
+      }
+    }, 300);
   } catch (error) {
-    console.error("Force logout error:", error);
+    console.error("Force logout error in API client:", error);
+    // Last resort navigation
+    try {
+      router.navigate("/(auth)/signin");
+    } catch (finalErr) {
+      console.error("Final navigation attempt failed:", finalErr);
+    }
   }
 };
 

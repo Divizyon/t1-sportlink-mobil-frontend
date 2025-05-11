@@ -22,8 +22,9 @@ export interface RegisterData {
 
 export interface AuthResponse {
   status: string;
+  message?: string;
   data: {
-    session: {
+    session?: {
       access_token: string;
       refresh_token: string;
     };

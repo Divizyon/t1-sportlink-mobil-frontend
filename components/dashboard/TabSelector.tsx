@@ -1,9 +1,6 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity } from "react-native";
-import { Box } from "@/components/ui/box";
-import { Text } from "@/components/ui/text";
-import { HStack } from "@/components/ui/hstack";
-import { MapPin, UserCheck, Navigation } from "lucide-react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { MapPin, Users } from "lucide-react-native";
 
 // Tema renkleri - daha koyu yeşil
 const theme = {
@@ -15,119 +12,79 @@ const theme = {
   textSecondary: "#64748B", // İkincil metin
 };
 
-interface TabSelectorProps {
+type TabSelectorProps = {
   activeTab: string;
   onTabChange: (tab: string) => void;
-}
+};
 
-const TabSelector: React.FC<TabSelectorProps> = ({
-  activeTab,
-  onTabChange,
-}) => {
-  // Tab değişikliğini yönetmek için wrapper fonksiyon
-  const handleTabChange = (tab: string) => {
-    console.log(`TabSelector: Tab değişikliği talebi - "${activeTab}" -> "${tab}"`);
-    
-    // Eğer zaten aktif tab'a tıklanırsa tekrar render etme
-    if (tab === activeTab) {
-      console.log("TabSelector: Zaten aktif tab'a tıklandı, işlem yapılmadı");
-      return;
-    }
-    
-    // Tab değişikliğini üst komponente ilet
-    onTabChange(tab);
-  };
-  
+const TabSelector = ({ activeTab, onTabChange }: TabSelectorProps) => {
   return (
-    <HStack style={styles.tabContainer}>
+    <View style={styles.container}>
       <TouchableOpacity
-        style={[styles.tabButton, activeTab === "nearest" && styles.activeTab]}
-        onPress={() => handleTabChange("nearest")}
-      >
-        <Navigation
-          size={18}
-          color={activeTab === "nearest" ? theme.primary : theme.textSecondary}
-        />
-        <Text
-          style={[
-            styles.tabText,
-            activeTab === "nearest" && styles.activeTabText,
-          ]}
-        >
-          Bana En Yakın
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.tabButton, activeTab === "nearby" && styles.activeTab]}
-        onPress={() => handleTabChange("nearby")}
+        style={[styles.tab, activeTab === "nearby" && styles.activeTab]}
+        onPress={() => onTabChange("nearby")}
       >
         <MapPin
           size={18}
-          color={activeTab === "nearby" ? theme.primary : theme.textSecondary}
+          color={activeTab === "nearby" ? "#22C55E" : "#64748B"}
         />
         <Text
-          style={[
-            styles.tabText,
-            activeTab === "nearby" && styles.activeTabText,
-          ]}
+          style={[styles.tabText, activeTab === "nearby" && styles.activeTabText]}
         >
           Yakındakiler
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.tabButton, activeTab === "joined" && styles.activeTab]}
-        onPress={() => handleTabChange("joined")}
+        style={[styles.tab, activeTab === "joined" && styles.activeTab]}
+        onPress={() => onTabChange("joined")}
       >
-        <UserCheck
+        <Users
           size={18}
-          color={activeTab === "joined" ? theme.primary : theme.textSecondary}
+          color={activeTab === "joined" ? "#22C55E" : "#64748B"}
         />
         <Text
-          style={[
-            styles.tabText,
-            activeTab === "joined" && styles.activeTabText,
-          ]}
+          style={[styles.tabText, activeTab === "joined" && styles.activeTabText]}
         >
           Katıldıklarım
         </Text>
       </TouchableOpacity>
-    </HStack>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  tabContainer: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 8,
+  container: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    margin: 16,
     padding: 4,
-    marginHorizontal: 16,
-    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  tabButton: {
+  tab: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
-    borderRadius: 6,
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 6,
   },
   activeTab: {
-    backgroundColor: "white",
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
+    backgroundColor: "#F0FDF9",
   },
   tabText: {
-    marginLeft: 6,
-    fontSize: 13, // Küçülttüm font boyutunu çünkü 3 düğmeye yer açmak için
-    color: theme.textSecondary,
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#64748B",
   },
   activeTabText: {
-    color: theme.primary,
+    color: "#22C55E",
     fontWeight: "600",
   },
 });

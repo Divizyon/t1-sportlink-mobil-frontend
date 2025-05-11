@@ -25,6 +25,7 @@ interface EventProps {
       icon: string;
       name: string;
     };
+    status?: string;
   };
   onPress: () => void;
   style?: ViewStyle;
@@ -62,9 +63,73 @@ export const EventCard: React.FC<EventProps> = ({ event, onPress, style }) => {
     100
   );
 
+  // Etkinlik durumuna göre border stili
+  const getBorderStyle = () => {
+    switch (event.status) {
+      case "ACTIVE":
+        return styles.activeBorder;
+      case "COMPLETED":
+        return styles.completedBorder;
+      case "CANCELLED":
+        return styles.cancelledBorder;
+      case "PENDING":
+        return styles.pendingBorder;
+      case "REJECTED":
+        return styles.rejectedBorder;
+      default:
+        return null;
+    }
+  };
+
+  // Etkinlik durumu etiketi
+  const getStatusBadge = () => {
+    switch (event.status) {
+      case "ACTIVE":
+        return (
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusText}>Aktif</Text>
+          </View>
+        );
+      case "COMPLETED":
+        return (
+          <View style={[styles.statusBadge, styles.completedBadge]}>
+            <Text style={[styles.statusText, styles.completedStatusText]}>
+              Tamamlandı
+            </Text>
+          </View>
+        );
+      case "CANCELLED":
+        return (
+          <View style={[styles.statusBadge, styles.cancelledBadge]}>
+            <Text style={[styles.statusText, styles.cancelledStatusText]}>
+              İptal Edildi
+            </Text>
+          </View>
+        );
+      case "PENDING":
+        return (
+          <View style={[styles.statusBadge, styles.pendingBadge]}>
+            <Text style={[styles.statusText, styles.pendingStatusText]}>
+              Onay Bekliyor
+            </Text>
+          </View>
+        );
+      case "REJECTED":
+        return (
+          <View style={[styles.statusBadge, styles.rejectedBadge]}>
+            <Text style={[styles.statusText, styles.rejectedStatusText]}>
+              Reddedildi
+            </Text>
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <TouchableOpacity
-      style={[styles.container, style]}
+      style={[styles.container, getBorderStyle(), style]}
       onPress={onPress}
       activeOpacity={0.7}
     >
@@ -81,6 +146,7 @@ export const EventCard: React.FC<EventProps> = ({ event, onPress, style }) => {
             <Text style={styles.categoryIcon}>{sportIcon}</Text>
             <Text style={styles.categoryText}>{sportName}</Text>
           </View>
+          {getStatusBadge()}
           <Text style={styles.timeText}>{event.time}</Text>
         </View>
 
@@ -235,5 +301,90 @@ const styles = StyleSheet.create({
   },
   actionContainer: {
     marginLeft: 8,
+  },
+  activeBorder: {
+    borderColor: "rgba(76, 175, 80, 0.3)",
+    borderWidth: 2,
+    borderRadius: 12,
+  },
+  completedBorder: {
+    borderColor: "rgba(255, 193, 7, 0.3)",
+    borderWidth: 2,
+    borderRadius: 12,
+  },
+  cancelledBorder: {
+    borderColor: "rgba(244, 67, 54, 0.3)",
+    borderWidth: 2,
+    borderRadius: 12,
+  },
+  pendingBorder: {
+    borderColor: "rgba(33, 150, 243, 0.3)",
+    borderWidth: 2,
+    borderRadius: 12,
+  },
+  rejectedBorder: {
+    borderColor: "rgba(156, 39, 176, 0.3)",
+    borderWidth: 2,
+    borderRadius: 12,
+  },
+  statusBadge: {
+    backgroundColor: "rgba(76, 175, 80, 0.2)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#4CAF50",
+  },
+  completedBadge: {
+    backgroundColor: "rgba(255, 193, 7, 0.2)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  completedStatusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#FFC107",
+  },
+  cancelledBadge: {
+    backgroundColor: "rgba(244, 67, 54, 0.2)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  cancelledStatusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#F44336",
+  },
+  pendingBadge: {
+    backgroundColor: "rgba(33, 150, 243, 0.2)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  pendingStatusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#2196F3",
+  },
+  rejectedBadge: {
+    backgroundColor: "rgba(156, 39, 176, 0.2)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  rejectedStatusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#9C27B0",
   },
 });

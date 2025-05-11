@@ -70,8 +70,6 @@ const FriendshipRequestItem = ({
   const handlePress = () => {
     if (onPress) {
       onPress();
-    } else {
-      router.push("/friend-requests" as any);
     }
   };
 

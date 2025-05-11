@@ -42,6 +42,21 @@ export default function Index() {
       setIsReady(true);
     }
   }, [isLoading]);
+  
+  // Kayıt ol butonuna tıklandığında
+  const handleSignUp = () => {
+    router.replace("/(auth)/signup");
+  };
+  
+  // Giriş yap butonuna tıklandığında
+  const handleSignIn = () => {
+    router.replace("/(auth)/signin");
+  };
+  
+  // Eğer kullanıcı zaten giriş yapmışsa dashboard'a yönlendir
+  const handleGoToDashboard = () => {
+    router.replace("/(tabs)/dashboard");
+  };
 
   return (
     <ImageBackground
@@ -53,8 +68,6 @@ export default function Index() {
         backgroundColor="transparent"
         translucent
       />
-
-      {/* Üst kısımdaki gradyan efekti */}
 
       <SafeAreaView style={styles.container}>
         <View style={styles.contentContainer}>
@@ -86,7 +99,7 @@ export default function Index() {
                 <Button
                   size="lg"
                   style={styles.primaryButton}
-                  onPress={() => router.navigate("/(tabs)/dashboard")}
+                  onPress={handleGoToDashboard}
                 >
                   <ButtonText style={styles.primaryButtonText}>
                     Etkinliklere Git
@@ -98,7 +111,7 @@ export default function Index() {
                   <Button
                     size="lg"
                     style={styles.primaryButton}
-                    onPress={() => router.navigate("/(auth)/signup")}
+                    onPress={handleSignUp}
                   >
                     <ButtonText style={styles.primaryButtonText}>
                       Kayıt Ol
@@ -108,7 +121,7 @@ export default function Index() {
                   <Button
                     size="lg"
                     style={styles.secondaryButton}
-                    onPress={() => router.navigate("/(auth)/signin")}
+                    onPress={handleSignIn}
                   >
                     <ButtonText style={styles.secondaryButtonText}>
                       Giriş Yap

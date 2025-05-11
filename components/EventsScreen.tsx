@@ -75,6 +75,7 @@ interface UIEvent {
     icon: string;
     name: string;
   };
+  status?: string;
 }
 
 interface Props {
@@ -134,6 +135,7 @@ const EventsScreen: React.FC<Props> = ({
         icon: apiEvent.sport?.icon || "🏆",
         name: apiEvent.sport?.name || "Diğer",
       },
+      status: apiEvent.status,
     };
   };
 
@@ -147,7 +149,12 @@ const EventsScreen: React.FC<Props> = ({
 
       switch (activeTab) {
         case "active":
-          apiEvents = await eventsApi.getEventsByStatus("ACTIVE", 1, 10);
+          // Kullanıcının katıldığı ACTIVE durumundaki etkinlikler
+          apiEvents = await eventsApi.getUserParticipatedEvents(
+            1,
+            10,
+            "ACTIVE"
+          );
           break;
         case "past":
           apiEvents = await eventsApi.getUserParticipatedEvents(
@@ -157,6 +164,8 @@ const EventsScreen: React.FC<Props> = ({
           );
           break;
         case "created":
+          // Oluşturduğum etkinlikleri status parametresi olmadan çağırıyoruz
+          // Böylece tüm etkinlikler (aktif ve tamamlanmış) gelecek
           apiEvents = await eventsApi.getUserCreatedEvents(1, 10);
           break;
       }
@@ -405,10 +414,10 @@ const EventsScreen: React.FC<Props> = ({
           <Text style={styles.emptyTitle}>Etkinlik Bulunamadı</Text>
           <Text style={styles.emptyText}>
             {activeTab === "active"
-              ? "Şu anda katılabileceğiniz aktif etkinlik bulunmuyor."
+              ? "Şu anda katıldığınız aktif etkinlik bulunmuyor."
               : activeTab === "past"
               ? "Geçmiş etkinlik kaydınız bulunmuyor."
-              : "Henüz oluşturduğunuz bir etkinlik bulunmuyor."}
+              : "Henüz oluşturduğunuz etkinlik bulunmuyor."}
           </Text>
           {activeTab !== "active" && (
             <TouchableOpacity

@@ -1,8 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert, SafeAreaView } from 'react-native';
-import { friendshipsApi, Friend } from '@/services/api/friendships';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, MessageCircle, RefreshCw } from 'lucide-react-native';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
+  SafeAreaView,
+} from "react-native";
+import { friendshipsApi, Friend } from "@/services/api/friendships";
+import { useRouter } from "expo-router";
+import {
+  ArrowLeft,
+  MessageCircle,
+  RefreshCw,
+  Clock,
+  User as UserIcon,
+} from "lucide-react-native";
+import { formatDistanceToNow } from "date-fns";
+import { tr } from "date-fns/locale";
 
 export default function FriendsListScreen() {
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -23,21 +42,21 @@ export default function FriendsListScreen() {
       setError(null);
       console.log("Arkadaşlar yükleniyor...");
       const response = await friendshipsApi.getFriends();
-      
+
       console.log("API yanıtı:", JSON.stringify(response, null, 2));
-      
+
       // Debug bilgisini kaydet
       let debugText = `API yanıtı tipi: ${typeof response}\n`;
-      
-      if (response.status === 'error') {
-        console.log('Arkadaş listesi getirme hatası:', response.message);
+
+      if (response.status === "error") {
+        console.log("Arkadaş listesi getirme hatası:", response.message);
         debugText += `Hata: ${response.message}\n`;
-        setError(response.message || 'Arkadaşlar yüklenirken bir hata oluştu');
+        setError(response.message || "Arkadaşlar yüklenirken bir hata oluştu");
         setFriends([]);
       } else {
         // API yanıtını doğru şekilde işle
         let friendsData: Friend[] = [];
-        
+
         if (Array.isArray(response)) {
           debugText += `Yanıt bir dizi, uzunluk: ${response.length}\n`;
           friendsData = response;
@@ -49,25 +68,35 @@ export default function FriendsListScreen() {
           console.log("Beklenmeyen API yanıt formatı:", response);
           friendsData = [];
         }
-        
-        console.log('Arkadaşlar yüklendi:', JSON.stringify(friendsData, null, 2));
+
+        console.log(
+          "Arkadaşlar yüklendi:",
+          JSON.stringify(friendsData, null, 2)
+        );
         debugText += `İşlenen arkadaş sayısı: ${friendsData.length}\n`;
-        
+
         // Dizi içeriğini kontrol et
         if (friendsData.length > 0) {
-          debugText += `İlk arkadaş: ${JSON.stringify(friendsData[0], null, 2)}\n`;
+          debugText += `İlk arkadaş: ${JSON.stringify(
+            friendsData[0],
+            null,
+            2
+          )}\n`;
         }
-        
+
         setFriends(friendsData);
       }
-      
+
       setDebugInfo(debugText);
     } catch (err: any) {
-      console.error('Beklenmeyen hata:', err);
-      setError('Arkadaşlar yüklenirken bir hata oluştu');
+      console.error("Beklenmeyen hata:", err);
+      setError("Arkadaşlar yüklenirken bir hata oluştu");
       setFriends([]);
-      setDebugInfo(`Hata: ${err.message || 'Bilinmeyen hata'}`);
-      Alert.alert("Hata", "Arkadaşlar yüklenirken bir hata oluştu. Lütfen tekrar deneyin.");
+      setDebugInfo(`Hata: ${err.message || "Bilinmeyen hata"}`);
+      Alert.alert(
+        "Hata",
+        "Arkadaşlar yüklenirken bir hata oluştu. Lütfen tekrar deneyin."
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -84,10 +113,10 @@ export default function FriendsListScreen() {
     router.push({
       pathname: `/messages/${friend.id}`,
       params: {
-        name: friend.first_name + ' ' + friend.last_name,
+        name: friend.first_name + " " + friend.last_name,
         avatar: friend.profile_picture,
-        email: friend.email
-      }
+        email: friend.email,
+      },
     });
   };
 
@@ -95,33 +124,84 @@ export default function FriendsListScreen() {
     router.back();
   };
 
+  const handleViewProfile = (friend: Friend) => {
+    console.log("Kullanıcı profiline yönlendiriliyor:", friend.id);
+    router.push({
+      pathname: "/(tabs)/profile/user-profile",
+      params: { id: friend.id },
+    });
+  };
+
+  const formatLastSeenTime = (lastSeenDate: string | Date) => {
+    try {
+      const date =
+        typeof lastSeenDate === "string"
+          ? new Date(lastSeenDate)
+          : lastSeenDate;
+      return formatDistanceToNow(date, { addSuffix: true, locale: tr });
+    } catch (error) {
+      console.error("Son görülme zamanı formatlama hatası:", error);
+      return "Bilinmiyor";
+    }
+  };
+
   const renderFriend = ({ item }: { item: Friend }) => {
     console.log("Arkadaş render ediliyor:", item);
     return (
-      <View style={styles.userCard}>
-        <View style={styles.userHeader}>
-          <View style={styles.userAvatarContainer}>
-            <Image
-              source={{ uri: item.profile_picture || 'https://via.placeholder.com/150' }}
-              style={styles.userAvatar}
-            />
-            {item.is_online && <View style={styles.onlineIndicator} />}
-          </View>
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{item.first_name} {item.last_name}</Text>
-            <Text style={styles.userLocation}>{item.email}</Text>
+      <TouchableOpacity onPress={() => handleViewProfile(item)}>
+        <View style={styles.userCard}>
+          <View style={styles.userHeader}>
+            <View style={styles.userAvatarContainer}>
+              {item.profile_picture ? (
+                <Image
+                  source={{ uri: item.profile_picture }}
+                  style={styles.userAvatar}
+                />
+              ) : (
+                <View style={styles.defaultAvatarContainer}>
+                  <UserIcon size={30} color="#666" />
+                </View>
+              )}
+              {item.is_online && <View style={styles.onlineIndicator} />}
+            </View>
+            <View style={styles.userInfoContainer}>
+              <View style={styles.userInfo}>
+                <Text
+                  style={styles.userName}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {item.first_name} {item.last_name}
+                </Text>
+                <View style={styles.lastSeenContainer}>
+                  <Clock size={12} color="#95a5a6" />
+                  <Text style={styles.lastSeenText}>
+                    {item.last_seen_at
+                      ? formatLastSeenTime(item.last_seen_at)
+                      : "Çevrimdışı"}
+                  </Text>
+                </View>
+                <Text
+                  style={styles.userLocation}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {item.email}
+                </Text>
+              </View>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.messageButton}
+                  onPress={() => handleSendMessage(item)}
+                >
+                  <MessageCircle size={14} color="#fff" />
+                  <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.messageButton}
-            onPress={() => handleSendMessage(item)}
-          >
-            <MessageCircle size={16} color="#fff" />
-            <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -148,11 +228,15 @@ export default function FriendsListScreen() {
           <ArrowLeft size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>Arkadaşlarım</Text>
-        <View style={{width: 24}} />
+        <View style={{ width: 24 }} />
       </View>
-      
+
       {loading && !refreshing ? (
-        <ActivityIndicator size="large" color="#4dabf7" style={{ marginTop: 40 }} />
+        <ActivityIndicator
+          size="large"
+          color="#4dabf7"
+          style={{ marginTop: 40 }}
+        />
       ) : error ? (
         renderErrorState()
       ) : (
@@ -160,18 +244,20 @@ export default function FriendsListScreen() {
           <FlatList
             data={friends}
             renderItem={renderFriend}
-            keyExtractor={item => item.id}
+            keyExtractor={(item) => item.id}
             contentContainerStyle={{ padding: 16, flexGrow: 1 }}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.empty}>Henüz arkadaşın yok.</Text>
                 <TouchableOpacity
                   style={styles.findFriendsButton}
-                  onPress={() => router.push("/(tabs)/profile/find-friends" as any)}
+                  onPress={() =>
+                    router.push("/(tabs)/profile/find-friends" as any)
+                  }
                 >
                   <Text style={styles.findFriendsButtonText}>Arkadaş Bul</Text>
                 </TouchableOpacity>
-                
+
                 {debugInfo ? (
                   <View style={styles.debugContainer}>
                     <Text style={styles.debugTitle}>Debug Bilgileri:</Text>
@@ -188,7 +274,7 @@ export default function FriendsListScreen() {
               />
             }
           />
-          
+
           {friends.length > 0 && (
             <View style={styles.countBadge}>
               <Text style={styles.countText}>{friends.length} arkadaş</Text>
@@ -203,18 +289,18 @@ export default function FriendsListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingTop: 20,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
     marginBottom: 8,
   },
   backButton: {
@@ -222,154 +308,184 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#333",
+    textAlign: "center",
   },
   userCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
   userHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   userAvatarContainer: {
-    position: 'relative',
+    position: "relative",
   },
   userAvatar: {
     width: 60,
     height: 60,
     borderRadius: 30,
   },
+  defaultAvatarContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#e9ecef",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#dee2e6",
+  },
   onlineIndicator: {
-    position: 'absolute',
-    width: 12,
-    height: 12,
-    backgroundColor: '#4cd137',
-    borderRadius: 6,
+    position: "absolute",
+    width: 14,
+    height: 14,
+    backgroundColor: "#4cd137",
+    borderRadius: 7,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: "#fff",
     right: 0,
     bottom: 0,
   },
-  userInfo: {
-    marginLeft: 12,
+  userInfoContainer: {
     flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginLeft: 12,
+  },
+  userInfo: {
+    flex: 1,
+    marginRight: 8,
   },
   userName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: 4,
+  },
+  lastSeenContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  lastSeenText: {
+    fontSize: 13,
+    color: "#95a5a6",
+    marginLeft: 6,
   },
   userLocation: {
     fontSize: 14,
-    color: '#666',
-    marginLeft: 4,
+    color: "#666",
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 10,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
   },
   messageButton: {
-    flexDirection: 'row',
-    backgroundColor: '#4dabf7',
-    padding: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    backgroundColor: "#4dabf7",
+    padding: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    height: 26,
+    minWidth: 70,
   },
   messageButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginLeft: 8,
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 11,
+    marginLeft: 4,
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   error: {
-    color: '#ff6b6b',
-    textAlign: 'center',
+    color: "#ff6b6b",
+    textAlign: "center",
     marginTop: 20,
     marginBottom: 20,
     fontSize: 16,
   },
   retryButton: {
-    flexDirection: 'row',
-    backgroundColor: '#4dabf7',
+    flexDirection: "row",
+    backgroundColor: "#4dabf7",
     padding: 12,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   retryButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
     marginLeft: 8,
   },
   emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 40,
   },
   empty: {
-    color: '#888',
-    textAlign: 'center',
+    color: "#888",
+    textAlign: "center",
     marginBottom: 16,
     fontSize: 16,
   },
   findFriendsButton: {
-    backgroundColor: '#4dabf7',
+    backgroundColor: "#4dabf7",
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
   },
   findFriendsButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
   },
   debugContainer: {
     marginTop: 20,
     padding: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     borderRadius: 8,
-    width: '100%',
+    width: "100%",
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
   },
   debugTitle: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
-    color: '#333',
+    color: "#333",
   },
   debugText: {
     fontSize: 12,
-    color: '#666',
+    color: "#666",
   },
   countBadge: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     right: 20,
-    backgroundColor: '#4dabf7',
+    backgroundColor: "#4dabf7",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
   },
   countText: {
-    color: 'white',
-    fontWeight: 'bold',
-  }
-}); 
+    color: "white",
+    fontWeight: "bold",
+  },
+});
