@@ -2,8 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
 import { StyleSheet, useColorScheme } from "react-native";
+import { Stack } from "expo-router";
 
-export default function TabsLayout() {
+export default function TabLayout() {
   const colorScheme = useColorScheme();
   const activeColor = colorScheme === "dark" ? "#2ecc71" : "#2ecc71";
   const inactiveColor = colorScheme === "dark" ? "#7f8c8d" : "#95a5a6";
@@ -11,6 +12,23 @@ export default function TabsLayout() {
 
   return (
     <>
+      <Stack.Screen
+        name="create-event"
+        options={{
+          presentation: 'modal',
+          headerShown: true,
+          headerTitle: 'Yeni Etkinlik',
+          headerTitleStyle: {
+            color: '#0F172A',
+            fontSize: 18,
+            fontWeight: '600',
+          },
+          headerShadowVisible: false,
+          headerStyle: {
+            backgroundColor: '#FFFFFF',
+          },
+        }}
+      />
       <Tabs
         screenOptions={{
           headerShown: false,
