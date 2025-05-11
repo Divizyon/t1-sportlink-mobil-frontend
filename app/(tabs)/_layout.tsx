@@ -16,7 +16,7 @@ export default function TabLayout() {
         name="create-event"
         options={{
           presentation: 'modal',
-          headerShown: true,
+          headerShown: false,
           headerTitle: 'Yeni Etkinlik',
           headerTitleStyle: {
             color: '#0F172A',
