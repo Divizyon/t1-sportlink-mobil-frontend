@@ -145,4 +145,66 @@ export const usersApi = {
       return null;
     }
   },
+
+  // Kullanıcı profil detaylarını getir
+  getUserDetails: async (userId: string) => {
+    try {
+      console.log("[Users API] Kullanıcı profil detayları getiriliyor...", {
+        userId,
+      });
+      const response = await apiClient.get(`/users/${userId}/details`);
+      console.log("[Users API] Kullanıcı profil detayları:", response.data);
+      return response.data.data || null;
+    } catch (error: any) {
+      console.error("[Users API] Profil detayı hatası:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      return null;
+    }
+  },
+
+  // Kullanıcıyı raporla
+  reportUser: async (userId: string, reason: string) => {
+    try {
+      console.log("[Users API] Kullanıcı raporlanıyor...", { userId, reason });
+      const response = await apiClient.post("/api/user-reports/user", {
+        reportedId: userId,
+        reason,
+      });
+      console.log("[Users API] Raporlama yanıtı:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("[Users API] Raporlama hatası:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+
+      // Daha açıklayıcı hata mesajı oluştur
+      const errorMessage =
+        error.response?.data?.message ||
+        "Raporlama sırasında bir sorun oluştu. Lütfen daha sonra tekrar deneyin.";
+
+      throw new Error(errorMessage);
+    }
+  },
+
+  // Kullanıcının gönderdiği raporları getir
+  getUserReports: async () => {
+    try {
+      console.log("[Users API] Kullanıcı raporları getiriliyor...");
+      const response = await apiClient.get("/api/user-reports");
+      console.log("[Users API] Raporlar alındı:", response.data);
+      return response.data.data || [];
+    } catch (error: any) {
+      console.error("[Users API] Rapor getirme hatası:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      return [];
+    }
+  },
 };

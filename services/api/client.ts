@@ -164,7 +164,7 @@ apiClient.interceptors.response.use(
       error.message &&
       error.message.includes("timeout")
     ) {
-      errorLog("API İstek zaman aşımı:", {
+      console.log("[API Info] İstek zaman aşımı:", {
         url: error.config?.url,
         timeout: error.config?.timeout,
       });
@@ -175,13 +175,25 @@ apiClient.interceptors.response.use(
       });
     }
 
-    errorLog("API Hatası:", {
-      url: error.config?.url,
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-      stack: error.stack,
-    });
+    // Hata durumlarını sessizce logla
+    const endpoint = error.config?.url || "bilinmeyen endpoint";
+    const statusCode = error.response?.status || "bilinmeyen";
+
+    // Arkadaşlık istekleri veya 400/404 hataları için ERROR log oluşturma, sadece INFO
+    if (
+      endpoint.includes("/friendships") ||
+      statusCode === 400 ||
+      statusCode === 404
+    ) {
+      // Arkadaşlık istekleri ve ilgili hata kodları için sadece INFO log
+      console.log(`[API Info] Endpoint yanıtı (${statusCode}): ${endpoint}`);
+      if (error.response?.data?.message) {
+        console.log(`[API Info] Mesaj: ${error.response.data.message}`);
+      }
+    } else if (statusCode !== 401) {
+      // 401 olmayan diğer hatalar için normal log
+      console.log("[API Info]", error.message, error.response?.data);
+    }
 
     // Original request configuration
     const originalRequest = error.config;

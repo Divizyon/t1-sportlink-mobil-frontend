@@ -34,6 +34,7 @@ import {
   Trash2,
   Send,
   RefreshCw,
+  Flag,
 } from "lucide-react-native";
 import MapView, { Marker } from "react-native-maps";
 import eventRatingService from "@/src/api/eventRatingService";
@@ -176,6 +177,11 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
   // Katılımcılar için state'ler
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
+
+  // Raporlama modal state'leri
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [isReporting, setIsReporting] = useState(false);
 
   // Uygulama başladığında kullanıcı ID'sini al
   useEffect(() => {
@@ -1199,18 +1205,25 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
 
             {/* Katılımcılar Bölümü */}
             <VStack style={styles.infoSection}>
-              <HStack style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <HStack
+                style={{
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 10,
+                }}
+              >
                 <Text style={styles.sectionTitle}>Katılımcılar</Text>
                 <TouchableOpacity onPress={handleShowParticipants}>
                   <Text style={styles.seeAllText}>Tümünü Gör</Text>
                 </TouchableOpacity>
               </HStack>
-              
+
               {participants && participants.length > 0 ? (
                 <HStack style={styles.participantsPreview}>
                   {participants.slice(0, 5).map((participant, index) => {
                     const profileImg =
-                      participant.profileImage && participant.profileImage !== ""
+                      participant.profileImage &&
+                      participant.profileImage !== ""
                         ? participant.profileImage
                         : participant.profile_image &&
                           participant.profile_image !== ""
@@ -1228,7 +1241,7 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
                       />
                     );
                   })}
-                  
+
                   {participants.length > 5 && (
                     <View style={styles.moreParticipants}>
                       <Text style={styles.moreParticipantsText}>
@@ -1601,6 +1614,125 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
     handleDeleteRatingFromModal();
   };
 
+  // Rapor butonu tıklama fonksiyonu
+  const handleReportButtonClick = () => {
+    setReportReason("");
+    setShowReportModal(true);
+  };
+
+  // Rapor modalını kapat
+  const closeReportModal = () => {
+    setShowReportModal(false);
+    setReportReason("");
+  };
+
+  // Etkinlik raporlama fonksiyonu
+  const handleSubmitReport = async () => {
+    if (!reportReason || reportReason.trim() === "") {
+      Alert.alert("Uyarı", "Lütfen raporlama sebebini belirtin.");
+      return;
+    }
+
+    try {
+      setIsReporting(true);
+      const response = await eventsApi.reportEvent(
+        event.id.toString(),
+        reportReason
+      );
+      setIsReporting(false);
+      setShowReportModal(false);
+
+      Alert.alert(
+        "Başarılı",
+        "Raporunuz başarıyla gönderildi. İnceleme sonrası gerekli işlemler yapılacaktır.",
+        [{ text: "Tamam" }]
+      );
+    } catch (error) {
+      console.error("Raporlama hatası:", error);
+      setIsReporting(false);
+      Alert.alert(
+        "Hata",
+        "Raporlama sırasında bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
+      );
+    }
+  };
+
+  // Rapor modalı
+  const renderReportModal = () => {
+    return (
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showReportModal}
+        onRequestClose={closeReportModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.editModalContent}>
+            <HStack style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Etkinliği Raporla</Text>
+              <TouchableOpacity onPress={closeReportModal}>
+                <X size={24} color="#0F172A" />
+              </TouchableOpacity>
+            </HStack>
+
+            <Text style={styles.modalLabel}>
+              Lütfen raporlama sebebini belirtin:
+            </Text>
+
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Raporlama sebebinizi açıklayın..."
+              value={reportReason}
+              onChangeText={setReportReason}
+              multiline
+              numberOfLines={4}
+              placeholderTextColor="#94A3B8"
+              maxLength={500}
+            />
+            <Text style={styles.charCountText}>{reportReason.length}/500</Text>
+
+            <HStack style={styles.modalActionButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.modalActionButton,
+                  { backgroundColor: "#EF4444" },
+                ]}
+                onPress={closeReportModal}
+                disabled={isReporting}
+              >
+                <X size={18} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>İptal</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.modalActionButton,
+                  { backgroundColor: theme.primary },
+                  (!reportReason || reportReason.trim() === "") && {
+                    opacity: 0.5,
+                  },
+                ]}
+                onPress={handleSubmitReport}
+                disabled={
+                  isReporting || !reportReason || reportReason.trim() === ""
+                }
+              >
+                {isReporting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Send size={18} color="#FFFFFF" />
+                    <Text style={styles.actionButtonText}>Gönder</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </HStack>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {renderParticipantsModal()}
@@ -1689,6 +1821,13 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
               }}
             />
             <Text style={styles.organizerName}>{event.organizer.name}</Text>
+
+            <TouchableOpacity
+              style={styles.reportButton}
+              onPress={handleReportButtonClick}
+            >
+              <Flag size={18} color="#EF4444" />
+            </TouchableOpacity>
           </HStack>
         </Box>
 
@@ -1836,6 +1975,9 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
 
         {/* Sekme İçeriği */}
         {renderTabContent()}
+
+        {/* Raporlama Modal */}
+        {renderReportModal()}
       </ScrollView>
     </SafeAreaView>
   );
@@ -1930,19 +2072,27 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   organizer: {
+    flexDirection: "row",
     alignItems: "center",
+    marginTop: 8,
+    justifyContent: "flex-start",
   },
   organizerLogo: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     marginRight: 8,
-    borderWidth: 2,
-    borderColor: "#E2E8F0",
   },
   organizerName: {
     fontSize: 14,
     color: "#64748B",
+    flex: 1,
+  },
+  reportButton: {
+    padding: 6,
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
   },
   infoContainer: {
     backgroundColor: "#FFFFFF",

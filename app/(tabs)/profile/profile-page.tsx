@@ -28,6 +28,7 @@ import {
   X,
   Smartphone,
   RefreshCw,
+  AlertCircle,
 } from "lucide-react-native";
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -288,6 +289,11 @@ const menuItems: MenuItem[] = [
     icon: <Settings size={22} color="#3498db" />,
   },
   {
+    id: "reports",
+    title: "Raporlarım",
+    icon: <AlertCircle size={22} color="#e74c3c" />,
+  },
+  {
     id: "logout",
     title: "Çıkış Yap",
     icon: <LogOut size={22} color="#95a5a6" />,
@@ -392,7 +398,8 @@ export default function ProfileScreen() {
     useState(false);
   const [isPrivacyModalVisible, setIsPrivacyModalVisible] = useState(false);
   const [isSportsModalVisible, setIsSportsModalVisible] = useState(false);
-  const [isAccountSettingsVisible, setIsAccountSettingsVisible] = useState(false);
+  const [isAccountSettingsVisible, setIsAccountSettingsVisible] =
+    useState(false);
   const [availableSports, setAvailableSports] = useState<
     Array<{ id: number; name: string; icon: string }>
   >([]);
@@ -748,6 +755,10 @@ export default function ProfileScreen() {
       case "account":
         setIsAccountSettingsVisible(true);
         break;
+      case "reports":
+        // Raporlarım sayfasına yönlendir
+        router.push("/(tabs)/profile/user-reports");
+        break;
       case "logout":
         handleLogout();
         break;
@@ -1095,11 +1106,12 @@ export default function ProfileScreen() {
               // Gerçek API çağrısı
               const result = await profileService.freezeAccount();
               setLoading(false);
-              
+
               if (result.success) {
                 Alert.alert(
                   "Başarılı",
-                  result.message || "Hesabınız başarıyla donduruldu. Tekrar giriş yaparak hesabınızı aktifleştirebilirsiniz.",
+                  result.message ||
+                    "Hesabınız başarıyla donduruldu. Tekrar giriş yaparak hesabınızı aktifleştirebilirsiniz.",
                   [
                     {
                       text: "Tamam",
@@ -1114,7 +1126,8 @@ export default function ProfileScreen() {
               } else {
                 Alert.alert(
                   "Hata",
-                  result.message || "Hesap dondurma işlemi sırasında bir hata oluştu."
+                  result.message ||
+                    "Hesap dondurma işlemi sırasında bir hata oluştu."
                 );
               }
             } catch (error) {
@@ -1146,7 +1159,7 @@ export default function ProfileScreen() {
               // Gerçek API çağrısı
               const result = await profileService.deleteAccount();
               setLoading(false);
-              
+
               if (result.success) {
                 Alert.alert(
                   "Başarılı",
@@ -1165,7 +1178,8 @@ export default function ProfileScreen() {
               } else {
                 Alert.alert(
                   "Hata",
-                  result.message || "Hesap silme işlemi sırasında bir hata oluştu."
+                  result.message ||
+                    "Hesap silme işlemi sırasında bir hata oluştu."
                 );
               }
             } catch (error) {
@@ -1732,6 +1746,30 @@ export default function ProfileScreen() {
                 </Text>
               )}
             </View>
+          </View>
+
+          {/* Raporlarım */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderWithAction}>
+              <Text style={styles.sectionTitle}>Raporlarım</Text>
+              <TouchableOpacity
+                style={styles.editInterestsButton}
+                onPress={() => router.push("/(tabs)/profile/user-reports")}
+              >
+                <ChevronRight size={18} color="#3498db" />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.reportsContainer}
+              onPress={() => router.push("/(tabs)/profile/user-reports")}
+            >
+              <View style={styles.reportsInfoContainer}>
+                <AlertCircle size={22} color="#e74c3c" />
+                <Text style={styles.reportsText}>
+                  Gönderdiğiniz raporları görüntülemek için tıklayın
+                </Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Katıldığım Etkinlikler */}
@@ -2371,7 +2409,9 @@ export default function ProfileScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.accountModalContent}>
-            <AccountSettings onClose={() => setIsAccountSettingsVisible(false)} />
+            <AccountSettings
+              onClose={() => setIsAccountSettingsVisible(false)}
+            />
           </View>
         </View>
       </Modal>
@@ -3427,5 +3467,26 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     height: "80%",
     paddingBottom: 20,
+  },
+  reportsContainer: {
+    padding: 16,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    marginTop: 10,
+    marginBottom: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#e74c3c",
+  },
+  reportsInfoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reportsText: {
+    fontSize: 14,
+    color: "#e74c3c",
+    marginLeft: 5,
   },
 });

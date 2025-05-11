@@ -187,17 +187,30 @@ export const eventsApi = {
   },
 
   // Yakındaki etkinlikleri getir
-  getNearbyEvents: async (lat: number, lng: number, distance: number = 10, page: number = 1, limit: number = 10, additionalParams: any = {}) => {
+  getNearbyEvents: async (
+    lat: number,
+    lng: number,
+    distance: number = 10,
+    page: number = 1,
+    limit: number = 10,
+    additionalParams: any = {}
+  ) => {
     return safeApiCall(async () => {
-      console.log(`[API] getNearbyEvents çağrılıyor: lat=${lat}, lng=${lng}, distance=${distance}, page=${page}, limit=${limit}, additionalParams=`, additionalParams);
-      
+      console.log(
+        `[API] getNearbyEvents çağrılıyor: lat=${lat}, lng=${lng}, distance=${distance}, page=${page}, limit=${limit}, additionalParams=`,
+        additionalParams
+      );
+
       // Koordinat kontrolü - geçerli koordinat değilse uyarı ver ve boş dizi döndür
       if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
         console.error("[API] Geçersiz koordinatlar:", { lat, lng });
-        showToast("Konum bilgisi geçersiz. Lütfen konum izninizi kontrol edin.", "error");
+        showToast(
+          "Konum bilgisi geçersiz. Lütfen konum izninizi kontrol edin.",
+          "error"
+        );
         return [];
       }
-      
+
       // Tarih kontrolü
       if (additionalParams.date) {
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -207,44 +220,60 @@ export const eventsApi = {
           const dateObj = new Date(additionalParams.date);
           if (!isNaN(dateObj.getTime())) {
             const year = dateObj.getFullYear();
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+            const day = String(dateObj.getDate()).padStart(2, "0");
             additionalParams.date = `${year}-${month}-${day}`;
-            console.log("[API] Tarih formatı düzeltildi:", additionalParams.date);
+            console.log(
+              "[API] Tarih formatı düzeltildi:",
+              additionalParams.date
+            );
           }
         }
       }
-      
+
       // API isteği için parametreleri oluştur
-      const params = { 
+      const params = {
         latitude: lat,
         longitude: lng,
         distance,
-        page, 
+        page,
         limit,
-        ...additionalParams
+        ...additionalParams,
       };
-      
+
       console.log("[API] Yakındaki etkinlikler için API isteği:", params);
-      
+
       try {
         const response = await apiClient.get(`events/nearby`, { params });
-        
-        console.log(`[API] Yakındaki etkinlikler yanıtı: ${response.data.data.events?.length || 0} etkinlik bulundu`);
-        
+
+        console.log(
+          `[API] Yakındaki etkinlikler yanıtı: ${
+            response.data.data.events?.length || 0
+          } etkinlik bulundu`
+        );
+
         if (response.data.data.events?.length === 0) {
           console.log(`[API] ${distance}km mesafede etkinlik bulunamadı`);
         } else if (additionalParams.date) {
           // Log dates for debugging
-          console.log(`[API] Tarih filtresi ${additionalParams.date} ile dönen etkinlikler:`);
+          console.log(
+            `[API] Tarih filtresi ${additionalParams.date} ile dönen etkinlikler:`
+          );
           response.data.data.events.forEach((event: any, i: number) => {
-            console.log(`[API] Etkinlik ${i+1}: ID=${event.id}, Tarih=${event.event_date}, Başlık=${event.title}`);
+            console.log(
+              `[API] Etkinlik ${i + 1}: ID=${event.id}, Tarih=${
+                event.event_date
+              }, Başlık=${event.title}`
+            );
           });
         }
-        
+
         return response.data.data.events as Event[];
       } catch (error: any) {
-        console.error("[API] Yakındaki etkinlikler getirilirken hata:", error.message);
+        console.error(
+          "[API] Yakındaki etkinlikler getirilirken hata:",
+          error.message
+        );
         throw error;
       }
     }, []);
@@ -372,11 +401,17 @@ export const eventsApi = {
   },
 
   // Etkinlik katılımcılarını getir
-  getEventParticipants: async (eventId: string, page: number = 1, limit: number = 20) => {
+  getEventParticipants: async (
+    eventId: string,
+    page: number = 1,
+    limit: number = 20
+  ) => {
     return safeApiCall(async () => {
-      console.log(`[API] Etkinlik katılımcıları getiriliyor: Etkinlik ID=${eventId}, sayfa=${page}, limit=${limit}`);
+      console.log(
+        `[API] Etkinlik katılımcıları getiriliyor: Etkinlik ID=${eventId}, sayfa=${page}, limit=${limit}`
+      );
       const response = await apiClient.get(`events/${eventId}/participants`, {
-        params: { page, limit }
+        params: { page, limit },
       });
       return response.data.data.participants || [];
     }, []);
@@ -493,8 +528,12 @@ export const eventsApi = {
     status?: string
   ) => {
     return safeApiCall(async () => {
-      console.log(`API Call: getUserParticipatedEvents with params:`, { page, limit, status });
-      
+      console.log(`API Call: getUserParticipatedEvents with params:`, {
+        page,
+        limit,
+        status,
+      });
+
       const queryParams: Record<string, any> = { page, limit };
       if (status) {
         queryParams.status = status;
@@ -548,6 +587,30 @@ export const eventsApi = {
       );
 
       return response.data.data.events as Event[];
+    }, []);
+  },
+
+  // Etkinliği raporla
+  reportEvent: async (eventId: string, reason: string) => {
+    return safeApiCall(async () => {
+      console.log(`Etkinlik raporlanıyor: ID=${eventId}, Sebep=${reason}`);
+
+      const response = await apiClient.post(`events/${eventId}/report`, {
+        reason,
+      });
+
+      return response.data;
+    });
+  },
+
+  // Kullanıcının yaptığı raporları getir
+  getUserReports: async () => {
+    return safeApiCall(async () => {
+      console.log("Kullanıcının raporları getiriliyor...");
+
+      const response = await apiClient.get("user-reports");
+
+      return response.data.data || [];
     }, []);
   },
 };

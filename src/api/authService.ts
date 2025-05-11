@@ -75,19 +75,22 @@ export const authService = {
       }
 
       console.log("Register isteği gönderiliyor:", data.email);
-      
+
       // API isteği detaylarını logla
       console.log("Register endpoint:", "/auth/register");
-      console.log("Register data:", JSON.stringify({
-        email: data.email,
-        password: "***HIDDEN***", 
-        password_confirm: "***HIDDEN***",
-        first_name: data.first_name,
-        last_name: data.last_name,
-        // Send birthday_date if available
-        ...(data.birthday_date ? { birthday_date: data.birthday_date } : {})
-      }));
-      
+      console.log(
+        "Register data:",
+        JSON.stringify({
+          email: data.email,
+          password: "***HIDDEN***",
+          password_confirm: "***HIDDEN***",
+          first_name: data.first_name,
+          last_name: data.last_name,
+          // Send birthday_date if available
+          ...(data.birthday_date ? { birthday_date: data.birthday_date } : {}),
+        })
+      );
+
       const response = await apiClient.post<AuthResponse>(
         "/auth/register",
         data
@@ -96,17 +99,18 @@ export const authService = {
       console.log("Register response:", JSON.stringify(response.data, null, 2));
 
       // Check if the registration was successful but needs email verification
-      if (response.data.status === "success" && 
-          response.data.message?.includes("e-posta adresinizi doğrulayın") &&
-          response.data.data?.user) {
-        
+      if (
+        response.data.status === "success" &&
+        response.data.message?.includes("e-posta adresinizi doğrulayın") &&
+        response.data.data?.user
+      ) {
         // No session tokens returned yet, but user was created successfully
         console.log("Kullanıcı kaydı başarılı. E-posta doğrulaması gerekiyor.");
-        
+
         // Return the user data without setting tokens
         return response.data.data.user;
       }
-      
+
       // If we have session tokens (immediate login case)
       else if (response.data.data && response.data.data.session) {
         await AsyncStorage.setItem(
@@ -121,11 +125,10 @@ export const authService = {
           USER_DATA_KEY,
           JSON.stringify(response.data.data.user)
         );
-        
+
         console.log("Token ve kullanıcı bilgileri kaydedildi");
         return response.data.data.user;
-      } 
-      else {
+      } else {
         // Unexpected response format
         console.error("Beklenmeyen yanıt formatı:", response.data);
         throw new Error("Beklenmeyen yanıt formatı");
@@ -140,14 +143,14 @@ export const authService = {
         console.error("Connection timeout: API isteği zaman aşımına uğradı");
       } else if (error.response) {
         console.error("API error:", error.response.status, error.response.data);
-        
+
         // Specific error handling for common registration errors
         if (error.response.status === 400) {
           if (error.response.data && error.response.data.message) {
             // Get detailed error message if available
             throw new Error(error.response.data.message);
           }
-          
+
           // Check validation errors
           if (error.response.data && error.response.data.errors) {
             const firstError = Object.values(error.response.data.errors)[0];
@@ -156,7 +159,7 @@ export const authService = {
             }
           }
         }
-        
+
         if (error.response.status === 409) {
           throw new Error("Bu e-posta adresi zaten kullanılıyor");
         }
@@ -176,24 +179,36 @@ export const authService = {
       }
 
       console.log("Doğrulama e-postası tekrar gönderiliyor için istek:", email);
-      
-      const response = await apiClient.post("/auth/resend-verification", { email });
-      console.log("Doğrulama e-postası tekrar gönderildi. Yanıt:", response.status);
-      
+
+      const response = await apiClient.post("/auth/resend-verification", {
+        email,
+      });
+      console.log(
+        "Doğrulama e-postası tekrar gönderildi. Yanıt:",
+        response.status
+      );
+
       if (response.data.status !== "success") {
         throw new Error(response.data.message || "E-posta gönderilemedi");
       }
-      
     } catch (error: any) {
-      console.error("Doğrulama e-postası gönderme hatası:", error.message, error.code);
+      console.error(
+        "Doğrulama e-postası gönderme hatası:",
+        error.message,
+        error.code
+      );
 
       // Özel hata mesajları ekleyin
       if (error.message === "Network Error") {
         console.error("Network error: API sunucusuna erişilemiyor");
-        throw new Error("Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.");
+        throw new Error(
+          "Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin."
+        );
       } else if (error.code === "ECONNABORTED") {
         console.error("Connection timeout: API isteği zaman aşımına uğradı");
-        throw new Error("Sunucu yanıt vermedi. Lütfen daha sonra tekrar deneyin.");
+        throw new Error(
+          "Sunucu yanıt vermedi. Lütfen daha sonra tekrar deneyin."
+        );
       } else if (error.response) {
         console.error("API error:", error.response.status, error.response.data);
         if (error.response.data && error.response.data.message) {
@@ -210,6 +225,29 @@ export const authService = {
     try {
       // Ağ bağlantısını kontrol et
       const isOnline = await checkNetworkConnection();
+
+      // Kullanıcıyı önce çevrimdışı yap
+      try {
+        // friendshipsApi'yi direkt çağıramayız, döngüsel bağımlılık oluşur
+        // API istemcisi üzerinden çevrimdışı duruma geçir
+        const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+        if (token && isOnline) {
+          console.log(
+            "Çıkış öncesi kullanıcı çevrimdışı duruma geçiriliyor..."
+          );
+          await apiClient.put("/mobile/friendships/status", {
+            is_online: false,
+          });
+          console.log("Kullanıcı çevrimdışı duruma geçirildi");
+        }
+      } catch (statusError) {
+        console.log(
+          "Çevrimdışı duruma geçiş hatası (önemli değil):",
+          statusError
+        );
+        // Hata olsa bile çıkış işlemine devam et
+      }
+
       if (!isOnline) {
         console.warn(
           "İnternet bağlantısı olmadığından, sadece yerel oturum kapatılacak"

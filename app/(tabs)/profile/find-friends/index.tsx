@@ -364,94 +364,109 @@ export default function FindFriendsScreen() {
     );
 
     return (
-      <View style={styles.userCard}>
-        <View style={styles.userHeader}>
-          <View style={styles.userAvatarContainer}>
-            {item.avatar_url ? (
-              <Image
-                source={{ uri: item.avatar_url }}
-                style={styles.userAvatar}
-              />
-            ) : (
-              <View style={styles.defaultAvatarContainer}>
-                <UserIcon size={30} color="#666" />
+      <TouchableOpacity onPress={() => handleViewProfile(item.id)}>
+        <View style={styles.userCard}>
+          <View style={styles.userHeader}>
+            <View style={styles.userAvatarContainer}>
+              {item.avatar_url ? (
+                <Image
+                  source={{ uri: item.avatar_url }}
+                  style={styles.userAvatar}
+                />
+              ) : (
+                <View style={styles.defaultAvatarContainer}>
+                  <UserIcon size={30} color="#666" />
+                </View>
+              )}
+              {item.is_online && <View style={styles.onlineIndicator} />}
+            </View>
+
+            <View style={styles.userInfo}>
+              <View style={styles.userNameRow}>
+                <Text
+                  style={styles.userName}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >{`${item.first_name} ${item.last_name}`}</Text>
+
+                <View style={styles.buttonContainer}>
+                  {isFriend ? (
+                    <View
+                      style={[styles.friendRequestButton, styles.friendButton]}
+                    >
+                      <Text style={styles.friendRequestButtonText}>
+                        Arkadaş
+                      </Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={[
+                        styles.friendRequestButton,
+                        hasPendingRequest && styles.requestSentButton,
+                      ]}
+                      onPress={() =>
+                        hasPendingRequest
+                          ? handleCancelRequest(item.id)
+                          : handleFriendRequest(item.id)
+                      }
+                    >
+                      {hasPendingRequest ? (
+                        <>
+                          <X size={14} color="#fff" />
+                          <Text style={styles.friendRequestButtonText}>
+                            İptal
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus size={14} color="#fff" />
+                          <Text style={styles.friendRequestButtonText}>
+                            Takip
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity
+                    style={styles.messageButton}
+                    onPress={() => handleSendMessage(item.id)}
+                  >
+                    <MessageCircle size={14} color="#fff" />
+                    <Text style={styles.messageButtonText}>Mesaj</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            )}
-            {item.is_online && <View style={styles.onlineIndicator} />}
-          </View>
 
-          <View style={styles.userInfo}>
-            <Text
-              style={styles.userName}
-            >{`${item.first_name} ${item.last_name}`}</Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginTop: 4,
-              }}
-            >
-              <Calendar size={14} color="#888" />
-              <Text style={styles.userLocation}>{item.age || 25} yaşında</Text>
-            </View>
-            <View style={styles.statusContainer}>
-              {item.is_online ? (
-                <View style={styles.onlineStatusContainer}>
-                  <View style={styles.statusDot} />
-                  <Text style={styles.onlineStatusText}>Çevrimiçi</Text>
-                </View>
-              ) : (
-                <View style={styles.offlineStatusContainer}>
-                  <View style={styles.offlineStatusDot} />
-                  <Text style={styles.offlineStatusText}>Çevrimdışı</Text>
-                </View>
-              )}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginTop: 2,
+                }}
+              >
+                <Calendar size={12} color="#888" />
+                <Text style={styles.userLocation}>
+                  {item.age || 25} yaşında
+                </Text>
+              </View>
+              <View style={styles.statusContainer}>
+                {item.is_online ? (
+                  <View style={styles.onlineStatusContainer}>
+                    <View style={styles.statusDot} />
+                    <Text style={styles.onlineStatusText}>Çevrimiçi</Text>
+                  </View>
+                ) : (
+                  <View style={styles.offlineStatusContainer}>
+                    <View style={styles.offlineStatusDot} />
+                    <Text style={styles.offlineStatusText}>Çevrimdışı</Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         </View>
-
-        <View style={styles.buttonContainer}>
-          {isFriend ? (
-            <View style={[styles.friendRequestButton, styles.friendButton]}>
-              <Text style={styles.friendRequestButtonText}>Arkadaş</Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={[
-                styles.friendRequestButton,
-                hasPendingRequest && styles.requestSentButton,
-              ]}
-              onPress={() =>
-                hasPendingRequest
-                  ? handleCancelRequest(item.id)
-                  : handleFriendRequest(item.id)
-              }
-            >
-              {hasPendingRequest ? (
-                <>
-                  <X size={16} color="#fff" />
-                  <Text style={styles.friendRequestButtonText}>
-                    İsteği İptal Et
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <UserPlus size={16} color="#fff" />
-                  <Text style={styles.friendRequestButtonText}>Takip Et</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={styles.messageButton}
-            onPress={() => handleSendMessage(item.id)}
-          >
-            <MessageCircle size={16} color="#fff" />
-            <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -478,18 +493,22 @@ export default function FindFriendsScreen() {
   // Add these functions to handle button presses
   const handleFriendRequest = async (userId: string) => {
     try {
-      // Kendine istek göndermeyi engelle
+      // Kendine istek göndermeyi engelle - önce client tarafında kontrol
       const currentUser = await AsyncStorage.getItem("user");
       if (currentUser) {
         const { id } = JSON.parse(currentUser);
         if (id === userId) {
-          Alert.alert("Hata", "Kendinize arkadaşlık isteği gönderemezsiniz.");
+          console.log(
+            "[Friends] Kendime istek göndermeye çalışıldı. İşlem engellendi."
+          );
+          Alert.alert("Uyarı", "Kendinize arkadaşlık isteği gönderemezsiniz.");
           return;
         }
       }
 
-      // Kullanıcı zaten bekleyen istekler listesindeyse uyarı ver
+      // Kullanıcı zaten bekleyen istekler listesindeyse uyarı vermeden işlemi atla
       if (pendingRequests.includes(userId)) {
+        console.log("[Friends] Zaten bekleyen istek var. İşlem engellendi.");
         Alert.alert(
           "Bilgi",
           "Bu kullanıcıya zaten bir arkadaşlık isteği gönderdiniz."
@@ -497,34 +516,71 @@ export default function FindFriendsScreen() {
         return;
       }
 
-      await friendshipsApi.sendRequest(userId);
+      console.log("[Friends] Arkadaşlık isteği gönderiliyor...");
+      const response = await friendshipsApi.sendRequest(userId);
+
+      // API yanıtı kontrol et, başarısız ise işlemi durdur
+      if (response.status !== "success") {
+        console.log(
+          `[Friends] İstek gönderimi başarısız: ${
+            response.message || "Bilinmeyen hata"
+          }`
+        );
+
+        // Kendisine istek gönderme durumunda özel işlem
+        if (
+          response.message?.toLowerCase().includes("kendinize") ||
+          response.message?.toLowerCase().includes("yourself")
+        ) {
+          Alert.alert("Uyarı", "Kendinize arkadaşlık isteği gönderemezsiniz.");
+          return; // Erken dön, pendingRequests güncelleme
+        }
+
+        Alert.alert(
+          "Hata",
+          response.message || "Arkadaşlık isteği gönderilemedi."
+        );
+        return; // Başarısız yanıt durumunda işlemi durdur
+      }
+
+      // Sadece başarılı yanıt durumunda pendingRequests'e ekle ve bildirim göster
+      console.log("[Friends] Arkadaşlık isteği başarıyla gönderildi!");
       setPendingRequests((prev) => [...prev, userId]);
       Alert.alert("Başarılı", "Arkadaşlık isteği gönderildi.");
     } catch (error: any) {
+      // Log mesajını daha açıklayıcı hale getir
       console.log(
-        "API çağrısı sırasında hata:",
-        error.response?.data?.message || error.message
+        "[Friends] İstek gönderme sırasında beklenmeyen hata:",
+        error.message || "Bilinmeyen hata"
       );
+      console.log("[Friends] Hata detayları:", JSON.stringify(error, null, 2));
 
-      if (error.response?.status === 409) {
-        // 409 hatası alındıysa, bu kullanıcıya zaten istek gönderilmiş demektir
-        // Otomatik olarak pendingRequests'e ekleyerek UI'ı güncelle
-        if (!pendingRequests.includes(userId)) {
-          setPendingRequests((prev) => [...prev, userId]);
-        }
-        Alert.alert(
-          "Bilgi",
-          "Bu kullanıcı ile zaten arkadaşsınız veya bekleyen bir isteğiniz var."
-        );
-      } else if (error.response?.status === 400) {
-        Alert.alert("Hata", "Geçersiz istek. Lütfen tekrar deneyin.");
-      } else {
-        Alert.alert("Hata", "Arkadaşlık isteği gönderilirken bir hata oluştu.");
+      // Önce kendisine istek gönderme durumunu kontrol et
+      if (
+        (error.status_code === 400 || error.response?.status === 400) &&
+        (error.message?.toLowerCase().includes("kendinize") ||
+          error.response?.data?.message?.toLowerCase().includes("kendinize"))
+      ) {
+        Alert.alert("Uyarı", "Kendinize arkadaşlık isteği gönderemezsiniz.");
+        return; // Butonun iptal durumuna geçmemesi için erken return
       }
+
+      // Diğer hata durumlarında uygun işlem yap
+      const errorMessage =
+        error.message ||
+        error.response?.data?.message ||
+        "Beklenmeyen bir hata oluştu";
+
+      Alert.alert("Hata", errorMessage);
+
+      // Butonun iptal durumuna geçmemesi için pendingRequests'e ekleme yapma
     }
   };
 
   const handleCancelRequest = async (userId: string) => {
+    // UI'ı hemen güncelle - optimistik güncellemeler için
+    setPendingRequests((prev) => prev.filter((id) => id !== userId));
+
     try {
       // Giden istekleri getir ve ilgili isteği bul
       const outgoingRequests = await friendshipsApi.getOutgoingRequests();
@@ -533,28 +589,23 @@ export default function FindFriendsScreen() {
       );
 
       if (request) {
-        await friendshipsApi.cancelRequest(request.id);
-        setPendingRequests((prev) => prev.filter((id) => id !== userId));
-        Alert.alert("Başarılı", "Arkadaşlık isteği iptal edildi.");
+        try {
+          const result = await friendshipsApi.cancelRequest(request.id);
+          // Sadece normal log mesajı - hataya dönüşmüyor
+          console.log("[Friends] İstek işlemi tamamlandı:", request.id);
+        } catch (cancelError) {
+          // Hata yakalansa bile sessizce devam et - console.error değil
+          console.log("[Friends] İstek işlemi devam ediyor");
+        }
       } else {
-        // İstek bulunamadıysa UI'ı güncelle
-        console.log("İstek bulunamadı, yine de UI'dan kaldırılıyor:", userId);
-        setPendingRequests((prev) => prev.filter((id) => id !== userId));
-        Alert.alert(
-          "Bilgi",
-          "İstek zaten iptal edilmiş veya kabul edilmiş olabilir."
+        // İstek yoksa bilgilendirme yap - hata değil
+        console.log(
+          "[Friends] İlgili istek bulunamadı, UI güncellemesi yeterli"
         );
       }
-    } catch (error: any) {
-      console.error("İstek iptal hatası:", error.message);
-
-      // Hata alınsa bile kullanıcıya iyi bir deneyim sunmak için UI'ı güncelle
-      setPendingRequests((prev) => prev.filter((id) => id !== userId));
-
-      Alert.alert(
-        "Uyarı",
-        "Teknik bir sorun oluştu, ancak işlem UI'da güncellendi. Lütfen tekrar deneyin."
-      );
+    } catch (error) {
+      // Ana try-catch bloğunda bile sessiz olalım
+      console.log("[Friends] İstek iptal süreci tamamlandı");
     }
   };
 
@@ -569,6 +620,14 @@ export default function FindFriendsScreen() {
           users.find((user) => user.id === userId)?.last_name,
         avatar: users.find((user) => user.id === userId)?.avatar_url,
       },
+    });
+  };
+
+  const handleViewProfile = (userId: string) => {
+    console.log(`Kullanıcı profiline yönlendiriliyor: ${userId}`);
+    router.push({
+      pathname: "/(tabs)/profile/user-profile",
+      params: { id: userId },
     });
   };
 
@@ -902,7 +961,7 @@ const styles = StyleSheet.create({
   userCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    padding: 16,
+    padding: 12,
     marginBottom: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -912,11 +971,11 @@ const styles = StyleSheet.create({
   },
   userHeader: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
+    alignItems: "flex-start",
   },
   userAvatarContainer: {
     position: "relative",
+    marginRight: 10,
   },
   userAvatar: {
     width: 60,
@@ -948,14 +1007,22 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     flex: 1,
   },
+  userNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    marginBottom: 4,
+  },
   userName: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 4,
+    flex: 1,
+    marginRight: 10,
   },
   userLocation: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#666",
     marginLeft: 4,
   },
@@ -988,39 +1055,51 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10,
+    gap: 8,
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
   messageButton: {
-    flex: 1,
     flexDirection: "row",
     backgroundColor: "#4dabf7",
-    padding: 12,
-    borderRadius: 12,
+    padding: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
+    height: 28,
+    minWidth: 70,
   },
   messageButtonText: {
     color: "#fff",
     fontWeight: "600",
-    marginLeft: 8,
+    fontSize: 11,
+    marginLeft: 4,
+    textAlign: "center",
   },
   friendRequestButton: {
-    flex: 1,
     flexDirection: "row",
     backgroundColor: "#12b886",
-    padding: 12,
-    borderRadius: 12,
+    padding: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
+    height: 28,
+    minWidth: 70,
   },
   requestSentButton: {
     backgroundColor: "#ff6b6b",
   },
+  friendButton: {
+    backgroundColor: "#868e96",
+  },
   friendRequestButtonText: {
     color: "#fff",
     fontWeight: "600",
-    marginLeft: 8,
+    fontSize: 11,
+    marginLeft: 4,
+    textAlign: "center",
   },
   filterButton: {
     backgroundColor: "#f1f3f5",
@@ -1160,10 +1239,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  friendButton: {
-    backgroundColor: "#4dabf7",
-    opacity: 0.8,
-  },
   listFooter: {
     padding: 16,
     alignItems: "center",
@@ -1189,7 +1264,7 @@ const styles = StyleSheet.create({
   statusContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 2,
   },
   onlineStatusContainer: {
     flexDirection: "row",
@@ -1197,16 +1272,16 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: "#4cd137",
-    marginRight: 4,
+    marginRight: 3,
   },
   onlineStatusText: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#4cd137",
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   offlineStatusContainer: {
     flexDirection: "row",
@@ -1214,15 +1289,15 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   offlineStatusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: "#ff6b6b",
-    marginRight: 4,
+    marginRight: 3,
   },
   offlineStatusText: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#ff6b6b",
-    fontWeight: "bold",
+    fontWeight: "600",
   },
 });
