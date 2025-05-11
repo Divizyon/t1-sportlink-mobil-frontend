@@ -8,7 +8,7 @@ import {
 } from "@/components/dashboard";
 import * as Location from "expo-location";
 import { router } from "expo-router";
-import { CheckCircle, MapPin, Users } from "lucide-react-native";
+import { CheckCircle, MapPin, Users, Plus } from "lucide-react-native";
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import {
   Alert,
@@ -1113,6 +1113,21 @@ export default function DashboardScreen() {
     );
   };
 
+  // Add create event button
+  const renderCreateEventButton = () => {
+    return (
+      <TouchableOpacity
+        style={styles.createEventButton}
+        onPress={() => router.push('/dashboard/create-event')}
+      >
+        <HStack style={styles.createEventButtonContent}>
+          <Plus size={24} color="#FFFFFF" />
+          <Text style={styles.createEventButtonText}>Etkinlik Oluştur</Text>
+        </HStack>
+      </TouchableOpacity>
+    );
+  };
+
   // Handle refresh when pull-to-refresh is triggered
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -1384,7 +1399,7 @@ export default function DashboardScreen() {
         )}
       </ScrollView>
 
-      <CreateEventButton onPress={handleCreateEvent} />
+      {renderCreateEventButton()}
     </SafeAreaView>
   );
 }
@@ -1761,20 +1776,29 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   createEventButton: {
-    backgroundColor: theme.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 12,
-    shadowColor: theme.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 2,
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#4F46E5',
+    borderRadius: 30,
+    padding: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  createEventButtonContent: {
+    alignItems: 'center',
+    gap: 8,
   },
   createEventButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: "700",
-    color: "white",
+    fontWeight: '600',
   },
   eventCardHeader: {
     flexDirection: "row",
