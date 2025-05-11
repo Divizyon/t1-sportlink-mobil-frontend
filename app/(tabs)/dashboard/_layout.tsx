@@ -6,7 +6,12 @@ export default function DashboardLayout() {
       <Stack.Screen name="index" options={{ headerShown: false, title: "" }} />
       <Stack.Screen
         name="event-details"
-        options={{ headerShown: false, title: "" }}
+        options={{
+          headerShown: false,
+          title: "",
+          presentation: "card",
+          animation: "slide_from_right",
+        }}
       />
       <Stack.Screen
         name="create-event"

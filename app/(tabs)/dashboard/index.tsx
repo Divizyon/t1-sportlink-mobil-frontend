@@ -572,9 +572,9 @@ export default function DashboardScreen() {
         console.log("Katıldığım ACTIVE etkinlikler için API isteği yapılıyor");
         
         // ACTIVE parametresini ekle (sadece aktif etkinlikleri göster)
-        additionalParams.status = "ACTIVE";
+        const status = "ACTIVE";
         
-        const events = await eventsApi.getUserParticipatedEvents(1, 50, "ACTIVE", additionalParams);
+        const events = await eventsApi.getUserParticipatedEvents(1, 50, status);
         
         if (events && events.length > 0) {
           console.log(`API ${events.length} aktif katılınan etkinlik buldu`);
@@ -817,6 +817,18 @@ export default function DashboardScreen() {
     }
   };
 
+  const handlePrevWeek = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 7);
+    setSelectedDate(newDate);
+  };
+
+  const handleNextWeek = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 7);
+    setSelectedDate(newDate);
+  };
+
   // Ekstra debug fonksiyonu ekle
   const logAllCategories = () => {
     // Veri tutarlılığını kontrol et - etkinlikler vs kategori listesi
@@ -840,6 +852,27 @@ export default function DashboardScreen() {
     }
   };
 
+  // Tab değişikliği, filtre değişikliği ve konum değişikliği için
+  useEffect(() => {
+    logAllCategories(); // Önce kategori tutarlılığını kontrol et
+
+    if (!isLocationLoading) {
+      // Debug için filtreleme bilgilerini göster
+      console.log(
+        `>> FİLTRELEME: Tab=${activeTab}, Kategori=${selectedCategory}, Mesafe=${distanceFilter}km`
+      );
+
+      // Debounce implementation to prevent rapid consecutive updates
+      const debounceTimer = setTimeout(() => {
+        // Filtreleme uygula
+        applyActiveFilters();
+      }, 300);
+
+      // Clean up timer on next effect run
+      return () => clearTimeout(debounceTimer);
+    }
+  }, [activeTab, selectedCategory, distanceFilter, isLocationLoading, selectedDate]);
+
   // Tab değişiminde event'lerin görüntülenmesi için ek bir güvenlik önlemi
   useEffect(() => {
     if (
@@ -854,7 +887,7 @@ export default function DashboardScreen() {
       // Yakındakiler için - Mesafeye bakılmaksızın tüm etkinlikleri göster
       setFilteredEvents(eventData);
     }
-  }, [activeTab, filteredEvents.length, isLocationLoading]);
+  }, [activeTab, filteredEvents.length, isLocationLoading, eventData]);
 
   // Aktif filtreleri uygula
   const applyActiveFilters = useCallback(() => {
@@ -912,48 +945,39 @@ export default function DashboardScreen() {
       });
     }
 
-    setFilteredEvents(eventsWithDistance);
-    console.log(
-      `Toplam ${eventsWithDistance.length} etkinlik filtreleme sonrası görüntüleniyor`
+    // Filtreleme uygulanıyor
+    let filteredResult = [...eventsWithDistance];
+
+    // Kategori filtrelemesi
+    if (selectedCategory !== "Tümü") {
+      filteredResult = filteredResult.filter(
+        (event) => event.category === selectedCategory
+      );
+      console.log(`Kategori filtrelemesi sonrası ${filteredResult.length} etkinlik`);
+    }
+
+    // Mesafe filtrelemesi
+    filteredResult = filteredResult.filter(
+      (event) => (event.calculatedDistance || 0) <= distanceFilter
     );
+    console.log(`Mesafe filtrelemesi sonrası ${filteredResult.length} etkinlik`);
+
+    // Sonuçları güncelle
+    console.log(`Toplam ${filteredResult.length} etkinlik filtreleme sonrası görüntüleniyor`);
+    setFilteredEvents(filteredResult);
   }, [activeTab, distanceFilter, eventData, userCoordinates, selectedCategory]);
 
-  // Tab değişikliği, filtre değişikliği ve konum değişikliği için
-  // Filtreleme için ayrı bir effect
-  useEffect(() => {
-    if (!isLoading && !isLocationLoading && eventData.length > 0) {
-      logAllCategories(); // Önce kategori tutarlılığını kontrol et
-      console.log(`>> FİLTRELEME: Tab=${activeTab}, Kategori=${selectedCategory}, Mesafe=${distanceFilter}km`);
-      
-      // Debounce filtreleme işlemini
-      const debounceTimer = setTimeout(() => {
-        applyActiveFilters();
-      }, 300);
-      
-      return () => clearTimeout(debounceTimer);
-    }
-  }, [
-    activeTab,
-    selectedSportId,
-    distanceFilter,
-    eventData,
-    isLocationLoading,
-    isLoading,
-    applyActiveFilters
-  ]);
-
   const handleCreateEvent = () => {
-    // @ts-ignore
-    router.navigate("/(tabs)/dashboard/create-event");
+    router.push("/event-form");
   };
 
   const handleEventPress = (eventId: string | number) => {
     // Convert to string if number
-    const id = typeof eventId === 'number' ? eventId.toString() : eventId;
+    const id = typeof eventId === "number" ? eventId.toString() : eventId;
     
-    // @ts-ignore
-    router.navigate({
-      pathname: "/(tabs)/dashboard/event-details",
+    // Navigate to event details
+    router.push({
+      pathname: "event-details/[id]",
       params: { id },
     });
   };

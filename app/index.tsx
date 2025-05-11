@@ -6,6 +6,7 @@ import {
   StatusBar,
   Dimensions,
   StyleSheet,
+  TouchableOpacity,
 } from "react-native";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -14,8 +15,22 @@ import { VStack } from "@/components/ui/vstack";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/src/store/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
+
+// Direk renk tanımları
+const colors = {
+  primary: "#2ecc71",
+  secondary: "#27ae60",
+  background: "#f5f5f5",
+  white: "#ffffff",
+  text: "#333333",
+  darkGray: "#7f8c8d",
+  gray: "#bdc3c7",
+  lightGray: "#ecf0f1",
+  error: "#e74c3c",
+};
 
 export default function Index() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -242,5 +257,44 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 16,
-  }
+  },
+  demoButton: {
+    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    borderWidth: 1,
+    borderColor: "#10b981",
+    borderRadius: 12,
+    height: 55,
+  },
+  demoButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  section: {
+    marginTop: 20,
+    alignItems: "center",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  card: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 10,
+    padding: 15,
+    width: "80%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 10,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.7)",
+  },
 });

@@ -18,12 +18,15 @@ import {
   Flag,
 } from "lucide-react-native";
 import { StyleSheet, TouchableOpacity, View, Image } from "react-native";
-import { NotificationResponse } from "../../services/api/notifications";
+import {
+  MobileNotification,
+  NotificationResponse,
+} from "../../services/api/notifications";
 import { LinearGradient } from "expo-linear-gradient";
 
 interface NotificationItemProps {
-  notification: NotificationResponse;
-  onPress: (notification: NotificationResponse) => void;
+  notification: MobileNotification | NotificationResponse;
+  onPress: (notification: MobileNotification | NotificationResponse) => void;
 }
 
 const NotificationItem = ({ notification, onPress }: NotificationItemProps) => {
@@ -34,6 +37,31 @@ const NotificationItem = ({ notification, onPress }: NotificationItemProps) => {
       return formatDistanceToNow(date, { addSuffix: true, locale: tr });
     } catch (error) {
       return "bilinmeyen zaman";
+    }
+  };
+
+  // Determine if the notification is a MobileNotification or old NotificationResponse
+  const isMobileNotification = (
+    notif: MobileNotification | NotificationResponse
+  ): notif is MobileNotification => {
+    return "title" in notif && "body" in notif;
+  };
+
+  // Get notification content based on type
+  const getNotificationContent = () => {
+    if (isMobileNotification(notification)) {
+      return notification.body;
+    } else {
+      return getFormattedContent(notification);
+    }
+  };
+
+  // Get notification title based on type
+  const getNotificationTitle = () => {
+    if (isMobileNotification(notification)) {
+      return notification.title;
+    } else {
+      return getNotificationTypeText(notification.notification_type);
     }
   };
 
@@ -114,59 +142,66 @@ const NotificationItem = ({ notification, onPress }: NotificationItemProps) => {
     return null;
   };
 
+  // Get notification type from either notification format
+  const getNotificationType = (): string => {
+    return isMobileNotification(notification)
+      ? notification.notification_type
+      : notification.notification_type;
+  };
+
   // Get background colors based on notification type
   const getNotificationColors = (type: string) => {
     switch (type) {
       case "new_event":
         return {
-          gradient: ["#2196F3", "#0D47A1"],
+          gradient: ["#2196F3", "#0D47A1"] as [string, string],
           iconBg: "#E3F2FD",
         };
       case "event_update":
       case "event_updated":
         return {
-          gradient: ["#00BCD4", "#006064"],
+          gradient: ["#00BCD4", "#006064"] as [string, string],
           iconBg: "#E0F7FA",
         };
       case "event_join":
         return {
-          gradient: ["#4CAF50", "#1B5E20"],
+          gradient: ["#4CAF50", "#1B5E20"] as [string, string],
           iconBg: "#E8F5E9",
         };
       case "event_leave":
         return {
-          gradient: ["#FF9800", "#E65100"],
+          gradient: ["#FF9800", "#E65100"] as [string, string],
           iconBg: "#FFF3E0",
         };
       case "event_cancelled":
         return {
-          gradient: ["#F44336", "#B71C1C"],
+          gradient: ["#F44336", "#B71C1C"] as [string, string],
           iconBg: "#FFEBEE",
         };
       case "event_completed":
         return {
-          gradient: ["#8BC34A", "#33691E"],
+          gradient: ["#8BC34A", "#33691E"] as [string, string],
           iconBg: "#F1F8E9",
         };
       case "friend_request":
         return {
-          gradient: ["#9C27B0", "#4A148C"],
+          gradient: ["#9C27B0", "#4A148C"] as [string, string],
           iconBg: "#F3E5F5",
         };
       case "friend_request_accepted":
         return {
-          gradient: ["#673AB7", "#311B92"],
+          gradient: ["#673AB7", "#311B92"] as [string, string],
           iconBg: "#EDE7F6",
         };
       case "chat_message":
       case "new_message":
         return {
-          gradient: ["#2ecc71", "#27ae60"],
+          gradient: ["#2ecc71", "#27ae60"] as [string, string],
           iconBg: "#E8F5E9",
         };
       default:
         return {
-          gradient: ["#9E9E9E", "#424242"],
+          gradient: ["#9E9E9E", "#424242"] as [string, string],
           iconBg: "#F5F5F5",
         };
     }
@@ -239,58 +274,53 @@ const NotificationItem = ({ notification, onPress }: NotificationItemProps) => {
         return "Sistem";
       case "like":
         return "Beğeni";
+      case "event_invitation":
+        return "Etkinlik Daveti";
       default:
         return "Bildirim";
     }
   };
 
-  const colors = getNotificationColors(notification.notification_type);
+  const type = getNotificationType();
+  const colors = getNotificationColors(type);
+  const createdDate = isMobileNotification(notification)
+    ? notification.created_at
+    : notification.created_at;
 
   return (
     <TouchableOpacity
-      activeOpacity={0.7}
-      style={[
-        styles.notificationItem,
-        !notification.read_status && styles.unreadItem,
-      ]}
+      style={[styles.container, !notification.read_status && styles.unread]}
       onPress={() => onPress(notification)}
+      activeOpacity={0.7}
     >
-      <View style={styles.container}>
-        <View
-          style={[styles.iconContainer, { backgroundColor: colors.iconBg }]}
+      <View style={styles.content}>
+        <LinearGradient
+          colors={colors.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.iconContainer}
         >
-          {getNotificationIcon(notification.notification_type)}
-          {!notification.read_status && <View style={styles.unreadDot} />}
-        </View>
-
-        <View style={styles.contentContainer}>
-          <Text style={styles.content} numberOfLines={2} ellipsizeMode="tail">
-            {getFormattedContent(notification)}
-          </Text>
-
-          <View style={styles.metaContainer}>
-            <LinearGradient
-              colors={[colors.gradient[0], colors.gradient[1]]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.badgeContainer}
-            >
-              <Text style={styles.notificationType}>
-                {getNotificationTypeText(notification.notification_type)}
-              </Text>
-            </LinearGradient>
-            <Text style={styles.time}>
-              {getFormattedTime(notification.created_at)}
-            </Text>
+          <View style={[styles.iconCircle, { backgroundColor: colors.iconBg }]}>
+            {getNotificationIcon(type)}
           </View>
+        </LinearGradient>
+
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>{getNotificationTitle()}</Text>
+          <Text style={styles.message} numberOfLines={2}>
+            {getNotificationContent()}
+          </Text>
+          <Text style={styles.time}>{getFormattedTime(createdDate)}</Text>
         </View>
+
+        {!notification.read_status && <View style={styles.unreadDot} />}
       </View>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  notificationItem: {
+  container: {
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
@@ -303,12 +333,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.05)",
   },
-  unreadItem: {
+  unread: {
     backgroundColor: "#f7faff",
     borderLeftWidth: 4,
     borderLeftColor: "#3498db",
   },
-  container: {
+  content: {
     flexDirection: "row",
     alignItems: "center",
   },
@@ -321,6 +351,35 @@ const styles = StyleSheet.create({
     marginRight: 12,
     position: "relative",
   },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  textContainer: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  title: {
+    fontSize: 14,
+    color: "#333",
+    lineHeight: 20,
+    marginBottom: 6,
+    fontWeight: "500",
+  },
+  message: {
+    fontSize: 14,
+    color: "#333",
+    lineHeight: 20,
+    marginBottom: 6,
+  },
+  time: {
+    fontSize: 11,
+    color: "#95a5a6",
+    fontWeight: "400",
+  },
   unreadDot: {
     position: "absolute",
     right: -3,
@@ -331,37 +390,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF3B30",
     borderWidth: 1.5,
     borderColor: "#fff",
-  },
-  contentContainer: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  content: {
-    fontSize: 14,
-    color: "#333",
-    lineHeight: 20,
-    marginBottom: 6,
-    fontWeight: "500",
-  },
-  metaContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  badgeContainer: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  notificationType: {
-    fontSize: 11,
-    color: "#fff",
-    fontWeight: "600",
-  },
-  time: {
-    fontSize: 11,
-    color: "#95a5a6",
-    fontWeight: "400",
   },
 });
 

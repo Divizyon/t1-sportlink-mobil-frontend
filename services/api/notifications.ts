@@ -1,6 +1,22 @@
 import { apiClient } from "./client";
 
-// Yeni bildirim yapısı - API'nin döndüğü formata göre güncellendi
+// API'nin döndüğü yeni bildirim yapısı
+export interface MobileNotification {
+  id: number;
+  title: string;
+  body: string;
+  notification_type: string;
+  read_status: boolean;
+  send_status: string;
+  created_at: string;
+  sent_at: string;
+  data: any;
+  user_id: string;
+  device_token: string;
+  platform: string;
+}
+
+// Eski bildirim yapısı (uyumluluk için korunuyor)
 export interface NotificationResponse {
   id: number;
   user_id: string;
@@ -14,12 +30,12 @@ export interface NotificationResponse {
 
 // API yanıt yapısı
 export interface ApiNotificationResponse {
-  status: string;
+  success: boolean;
   count: number;
-  data: NotificationResponse[];
+  data: MobileNotification[];
 }
 
-// Log fonksiyonu ekleyelim
+// Log fonksiyonu
 const logApiCall = (endpoint: string, result: any, error?: any) => {
   if (error) {
     console.log(`[Notifications API] Error calling ${endpoint}:`, error);
@@ -37,49 +53,16 @@ const notificationsService = {
    * @returns API yanıtı
    */
   getNotifications: async () => {
-    // API isteği için deneme sayısı
-    const MAX_RETRY = 2;
-    let lastError: any = null;
+    try {
+      // Yeni bildirim API endpoint'ini kullan
+      const response = await apiClient.get("/mobile/notifications");
+      logApiCall("/mobile/notifications", response);
 
-    const endpoints = ["/notifications", "/mobile/notifications"];
-
-    // Her bir endpoint'i sırayla deneyelim
-    for (const endpoint of endpoints) {
-      // Her endpoint için belirlenen retry sayısı kadar deneyelim
-      for (let retryCount = 0; retryCount < MAX_RETRY; retryCount++) {
-        try {
-          const response = await apiClient.get(endpoint);
-          logApiCall(endpoint, response);
-
-          // Yanıtın geçerli olup olmadığını kontrol et
-          if (response && response.data) {
-            return response;
-          } else {
-            throw new Error("Geçersiz API yanıtı: Boş yanıt");
-          }
-        } catch (error) {
-          lastError = error;
-          console.log(
-            `${endpoint} endpoint'i için ${retryCount + 1}. deneme başarısız:`,
-            error
-          );
-
-          // Son deneme değilse, biraz bekleyip tekrar dene
-          if (retryCount < MAX_RETRY - 1) {
-            // Üstel bekleme (exponential backoff) - her denemede bekleme süresini artır
-            const waitTime = 1000 * Math.pow(2, retryCount);
-            console.log(`${waitTime}ms bekledikten sonra tekrar deneniyor...`);
-            await new Promise((resolve) => setTimeout(resolve, waitTime));
-          }
-        }
-      }
+      return response;
+    } catch (error) {
+      logApiCall("/mobile/notifications", null, error);
+      throw error;
     }
-
-    // Tüm denemeler başarısız olduysa son hatayı fırlat
-    console.error("Tüm bildirim API istekleri başarısız oldu:", lastError);
-    throw (
-      lastError || new Error("Bildirimler alınamadı: Tüm denemeler başarısız")
-    );
   },
 
   /**
@@ -88,11 +71,14 @@ const notificationsService = {
    */
   getUnreadCount: async () => {
     try {
-      const response = await apiClient.get("/notifications/unread-count");
-      logApiCall("/notifications/unread-count", response);
+      // Yeni endpoint yapısını kullan
+      const response = await apiClient.get(
+        "/mobile/notifications/unread-count"
+      );
+      logApiCall("/mobile/notifications/unread-count", response);
       return response;
     } catch (error) {
-      logApiCall("/notifications/unread-count", null, error);
+      logApiCall("/mobile/notifications/unread-count", null, error);
       throw error;
     }
   },
@@ -104,13 +90,14 @@ const notificationsService = {
    */
   markAsRead: async (notificationId: number) => {
     try {
-      const response = await apiClient.put(
-        `/notifications/${notificationId}/read`
+      // Yeni endpoint yapısını kullan
+      const response = await apiClient.patch(
+        `/mobile/notifications/${notificationId}/read`
       );
-      logApiCall(`/notifications/${notificationId}/read`, response);
+      logApiCall(`/mobile/notifications/${notificationId}/read`, response);
       return response;
     } catch (error) {
-      logApiCall(`/notifications/${notificationId}/read`, null, error);
+      logApiCall(`/mobile/notifications/${notificationId}/read`, null, error);
       throw error;
     }
   },
@@ -121,11 +108,14 @@ const notificationsService = {
    */
   markAllAsRead: async () => {
     try {
-      const response = await apiClient.put("/notifications/mark-all-read");
-      logApiCall("/notifications/mark-all-read", response);
+      // Yeni endpoint yapısını kullan
+      const response = await apiClient.patch(
+        "/mobile/notifications/mark-all-read"
+      );
+      logApiCall("/mobile/notifications/mark-all-read", response);
       return response;
     } catch (error) {
-      logApiCall("/notifications/mark-all-read", null, error);
+      logApiCall("/mobile/notifications/mark-all-read", null, error);
       throw error;
     }
   },
@@ -138,12 +128,12 @@ const notificationsService = {
   deleteNotification: async (notificationId: number) => {
     try {
       const response = await apiClient.delete(
-        `/notifications/${notificationId}`
+        `/mobile/notifications/${notificationId}`
       );
-      logApiCall(`/notifications/${notificationId}`, response);
+      logApiCall(`/mobile/notifications/${notificationId}`, response);
       return response;
     } catch (error) {
-      logApiCall(`/notifications/${notificationId}`, null, error);
+      logApiCall(`/mobile/notifications/${notificationId}`, null, error);
       throw error;
     }
   },

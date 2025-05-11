@@ -27,8 +27,9 @@ import {
   Users,
   X,
   Smartphone,
+  RefreshCw,
 } from "lucide-react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ActionSheetIOS,
   Alert,
@@ -47,12 +48,13 @@ import {
 } from "react-native";
 import { useAuth } from "@/src/store/AuthContext";
 import apiClient from "@/src/api";
-import { useRouter } from 'expo-router';
-import { friendshipsApi } from '@/services/api/friendships';
+import { useRouter } from "expo-router";
+import { friendshipsApi } from "@/services/api/friendships";
 import profileService from "@/src/api/profileService";
 import { UserProfile } from "@/src/types";
 import eventService from "@/src/api/eventService";
 import EventCard from "@/components/profile/EventCard";
+import eventBus from "@/src/utils/EventBus";
 
 // Menü öğesi tipi tanımlama
 interface MenuItem {
@@ -383,6 +385,11 @@ export default function ProfileScreen() {
   const [isNotificationsModalVisible, setIsNotificationsModalVisible] =
     useState(false);
   const [isPrivacyModalVisible, setIsPrivacyModalVisible] = useState(false);
+  const [isSportsModalVisible, setIsSportsModalVisible] = useState(false);
+  const [availableSports, setAvailableSports] = useState<
+    Array<{ id: number; name: string; icon: string }>
+  >([]);
+  const [selectedSports, setSelectedSports] = useState<Array<number>>([]);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [notificationCategories, setNotificationCategories] = useState<
     NotificationCategory[]
@@ -462,6 +469,12 @@ export default function ProfileScreen() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sports, setSports] = useState<
+    Array<{
+      sport_id: number;
+      sport: { id: number; name: string; icon: string; description: string };
+    }>
+  >([]);
 
   const [editedProfile, setEditedProfile] = useState({
     firstName: "",
@@ -519,6 +532,11 @@ export default function ProfileScreen() {
       const profileData = await profileService.getProfile();
       console.log("Alınan profil verileri:", profileData);
 
+      // İlgi alanlarını getir
+      const sportsData = await profileService.getSports();
+      setSports(sportsData);
+      console.log("İlgi alanları alındı:", sportsData);
+
       // Profil verileri geçerli mi kontrol et
       if (!profileData) {
         throw new Error("Sunucudan boş profil verisi alındı");
@@ -534,7 +552,10 @@ export default function ProfileScreen() {
         birthDate: profileData.birthday_date || "",
         biography: profileData.bio || "",
         profileImage: profileData.avatar || DEFAULT_PROFILE_IMAGE,
-        interests: userData.interests || [], // Şimdilik userData'dan al
+        interests:
+          sportsData.map(
+            (sportItem: { sport: { name: string } }) => sportItem.sport.name
+          ) || [], // İlgi alanlarını kullan
       };
 
       setEditedProfile(updatedProfile);
@@ -575,6 +596,23 @@ export default function ProfileScreen() {
   useEffect(() => {
     fetchProfileData();
     fetchParticipatedEvents();
+    loadFriendCount();
+
+    // Etkinlik katılım durumu değiştiğinde etkinlikleri yenile
+    const unsubscribe = eventBus.subscribe(
+      "EVENT_PARTICIPATION_CHANGED",
+      () => {
+        console.log(
+          "Etkinlik katılım değişikliği algılandı, etkinlikler yenileniyor..."
+        );
+        fetchParticipatedEvents();
+      }
+    );
+
+    // Component unmount olduğunda event dinleyicisini temizle
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const handleEditProfile = () => {
@@ -588,7 +626,10 @@ export default function ProfileScreen() {
       birthDate: userProfile?.birthday_date || "",
       biography: userProfile?.bio || "",
       profileImage: userProfile?.avatar || DEFAULT_PROFILE_IMAGE,
-      interests: userData.interests || [],
+      interests:
+        sports.map(
+          (sportItem: { sport: { name: string } }) => sportItem.sport.name
+        ) || [],
     };
 
     // Düzenleme alanlarını mevcut değerlerle doldur
@@ -740,11 +781,8 @@ export default function ProfileScreen() {
   const handleEventPress = (eventId: number) => {
     console.log(`Etkinlik detayına yönlendiriliyor: ${eventId}`);
 
-    // // Doğru rotaya yönlendir
-    // router.push({
-    //   pathname: "/(tabs)/events/[id]",
-    //   params: { id: eventId.toString() },
-    // });
+    // Doğru rotaya yönlendir
+    router.push(`/dashboard/event-details?id=${eventId}`);
   };
 
   // Handler for profile picture change
@@ -1395,6 +1433,109 @@ export default function ProfileScreen() {
     }
   };
 
+  // İlgi alanlarını getirme fonksiyonu
+  const fetchAvailableSports = async () => {
+    try {
+      const response = await apiClient.get("/sports");
+      if (response.data && response.data.data) {
+        setAvailableSports(response.data.data);
+      }
+    } catch (error) {
+      console.error("İlgi alanları yüklenirken hata oluştu:", error);
+    }
+  };
+
+  // İlgi alanlarını güncelleme fonksiyonu
+  const updateUserSports = async () => {
+    try {
+      setLoading(true);
+
+      // Mevcut ve yeni seçilen sporlar arasındaki farkı hesapla
+      const currentSportIds = sports.map((s) => s.sport.id);
+
+      // Eklenecek sporlar (yeni seçilip daha önce eklenmemiş olanlar)
+      const sportsToAdd = selectedSports.filter(
+        (id) => !currentSportIds.includes(id)
+      );
+
+      // Kaldırılacak sporlar (daha önce eklenmiş olup şu an seçili olmayanlar)
+      const sportsToRemove = currentSportIds.filter(
+        (id) => !selectedSports.includes(id)
+      );
+
+      // Değişiklik yoksa işlemi sonlandır
+      if (sportsToAdd.length === 0 && sportsToRemove.length === 0) {
+        setIsSportsModalVisible(false);
+        return;
+      }
+
+      // Batch API'ye gönderilecek veri
+      const updateData = {
+        add: sportsToAdd.length > 0 ? sportsToAdd : [],
+        remove: sportsToRemove.length > 0 ? sportsToRemove : [],
+      };
+
+      console.log("İlgi alanları güncelleniyor:", updateData);
+
+      // API çağrısı (POST metodu kullanılıyor)
+      await apiClient.post("/profile/sports/batch", updateData);
+
+      // Profil bilgilerini güncelle
+      await fetchProfileData();
+      setIsSportsModalVisible(false);
+      Alert.alert("Başarılı", "İlgi alanlarınız güncellendi");
+    } catch (error) {
+      console.error("İlgi alanları güncellenirken hata oluştu:", error);
+      Alert.alert("Hata", "İlgi alanları güncellenirken bir sorun oluştu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Spor seçimini değiştirme fonksiyonu
+  const toggleSportSelection = (sportId: number) => {
+    setSelectedSports((prevSelectedSports) => {
+      if (prevSelectedSports.includes(sportId)) {
+        return prevSelectedSports.filter((id) => id !== sportId);
+      } else {
+        return [...prevSelectedSports, sportId];
+      }
+    });
+  };
+
+  // İlgi alanları değişiklik kontrolü
+  const isUserSportsChanged = () => {
+    const currentSportIds = sports.map((s) => s.sport.id);
+    const sportsToAdd = selectedSports.filter(
+      (id) => !currentSportIds.includes(id)
+    );
+    const sportsToRemove = currentSportIds.filter(
+      (id) => !selectedSports.includes(id)
+    );
+
+    return sportsToAdd.length > 0 || sportsToRemove.length > 0;
+  };
+
+  // İlgi alanları modalını açma fonksiyonu
+  const openSportsModal = async () => {
+    try {
+      setLoading(true);
+      // Tüm mevcut sporları getir
+      await fetchAvailableSports();
+
+      // Kullanıcının seçili sporlarını ayarla
+      const userSportIds = sports.map((s) => s.sport.id);
+      setSelectedSports(userSportIds);
+
+      setIsSportsModalVisible(true);
+    } catch (error) {
+      console.error("İlgi alanları yüklenirken hata oluştu:", error);
+      Alert.alert("Hata", "İlgi alanları yüklenirken bir sorun oluştu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
@@ -1479,15 +1620,11 @@ export default function ProfileScreen() {
 
             {/* İstatistikler */}
             <View style={styles.statsContainer}>
-              <View style={[styles.statItem, styles.statDivider]}>
-                <Text style={styles.statNumber}>
-                  {userProfile?.total_events || 0}
-                </Text>
-                <Text style={styles.statLabel}>Etkinlik</Text>
-              </View>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.statItem}
-                onPress={() => router.push('/(tabs)/profile/friends-list' as any)}
+                onPress={() =>
+                  router.push("/(tabs)/profile/friends-list" as any)
+                }
               >
                 <Text style={styles.statNumber}>
                   {userProfile?.friend_count || 0}
@@ -1499,13 +1636,29 @@ export default function ProfileScreen() {
 
           {/* İlgi Alanları */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>İlgi Alanları</Text>
+            <View style={styles.sectionHeaderWithAction}>
+              <Text style={styles.sectionTitle}>İlgi Alanları</Text>
+              <TouchableOpacity
+                style={styles.editInterestsButton}
+                onPress={openSportsModal}
+              >
+                <Edit3 size={18} color="#3498db" />
+              </TouchableOpacity>
+            </View>
             <View style={styles.interestsContainer}>
-              {userData.interests.map((interest, index) => (
-                <View key={index} style={styles.interestTag}>
-                  <Text style={styles.interestTagText}>{interest}</Text>
-                </View>
-              ))}
+              {sports.length > 0 ? (
+                sports.map((sportItem) => (
+                  <View key={sportItem.sport_id} style={styles.interestTag}>
+                    <Text style={styles.interestTagText}>
+                      {sportItem.sport.icon} {sportItem.sport.name}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.noInterestsText}>
+                  Henüz ilgi alanı eklenmemiş
+                </Text>
+              )}
             </View>
           </View>
 
@@ -1513,10 +1666,19 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeaderContainer}>
               <Text style={styles.sectionTitle}>Katıldığım Etkinlikler</Text>
-              <View style={styles.eventCountBadge}>
-                <Text style={styles.eventCountText}>
-                  {participatedEvents.length}
-                </Text>
+              <View style={styles.eventHeaderActions}>
+                <TouchableOpacity
+                  style={styles.refreshButton}
+                  onPress={fetchParticipatedEvents}
+                  disabled={eventsLoading}
+                >
+                  <RefreshCw size={18} color="#3498db" />
+                </TouchableOpacity>
+                <View style={styles.eventCountBadge}>
+                  <Text style={styles.eventCountText}>
+                    {participatedEvents.length}
+                  </Text>
+                </View>
               </View>
             </View>
 
@@ -1663,18 +1825,6 @@ export default function ProfileScreen() {
                   onChangeText={(text) => handleProfileChange("lastName", text)}
                   placeholder="Soyadınız"
                   autoCapitalize="words"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>E-posta</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={editedProfile.email}
-                  onChangeText={(text) => handleProfileChange("email", text)}
-                  placeholder="E-posta adresiniz"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
                 />
               </View>
 
@@ -2067,6 +2217,78 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* İlgi Alanları Düzenleme Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isSportsModalVisible}
+        onRequestClose={() => setIsSportsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>İlgi Alanlarını Düzenle</Text>
+              <TouchableOpacity onPress={() => setIsSportsModalVisible(false)}>
+                <X size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <Text style={styles.modalDescription}>
+                İlgilendiğiniz spor dallarını seçin. Birden fazla seçim
+                yapabilirsiniz.
+              </Text>
+
+              <View style={styles.sportsGrid}>
+                {availableSports.map((sport) => (
+                  <TouchableOpacity
+                    key={sport.id}
+                    style={[
+                      styles.sportItem,
+                      selectedSports.includes(sport.id) &&
+                        styles.selectedSportItem,
+                    ]}
+                    onPress={() => toggleSportSelection(sport.id)}
+                  >
+                    <Text style={styles.sportEmoji}>{sport.icon}</Text>
+                    <Text
+                      style={[
+                        styles.sportItemText,
+                        selectedSports.includes(sport.id) &&
+                          styles.selectedSportItemText,
+                      ]}
+                    >
+                      {sport.name}
+                    </Text>
+                    {selectedSports.includes(sport.id) && (
+                      <View style={styles.checkmarkContainer}>
+                        <Check size={16} color="#fff" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.saveButton,
+                  (!isUserSportsChanged() || loading) &&
+                    styles.saveButtonDisabled,
+                ]}
+                onPress={updateUserSports}
+                disabled={!isUserSportsChanged() || loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Kaydet</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -2265,16 +2487,15 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   eventCountBadge: {
-    backgroundColor: "#e6f7f4",
+    backgroundColor: "#3498db",
+    borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 12,
-    marginLeft: 8,
   },
   eventCountText: {
+    color: "#fff",
     fontSize: 12,
-    fontWeight: "bold",
-    color: "#047857",
+    fontWeight: "600",
   },
   interestsContainer: {
     flexDirection: "row",
@@ -3038,5 +3259,76 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 4,
+  },
+  noInterestsText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginVertical: 10,
+  },
+  sectionHeaderWithAction: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  editInterestsButton: {
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 18,
+    backgroundColor: "#f0f8ff",
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  sportsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  sportItem: {
+    width: "48%",
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  selectedSportItem: {
+    backgroundColor: "#e3f2fd",
+    borderColor: "#1c7ed6",
+  },
+  sportItemText: {
+    fontSize: 14,
+    color: "#333",
+    flex: 1,
+  },
+  selectedSportItemText: {
+    color: "#1c7ed6",
+    fontWeight: "500",
+  },
+  checkmarkContainer: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#1c7ed6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  refreshButton: {
+    marginRight: 10,
+    padding: 5,
+  },
+  eventHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });
