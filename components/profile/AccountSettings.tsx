@@ -10,6 +10,7 @@ import {
 import { Clock, X } from "lucide-react-native";
 import profileService from "@/src/api/profileService";
 import { useAuth } from "@/src/store/AuthContext";
+import { router } from "expo-router";
 
 interface AccountSettingsProps {
   onClose: () => void;
@@ -47,6 +48,7 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ onClose }) => {
                       onPress: () => {
                         logout();
                         onClose();
+                        router.push("/(auth)/signin");
                       },
                     },
                   ]
@@ -96,6 +98,7 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ onClose }) => {
                       onPress: () => {
                         logout();
                         onClose();
+                        router.push("/(auth)/signin");
                       },
                     },
                   ]

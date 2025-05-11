@@ -1106,6 +1106,7 @@ export default function ProfileScreen() {
                       onPress: () => {
                         logout();
                         setActivePrivacySection(null);
+                        router.push("/(auth)/signin");
                       },
                     },
                   ]
@@ -1156,6 +1157,7 @@ export default function ProfileScreen() {
                       onPress: () => {
                         logout();
                         setActivePrivacySection(null);
+                        router.push("/(auth)/signin");
                       },
                     },
                   ]

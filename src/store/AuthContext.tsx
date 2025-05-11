@@ -66,16 +66,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Force navigation to login after a slight delay to allow state updates
       setTimeout(() => {
         console.log("Redirecting to login page...");
-        if (router.canGoBack()) {
-          router.replace("/(auth)/login");
-        } else {
-          router.navigate("/(auth)/login");
+        try {
+          router.replace("/(auth)/signin");
+        } catch (err) {
+          console.error("Navigation error:", err);
+          // Fallback navigation
+          router.navigate("/(auth)/signin");
         }
       }, 500);
     } catch (error) {
       console.error("Force logout error:", error);
       // Fallback direct navigation if something fails
-      router.navigate("/(auth)/login");
+      try {
+        router.replace("/(auth)/signin");
+      } catch (err) {
+        console.error("Error during fallback navigation:", err);
+        router.navigate("/(auth)/signin");
+      }
     }
   }, []);
 

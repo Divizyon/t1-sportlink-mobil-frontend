@@ -42,12 +42,16 @@ const forceLogout = async () => {
     // Show toast notification
     showToast("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.", "error");
 
-    // Navigate to login screen
+    // Navigate to login screen - Değişik rotalar için düzeltme
     setTimeout(() => {
-      router.replace("/auth/login");
+      router.replace("/(auth)/signin");
     }, 500);
   } catch (error) {
     console.error("Force logout error:", error);
+    // Hata olsa bile login sayfasına yönlendirmeyi dene
+    setTimeout(() => {
+      router.replace("/(auth)/signin");
+    }, 500);
   }
 };
 
