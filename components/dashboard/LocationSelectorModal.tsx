@@ -1,306 +1,245 @@
-import React, { useState } from "react";
-import {
-  StyleSheet,
-  Modal,
-  TextInput,
-  FlatList,
-  TouchableOpacity,
-  Image,
-} from "react-native";
-import { Box } from "@/components/ui/box";
-import { Text } from "@/components/ui/text";
-import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
-import { Button, ButtonText } from "@/components/ui/button";
-import { X, Search, MapPin, Check } from "lucide-react-native";
-
-interface Location {
-  id: number;
-  name: string;
-  address: string;
-  distance?: string;
-  image?: string;
-  coordinates?: {
-    latitude: number;
-    longitude: number;
-  };
-}
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Modal, View, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { Text } from '@/components/ui/text';
+import { X, Search, MapPin } from 'lucide-react-native';
+import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
+import { Button, ButtonText } from '@/components/ui/button';
 
 interface LocationSelectorModalProps {
   visible: boolean;
-  onSelect: (
-    location: string,
-    coordinates: { latitude: number; longitude: number }
-  ) => void;
   onClose: () => void;
+  onSelect: (locationName: string, coordinates: { latitude: number; longitude: number }) => void;
 }
 
-// Örnek konum verileri - gerçek uygulamada API'dan gelir
-const mockLocations: Location[] = [
-  {
-    id: 1,
-    name: "Konya Spor Kompleksi",
-    address: "Selçuklu, Konya",
-    distance: "1.2 km",
-    image: "https://picsum.photos/600/200",
-    coordinates: {
-      latitude: 37.8651,
-      longitude: 32.4932,
-    },
-  },
-  {
-    id: 2,
-    name: "Meram Futbol Sahası",
-    address: "Meram, Konya",
-    distance: "2.5 km",
-    image: "https://picsum.photos/600/201",
-    coordinates: {
-      latitude: 37.8583,
-      longitude: 32.4482,
-    },
-  },
-  {
-    id: 3,
-    name: "Selçuklu Kapalı Spor Salonu",
-    address: "Selçuklu, Konya",
-    distance: "3.7 km",
-    image: "https://picsum.photos/600/202",
-    coordinates: {
-      latitude: 37.874,
-      longitude: 32.4921,
-    },
-  },
-  {
-    id: 4,
-    name: "Konya Atatürk Stadyumu",
-    address: "Selçuklu, Konya",
-    distance: "4.1 km",
-    image: "https://picsum.photos/600/203",
-    coordinates: {
-      latitude: 37.8691,
-      longitude: 32.4862,
-    },
-  },
-];
-
-const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
+export default function LocationSelectorModal({
   visible,
-  onSelect,
   onClose,
-}) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(
-    null
-  );
+  onSelect,
+}: LocationSelectorModalProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    name: string;
+  } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
-  const filteredLocations = searchQuery
-    ? mockLocations.filter(
-        (location) =>
-          location.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          location.address.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : mockLocations;
+  useEffect(() => {
+    if (visible) {
+      getCurrentLocation();
+    }
+  }, [visible]);
 
-  const handleSelectLocation = (location: Location) => {
-    setSelectedLocation(location);
+  const getCurrentLocation = async () => {
+    setIsLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Konum izni reddedildi');
+        return;
+      }
+
+      const initialLocation = {
+        latitude: 37.874641,
+        longitude: 32.493156,
+      };
+      setUserLocation(initialLocation);
+      setSelectedLocation({
+        ...initialLocation,
+        name: 'Seçilen Konum',
+      });
+    } catch (error) {
+      console.error('Konum alınamadı:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMapPress = async (event: any) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    try {
+      const [location] = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      });
+
+      const locationName = location
+        ? `${location.street || ''} ${location.name || ''}, ${location.district || ''}, ${location.city || ''}`
+        : 'Seçilen Konum';
+
+      setSelectedLocation({
+        latitude,
+        longitude,
+        name: locationName.trim(),
+      });
+    } catch (error) {
+      console.error('Adres bulunamadı:', error);
+      setSelectedLocation({
+        latitude,
+        longitude,
+        name: 'Seçilen Konum',
+      });
+    }
   };
 
   const handleConfirm = () => {
     if (selectedLocation) {
-      const coordinates = selectedLocation.coordinates || {
-        latitude: 0,
-        longitude: 0,
-      };
-      onSelect(selectedLocation.name, coordinates);
+      onSelect(selectedLocation.name, {
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
+      });
+      onClose();
     }
-    onClose();
   };
 
   return (
     <Modal
-      animationType="slide"
-      transparent={true}
       visible={visible}
+      animationType="slide"
       onRequestClose={onClose}
     >
-      <Box style={styles.modalOverlay}>
-        <Box style={styles.modalContent}>
-          <HStack style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Konum Seçin</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <X size={24} color="#64748B" />
-            </TouchableOpacity>
-          </HStack>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Konum Seç</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <X size={24} color="#0F172A" />
+          </TouchableOpacity>
+        </View>
 
-          {/* Arama kutusu */}
-          <Box style={styles.searchContainer}>
-            <Search size={20} color="#64748B" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Konum ara..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholderTextColor="#9CA3AF"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setSearchQuery("")}
-                style={styles.clearButton}
-              >
-                <X size={16} color="#64748B" />
-              </TouchableOpacity>
-            )}
-          </Box>
-
-          {/* Konum listesi */}
-          <FlatList
-            data={filteredLocations}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.locationItem,
-                  selectedLocation?.id === item.id &&
-                    styles.selectedLocationItem,
-                ]}
-                onPress={() => handleSelectLocation(item)}
-              >
-                <HStack style={styles.locationContent}>
-                  <MapPin
-                    size={20}
-                    color="#10B981"
-                    style={styles.locationIcon}
-                  />
-                  <VStack style={styles.locationInfo}>
-                    <Text style={styles.locationName}>{item.name}</Text>
-                    <Text style={styles.locationAddress}>
-                      {item.address} {item.distance && `(${item.distance})`}
-                    </Text>
-                  </VStack>
-                  {selectedLocation?.id === item.id && (
-                    <Check size={20} color="#10B981" />
-                  )}
-                </HStack>
-
-                {item.image && selectedLocation?.id === item.id && (
-                  <Box style={styles.mapPreviewContainer}>
-                    <Image
-                      source={{ uri: item.image }}
-                      style={styles.mapPreview}
-                      resizeMode="cover"
-                    />
-                  </Box>
-                )}
-              </TouchableOpacity>
-            )}
-            contentContainerStyle={styles.locationList}
+        <View style={styles.searchContainer}>
+          <Search size={20} color="#6B7280" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Konum ara..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
+        </View>
 
-          <Button
-            style={styles.confirmButton}
-            onPress={handleConfirm}
-            disabled={!selectedLocation}
-          >
-            <ButtonText>Konum Seç</ButtonText>
-          </Button>
-        </Box>
-      </Box>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4F46E5" />
+            <Text style={styles.loadingText}>Konum alınıyor...</Text>
+          </View>
+        ) : (
+          <View style={styles.mapContainer}>
+            <MapView
+              style={styles.map}
+              initialRegion={userLocation ? {
+                ...userLocation,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              } : undefined}
+              onPress={handleMapPress}
+            >
+              {selectedLocation && (
+                <Marker
+                  coordinate={{
+                    latitude: selectedLocation.latitude,
+                    longitude: selectedLocation.longitude,
+                  }}
+                />
+              )}
+            </MapView>
+          </View>
+        )}
+
+        {selectedLocation && (
+          <View style={styles.footer}>
+            <View style={styles.selectedLocation}>
+              <MapPin size={20} color="#4F46E5" />
+              <Text style={styles.locationText} numberOfLines={2}>
+                {selectedLocation.name}
+              </Text>
+            </View>
+            <Button onPress={handleConfirm} style={styles.confirmButton}>
+              <ButtonText>Konumu Seç</ButtonText>
+            </Button>
+          </View>
+        )}
+      </View>
     </Modal>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  container: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
+    backgroundColor: '#FFFFFF',
   },
-  modalContent: {
-    backgroundColor: "white",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: "80%",
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  modalTitle: {
+  title: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#0F172A",
+    fontWeight: '600',
+    color: '#0F172A',
   },
   closeButton: {
     padding: 4,
   },
   searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F1F5F9",
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    margin: 16,
+    backgroundColor: '#F1F5F9',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 16,
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    height: 48,
     fontSize: 16,
-    color: "#0F172A",
+    color: '#0F172A',
   },
-  clearButton: {
-    padding: 8,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  locationList: {
-    paddingBottom: 16,
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
   },
-  locationItem: {
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    backgroundColor: "#F8FAFC",
+  mapContainer: {
+    flex: 1,
+    overflow: 'hidden',
   },
-  selectedLocationItem: {
-    backgroundColor: "#EFF6FF",
-    borderWidth: 1,
-    borderColor: "#4F46E5",
+  map: {
+    width: '100%',
+    height: '100%',
   },
-  locationContent: {
-    alignItems: "center",
+  footer: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
   },
-  locationIcon: {
-    marginRight: 12,
+  selectedLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  locationInfo: {
+  locationText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#0F172A',
     flex: 1,
   },
-  locationName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#0F172A",
-  },
-  locationAddress: {
-    fontSize: 14,
-    color: "#64748B",
-  },
-  mapPreviewContainer: {
-    height: 120,
-    marginTop: 12,
-    borderRadius: 8,
-    overflow: "hidden",
-  },
-  mapPreview: {
-    width: "100%",
-    height: "100%",
-  },
   confirmButton: {
-    marginTop: 8,
+    width: '100%',
   },
 });
-
-export default LocationSelectorModal;

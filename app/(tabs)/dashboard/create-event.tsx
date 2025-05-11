@@ -35,8 +35,8 @@ export default function CreateEventScreen() {
     start_time: '',
     end_time: '',
     location_name: '',
-    location_lat: 0,
-    location_long: 0,
+    location_lat: 37.874641,
+    location_long: 32.493156,
     max_participants: 0
   });
 
@@ -199,9 +199,10 @@ export default function CreateEventScreen() {
         <LocationSelector
           label="Konum"
           value={form.location_name}
-          mapPreviewUrl={form.location_lat && form.location_long ? 
-            `https://maps.googleapis.com/maps/api/staticmap?center=${form.location_lat},${form.location_long}&zoom=15&size=400x200&key=YOUR_API_KEY` : 
-            ''}
+          coordinates={form.location_lat && form.location_long ? {
+            latitude: form.location_lat,
+            longitude: form.location_long
+          } : undefined}
           onPress={() => setIsLocationModalVisible(true)}
           error={errors.location_name}
         />
@@ -234,6 +235,7 @@ export default function CreateEventScreen() {
       </Box>
 
       <LocationSelectorModal
+      
         visible={isLocationModalVisible}
         onSelect={handleLocationSelect}
         onClose={() => setIsLocationModalVisible(false)}

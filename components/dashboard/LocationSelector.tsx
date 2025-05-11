@@ -1,132 +1,108 @@
-import React from "react";
-import { StyleSheet, TouchableOpacity, Image, View } from "react-native";
-import { Box } from "@/components/ui/box";
-import { Text } from "@/components/ui/text";
-import { HStack } from "@/components/ui/hstack";
-import { MapPin, ChevronDown, Tag } from "lucide-react-native";
+import React from 'react';
+import { StyleSheet, TouchableOpacity, View, Dimensions } from 'react-native';
+import { Text } from '@/components/ui/text';
+import { FormControl, FormControlLabel, FormControlError } from '@/components/ui/form-control';
+import { MapPin } from 'lucide-react-native';
+import MapView, { Marker } from 'react-native-maps';
 
 interface LocationSelectorProps {
-  label?: string;
+  label: string;
   value: string;
-  mapPreviewUrl?: string;
   onPress: () => void;
   error?: string;
-  isCategory?: boolean;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
-const LocationSelector: React.FC<LocationSelectorProps> = ({
+export default function LocationSelector({
   label,
   value,
-  mapPreviewUrl,
   onPress,
   error,
-  isCategory = false,
-}) => {
+  coordinates
+}: LocationSelectorProps) {
   return (
-    <Box style={styles.formGroup}>
-      {label && <Text style={styles.label}>{label}</Text>}
+    <FormControl isInvalid={!!error}>
+      <FormControlLabel>{label}</FormControlLabel>
       <TouchableOpacity
-        style={[styles.locationSelector, error && styles.selectorError]}
+        style={[styles.selector, error ? styles.selectorError : null]}
         onPress={onPress}
       >
-        <HStack style={styles.locationContent}>
-          {isCategory ? (
-            <Tag size={20} color="#10B981" style={styles.inputIcon} />
-          ) : (
-            <MapPin size={20} color="#10B981" style={styles.inputIcon} />
-          )}
-          <Text style={[styles.locationText, !value && styles.placeholderText]}>
-            {value ||
-              (isCategory ? "Kategori seçin" : "Etkinlik konumunu seçin")}
+        <View style={styles.locationInfo}>
+          <MapPin size={20} color="#6B7280" />
+          <Text style={styles.selectorText}>
+            {value || 'Konum seçin'}
           </Text>
-        </HStack>
-        <ChevronDown size={20} color="#6B7280" />
+        </View>
       </TouchableOpacity>
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
-
-      {!isCategory && value && mapPreviewUrl && (
-        <Box style={styles.mapPreviewContainer}>
-          <Image
-            source={{ uri: mapPreviewUrl }}
-            style={styles.mapPreview}
-            resizeMode="cover"
-          />
-          <View style={styles.mapMarker} />
-        </Box>
+      {coordinates && (
+        <View style={styles.mapPreview}>
+          <MapView
+            style={styles.map}
+            region={{
+              latitude: coordinates.latitude,
+              longitude: coordinates.longitude,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            initialRegion={{
+              latitude: coordinates.latitude,
+              longitude: coordinates.longitude,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            scrollEnabled={false}
+            zoomEnabled={false}
+          >
+            <Marker
+              coordinate={{
+                latitude: coordinates.latitude,
+                longitude: coordinates.longitude,
+              }}
+            />
+          </MapView>
+        </View>
       )}
-    </Box>
+
+      {error && <FormControlError>{error}</FormControlError>}
+    </FormControl>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  formGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#0F172A",
-    marginBottom: 6,
-  },
-  locationSelector: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  selector: {
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: '#E2E8F0',
     borderRadius: 8,
-    backgroundColor: "white",
+    backgroundColor: 'white',
     padding: 12,
-    height: 48,
+    minHeight: 48,
   },
   selectorError: {
-    borderColor: "#EF4444",
+    borderColor: '#EF4444',
   },
-  locationContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  locationText: {
+  selectorText: {
     fontSize: 14,
-    color: "#0F172A",
+    color: '#0F172A',
+    marginLeft: 8,
   },
-  placeholderText: {
-    color: "#9CA3AF",
-  },
-  errorText: {
-    color: "#EF4444",
-    fontSize: 12,
-    marginTop: 4,
-  },
-  mapPreviewContainer: {
-    height: 150,
-    marginTop: 12,
-    borderRadius: 8,
-    overflow: "hidden",
-    position: "relative",
+  locationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   mapPreview: {
-    width: "100%",
-    height: "100%",
+    marginTop: 8,
+    height: 200,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  mapMarker: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    width: 20,
-    height: 20,
-    marginLeft: -10,
-    marginTop: -20,
-    borderRadius: 10,
-    backgroundColor: "#10B981",
-    borderWidth: 3,
-    borderColor: "white",
+  map: {
+    width: '100%',
+    height: '100%',
   },
 });
-
-export default LocationSelector;
