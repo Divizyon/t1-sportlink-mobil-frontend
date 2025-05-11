@@ -162,6 +162,50 @@ export const profileService = {
       return [];
     }
   },
+
+  // Hesabı dondurma
+  async freezeAccount(): Promise<{success: boolean; message: string}> {
+    try {
+      console.log("Hesap dondurma işlemi başlatılıyor...");
+
+      const response = await apiClient.post("/users/account/freeze");
+      
+      console.log("Hesap dondurma yanıtı:", response.data);
+      
+      return {
+        success: true,
+        message: response.data?.message || "Hesabınız başarıyla donduruldu."
+      };
+    } catch (error: any) {
+      console.error("Hesap dondurma hatası:", error);
+      return {
+        success: false,
+        message: error.response?.data?.message || "Hesap dondurma işlemi sırasında bir hata oluştu."
+      };
+    }
+  },
+
+  // Hesabı silme
+  async deleteAccount(): Promise<{success: boolean; message: string}> {
+    try {
+      console.log("Hesap silme işlemi başlatılıyor...");
+
+      const response = await apiClient.post("/users/account/delete");
+      
+      console.log("Hesap silme yanıtı:", response.data);
+      
+      return {
+        success: true,
+        message: response.data?.message || "Hesabınız başarıyla silindi."
+      };
+    } catch (error: any) {
+      console.error("Hesap silme hatası:", error);
+      return {
+        success: false,
+        message: error.response?.data?.message || "Hesap silme işlemi sırasında bir hata oluştu."
+      };
+    }
+  }
 };
 
 export default profileService;
