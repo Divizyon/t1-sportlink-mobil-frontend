@@ -22,14 +22,20 @@ export const unstable_settings = {
 
 // Simple TokenValidationProvider to ensure token is regularly checked
 function TokenValidationProvider({ children }: { children: React.ReactNode }) {
-  const { validateToken, isAuthenticated } = useAuth();
+  const { validateToken, isAuthenticated, forceLogout } = useAuth();
   const appState = useRef(AppState.currentState);
   
   // Validate token when app comes to foreground
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active' && isAuthenticated) {
-        validateToken();
+        console.log("App came to foreground, validating token...");
+        validateToken().then(isValid => {
+          if (!isValid) {
+            console.log("Token invalid after app resume, forcing logout");
+            forceLogout("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.");
+          }
+        });
       }
       appState.current = nextAppState;
     });
@@ -37,7 +43,29 @@ function TokenValidationProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.remove();
     };
-  }, [validateToken, isAuthenticated]);
+  }, [validateToken, isAuthenticated, forceLogout]);
+  
+  // Periodically validate token while app is active
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    console.log("Setting up periodic token validation");
+    
+    // Check token every 5 minutes
+    const interval = setInterval(() => {
+      console.log("Performing periodic token validation check");
+      validateToken().then(isValid => {
+        if (!isValid) {
+          console.log("Token invalid during periodic check, forcing logout");
+          forceLogout("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.");
+        }
+      });
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, validateToken, forceLogout]);
 
   return <>{children}</>;
 }

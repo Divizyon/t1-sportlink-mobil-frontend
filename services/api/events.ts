@@ -199,18 +199,18 @@ export const eventsApi = {
       }
       
       // Tarih kontrolü
-      if (additionalParams.event_date) {
+      if (additionalParams.date) {
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(additionalParams.event_date)) {
-          console.error("[API] Geçersiz tarih formatı:", additionalParams.event_date);
+        if (!dateRegex.test(additionalParams.date)) {
+          console.error("[API] Geçersiz tarih formatı:", additionalParams.date);
           // Try to fix date format if possible
-          const dateObj = new Date(additionalParams.event_date);
+          const dateObj = new Date(additionalParams.date);
           if (!isNaN(dateObj.getTime())) {
             const year = dateObj.getFullYear();
             const month = String(dateObj.getMonth() + 1).padStart(2, '0');
             const day = String(dateObj.getDate()).padStart(2, '0');
-            additionalParams.event_date = `${year}-${month}-${day}`;
-            console.log("[API] Tarih formatı düzeltildi:", additionalParams.event_date);
+            additionalParams.date = `${year}-${month}-${day}`;
+            console.log("[API] Tarih formatı düzeltildi:", additionalParams.date);
           }
         }
       }
@@ -234,9 +234,9 @@ export const eventsApi = {
         
         if (response.data.data.events?.length === 0) {
           console.log(`[API] ${distance}km mesafede etkinlik bulunamadı`);
-        } else if (additionalParams.event_date) {
+        } else if (additionalParams.date) {
           // Log dates for debugging
-          console.log(`[API] Tarih filtresi ${additionalParams.event_date} ile dönen etkinlikler:`);
+          console.log(`[API] Tarih filtresi ${additionalParams.date} ile dönen etkinlikler:`);
           response.data.data.events.forEach((event: any, i: number) => {
             console.log(`[API] Etkinlik ${i+1}: ID=${event.id}, Tarih=${event.event_date}, Başlık=${event.title}`);
           });

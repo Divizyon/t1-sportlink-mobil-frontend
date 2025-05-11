@@ -7,6 +7,11 @@ import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import apiClient from "../api";
 
+// Extend global object type to include our sportlinkForceLogout method
+declare global {
+  var sportlinkForceLogout: (() => Promise<void>) | undefined;
+}
+
 // Define token validation interval (check every 10 minutes)
 const TOKEN_VALIDATION_INTERVAL = 10 * 60 * 1000; 
 // Minimum time between checks to prevent excessive API calls
@@ -48,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Force logout and navigate to login screen
   const forceLogout = useCallback(async (customMessage?: string) => {
-    console.log("Force logout initiated");
+    console.log("Force logout initiated in AuthContext");
     try {
       // Clear all authentication data
       await AsyncStorage.removeItem("authToken");
@@ -64,36 +69,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Show toast notification with custom message if provided
       if (customMessage) {
         showToast(customMessage, "error");
+      } else {
+        showToast("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.", "error");
       }
       
-      // Force navigation to login after a slight delay to allow state updates
+      // Force navigation to login screen with a more direct approach
+      console.log("Redirecting to login screen...");
+      
+      // Use a shorter timeout and more reliable navigation
       setTimeout(() => {
-        console.log("Redirecting to login page...");
         try {
-          // First try to use replace if we can go back
-          if (router.canGoBack()) {
-            router.replace("/(auth)/signin");
-          } else {
-            // Otherwise just navigate to it
-            router.navigate("/(auth)/signin");
-          }
-        } catch (err) {
-          console.error("Navigation error:", err);
-          // Fallback navigation
+          // Direct navigation to signin screen
           router.navigate("/(auth)/signin");
+          console.log("Navigation to login completed");
+        } catch (err) {
+          console.error("Navigation failed, trying alternative method:", err);
+          
+          // If that fails, try replace
+          try {
+            router.replace("/(auth)/signin");
+            console.log("Alternative navigation completed");
+          } catch (replaceErr) {
+            console.error("Alternative navigation also failed:", replaceErr);
+          }
         }
-      }, 500);
+      }, 300);
     } catch (error) {
       console.error("Force logout error:", error);
-      // Fallback direct navigation if something fails
+      
+      // Last resort direct navigation
       try {
-        router.replace("/(auth)/signin");
-      } catch (err) {
-        console.error("Error during fallback navigation:", err);
         router.navigate("/(auth)/signin");
+      } catch (navError) {
+        console.error("Last resort navigation failed:", navError);
       }
     }
   }, []);
+
+  // Expose forceLogout globally for use by API client
+  useEffect(() => {
+    // Assign to global object for access from API client
+    global.sportlinkForceLogout = () => forceLogout();
+
+    // Clean up when component unmounts
+    return () => {
+      global.sportlinkForceLogout = undefined;
+    };
+  }, [forceLogout]);
 
   // Validate token with the API
   const validateToken = useCallback(async (): Promise<boolean> => {
@@ -111,14 +133,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return false;
       }
       
-      // For more robust validation, we should ideally check with the server
-      // But for now, just having a token is considered valid
-      
-      // Optional: Add actual token validation with API endpoint if available
-      // const isValid = await apiClient.checkToken();
-      // return isValid;
-      
-      return true;
+      // Actually check with the server by making a simple request
+      try {
+        // Try a simple request to profile endpoint or similar
+        console.log("Validating token with API...");
+        const response = await apiClient.get("/profile", {
+          timeout: 5000 // Set a shorter timeout for this check
+        });
+        
+        // If we get a successful response, token is valid
+        if (response.status === 200) {
+          console.log("Token is valid");
+          return true;
+        } else {
+          console.log("Token validation failed with status:", response.status);
+          return false;
+        }
+      } catch (apiError: any) {
+        console.error("Token validation API check failed:", apiError);
+        // If we get a 401, token is definitely invalid
+        if (apiError.response && apiError.response.status === 401) {
+          console.log("Token is confirmed invalid (401)");
+          return false;
+        }
+        // For other errors (like network issues), be cautious but don't log out immediately
+        return token ? true : false; // If we have a token, give benefit of doubt during network issues
+      }
     } catch (error) {
       console.error("Token validation error:", error);
       // In case of error, consider the token invalid to be safe

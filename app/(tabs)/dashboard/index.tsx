@@ -214,20 +214,35 @@ export default function DashboardScreen() {
     if (distance !== distanceFilter) {
       console.log(`Distance filter changed: ${distanceFilter}km → ${distance}km`);
       
-      // Immediately update the UI state
+      // Set loading state first for UI feedback
+      setIsLoading(true);
+      
+      // Immediately clear existing filtered events to prevent showing irrelevant results
+      setFilteredEvents([]);
+      
+      // Update the UI state
       setDistanceFilter(distance);
       
       // API calls will be handled by the dependency effect
+      // Use a small timeout to let the loading state render first
+      setTimeout(() => {
+        fetchEvents();
+      }, 100);
     }
   };
 
   const handleTabChange = (tab: string) => {
     console.log(`Tab değişimi: ${activeTab} -> ${tab}`);
-    setActiveTab(tab);
+    
+    // Immediately set loading state
+    setIsLoading(true);
     
     // Clear existing events when switching tabs to avoid showing stale data
     setFilteredEvents([]);
     setEventData([]);
+    
+    // Update the active tab
+    setActiveTab(tab);
     
     // Force a fetch of new events with a slight delay
     setTimeout(() => {
@@ -241,16 +256,17 @@ export default function DashboardScreen() {
   };
 
   const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
+    // Immediately set loading state to prevent showing old data
+    setIsLoading(true);
     
-    // Clear existing events lists
+    // Clear existing events lists immediately
     setFilteredEvents([]);
     setEventData([]);
     
-    // Show loading state
-    setIsLoading(true);
+    // Update the selected date
+    setSelectedDate(date);
     
-    // Filter events for the selected date
+    // Log for debugging
     const dateStr = formatDateToString(date);
     console.log(`Selected date: ${dateStr}`);
     
@@ -276,6 +292,15 @@ export default function DashboardScreen() {
 
   const handleCategorySelect = (category: string) => {
     console.log(`Kategori seçildi: ${category}`);
+    
+    // Immediately set loading state
+    setIsLoading(true);
+    
+    // Clear existing events to avoid showing irrelevant data during transition
+    setFilteredEvents([]);
+    setEventData([]);
+    
+    // Update category state
     setSelectedCategory(category);
     
     // Find the corresponding sport ID
@@ -388,6 +413,12 @@ export default function DashboardScreen() {
     // Only log significant changes
     if (newDistance !== distanceFilter || newCategory !== selectedCategory) {
       console.log(`Harita filtresi değişti: Kategori="${newCategory}", Mesafe=${newDistance}km`);
+      
+      // Immediately show loading state
+      setIsLoading(true);
+      
+      // Clear current results to prevent flickering of irrelevant data
+      setFilteredEvents([]);
     }
     
     // Update distance if changed
@@ -418,10 +449,10 @@ export default function DashboardScreen() {
         clearTimeout(debounceTimerRef.current);
       }
       
-      // Fetch events after a short delay to prevent multiple rapid API calls
+      // Fetch events after a short delay
       debounceTimerRef.current = setTimeout(() => {
         fetchEvents();
-      }, 500);
+      }, 100);
     }
   };
 
@@ -459,7 +490,7 @@ export default function DashboardScreen() {
       
       // Ek parametreler
       const additionalParams: Record<string, any> = {
-        event_date: formattedDate // Tarih filtresi
+        date: formattedDate // Tarih filtresi - Bu parametre adı backend API ile eşleşmeli
       };
       
       // Kategori filtresi ekle (Tümü değilse)
@@ -579,8 +610,38 @@ export default function DashboardScreen() {
         if (events && events.length > 0) {
           console.log(`API ${events.length} aktif katılınan etkinlik buldu`);
           
-          // API yanıtını UI formatına dönüştür - Tekrarlı filtreleme yapmıyoruz
-          const mappedEvents = mapApiEventsToUIEvents(events);
+          // API yanıtını UI formatına dönüştür
+          let mappedEvents = mapApiEventsToUIEvents(events);
+          
+          // Backend date parameter desteği olmadığı için burada client-side tarih filtreleme yapıyoruz
+          if (formattedDate) {
+            console.log(`Client-side tarih filtrelemesi uygulanıyor: ${formattedDate}`);
+            
+            // Tarih formatını kontrol et ve eşleştir
+            mappedEvents = mappedEvents.filter(event => {
+              // Etkinlik tarihini al (API event verisinden)
+              const apiEvent = events.find((e: ApiEvent) => e.id === event.id);
+              if (!apiEvent || !apiEvent.event_date) return false;
+              
+              // Etkinlik tarihini Date nesnesine çevir
+              const eventDate = new Date(apiEvent.event_date);
+              if (isNaN(eventDate.getTime())) return false;
+              
+              // Tarih karşılaştırması için YYYY-MM-DD formatında string'e çevir
+              const eventDateStr = formatDateToString(eventDate);
+              
+              // Tarihler eşleşiyor mu kontrol et
+              const isMatch = eventDateStr === formattedDate;
+              console.log(`Etkinlik: ${event.title}, Tarih: ${eventDateStr}, Seçili Tarih: ${formattedDate}, Eşleşme: ${isMatch ? 'Evet' : 'Hayır'}`);
+              
+              return isMatch;
+            });
+            
+            console.log(`Tarih filtrelemesi sonrası ${mappedEvents.length} etkinlik görüntüleniyor`);
+          } else {
+            console.log("Tarih filtresi yok, tüm etkinlikler gösteriliyor");
+          }
+          
           setEventData(mappedEvents);
           setFilteredEvents(mappedEvents); // Doğrudan göster
         } else {
@@ -611,34 +672,12 @@ export default function DashboardScreen() {
     console.log(`Seçili tarih için filtreleme: ${formattedSelectedDate}`);
     
     // Check if we should be strict with date filtering
-    // If we're getting no events, relax the filter to show something
-    let shouldFilterByDate = true;
-    if (apiEvents.length > 0 && apiEvents.every(event => {
-      const eventDateStr = event.event_date.substring(0, 10);
-      return eventDateStr !== formattedSelectedDate;
-    })) {
-      // All events don't match the selected date, relax filtering
-      console.log("Hiç etkinlik bulunamadı, tarihe göre filtreleme devre dışı bırakıldı");
-      shouldFilterByDate = false;
-    }
-
-    // Filter events to only include those matching the selected date (if filter is active)
-    const filteredEvents = shouldFilterByDate ? 
-      apiEvents.filter(event => {
-        // Extract just the date part (YYYY-MM-DD) from the event_date
-        const eventDateStr = event.event_date.substring(0, 10);
-        const match = eventDateStr === formattedSelectedDate;
-        
-        if (!match) {
-          console.log(`Tarih uyuşmazlığı - Event ${event.id}: ${eventDateStr}, seçili tarih: ${formattedSelectedDate}`);
-        }
-        
-        return match;
-      }) : apiEvents;
+    // We will always apply date filtering from the backend
+    // The shouldFilterByDate flag is removed since we handle this on the server side
     
-    console.log(`API'den gelen ${apiEvents.length} etkinlikten ${filteredEvents.length} etkinlik gösteriliyor (Tarih filtresi ${shouldFilterByDate ? 'aktif' : 'pasif'})`);
+    console.log(`API'den gelen ${apiEvents.length} etkinlik gösteriliyor. Tarih filtresi backend tarafından uygulandı.`);
     
-    return filteredEvents.map(event => {
+    return apiEvents.map(event => {
       // Tarihi biçimlendir
       const eventDate = new Date(event.event_date);
       const day = eventDate.getDate();
