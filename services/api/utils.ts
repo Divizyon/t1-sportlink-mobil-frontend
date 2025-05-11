@@ -10,12 +10,7 @@ export const checkNetwork = async () => {
 // Ağ bağlantısı kontrol edilerek API isteği atma yardımcı fonksiyonu
 export const safeApiCall = async (apiFunc: Function, fallback: any = null) => {
   try {
-    const isConnected = await checkNetwork();
-    if (!isConnected) {
-      console.log("Ağ bağlantısı yok, istek yapılamıyor");
-      showToast("İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.", "error");
-      return { status: "error", data: fallback, message: "İnternet bağlantısı yok" };
-    }
+    
     
     return await apiFunc();
   } catch (error: any) {
