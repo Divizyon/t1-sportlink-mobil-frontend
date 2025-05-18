@@ -1278,14 +1278,6 @@ export default function DashboardScreen() {
             <Text style={styles.noEventsCardText}>
               Seçilen filtrelere uygun etkinlik bulunamadı. Lütfen filtrelerinizi değiştirin veya yeni bir etkinlik oluşturun.
             </Text>
-            <TouchableOpacity
-              style={styles.createEventButton}
-              onPress={handleCreateEvent}
-            >
-              <Text style={styles.createEventButtonText}>
-                Etkinlik Oluştur
-              </Text>
-            </TouchableOpacity>
           </View>
         ) : (
           <>

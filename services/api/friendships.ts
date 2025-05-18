@@ -36,19 +36,7 @@ const checkNetwork = async () => {
 // Ağ bağlantısı kontrol edilerek API isteği atma yardımcı fonksiyonu
 const safeApiCall = async (apiFunc: Function, fallback: any = null) => {
   try {
-    const isConnected = await checkNetwork();
-    if (!isConnected) {
-      console.log("Ağ bağlantısı yok, istek yapılamıyor");
-      showToast(
-        "İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.",
-        "error"
-      );
-      return {
-        status: "error",
-        data: fallback,
-        message: "İnternet bağlantısı yok",
-      };
-    }
+   
 
     return await apiFunc();
   } catch (error: any) {
@@ -237,18 +225,7 @@ export const friendshipsApi = {
  */
 export const getIncomingFriendshipRequests = async () => {
   try {
-    const isConnected = await checkNetwork();
-    if (!isConnected) {
-      showToast(
-        "İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.",
-        "error"
-      );
-      return {
-        status: "error",
-        data: [],
-        message: "İnternet bağlantısı yok",
-      };
-    }
+    
 
     const response = await apiClient.get(
       "/mobile/friendships/requests/incoming"
@@ -277,18 +254,7 @@ export const getIncomingFriendshipRequests = async () => {
  */
 export const acceptFriendshipRequest = async (requestId: string) => {
   try {
-    const isConnected = await checkNetwork();
-    if (!isConnected) {
-      showToast(
-        "İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.",
-        "error"
-      );
-      return {
-        status: "error",
-        message: "İnternet bağlantısı yok",
-      };
-    }
-
+    
     // PUT metodunu kullan ve status olarak accepted gönder
     const response = await apiClient.put(
       `/mobile/friendships/requests/${requestId}`,
@@ -328,18 +294,7 @@ export const acceptFriendshipRequest = async (requestId: string) => {
  */
 export const rejectFriendshipRequest = async (requestId: string) => {
   try {
-    const isConnected = await checkNetwork();
-    if (!isConnected) {
-      showToast(
-        "İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.",
-        "error"
-      );
-      return {
-        status: "error",
-        message: "İnternet bağlantısı yok",
-      };
-    }
-
+    
     // PUT metodunu kullan ve status olarak rejected gönder
     const response = await apiClient.put(
       `/mobile/friendships/requests/${requestId}`,
