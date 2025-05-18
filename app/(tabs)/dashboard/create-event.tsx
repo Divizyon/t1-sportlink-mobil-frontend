@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
-import { Box } from '@/components/ui/box';
-import { Button, ButtonText } from '@/components/ui/button';
-import { Input, InputField } from '@/components/ui/input';
-import { Text } from '@/components/ui/text';
-import { FormControl, FormControlLabel, FormControlError } from '@/components/ui/form-control';
-import LocationSelector from '@/components/dashboard/LocationSelector';
-import LocationSelectorModal from '@/components/dashboard/LocationSelectorModal';
-import CustomDateTimePicker from '@/components/dashboard/DateTimePicker';
-import SportSelector from '@/components/dashboard/SportSelector';
-import { showToast } from '@/src/utils/toastHelper';
-import apiClient from '@/services/api';
+import React, { useState } from "react";
+import { ScrollView, StyleSheet } from "react-native";
+import { router } from "expo-router";
+import { Box } from "@/components/ui/box";
+import { Button, ButtonText } from "@/components/ui/button";
+import { Input, InputField } from "@/components/ui/input";
+import { Text } from "@/components/ui/text";
+import {
+  FormControl,
+  FormControlLabel,
+  FormControlError,
+} from "@/components/ui/form-control";
+import LocationSelector from "@/components/dashboard/LocationSelector";
+import LocationSelectorModal from "@/components/dashboard/LocationSelectorModal";
+import CustomDateTimePicker from "@/components/dashboard/DateTimePicker";
+import SportSelector from "@/components/dashboard/SportSelector";
+import { showToast } from "@/src/utils/toastHelper";
+import apiClient from "@/services/api";
 
 interface CreateEventForm {
   title: string;
@@ -26,24 +30,26 @@ interface CreateEventForm {
   max_participants: number;
 }
 
-export default function CreateEventScreen() {
+const CreateEventScreen = () => {
   const [form, setForm] = useState<CreateEventForm>({
-    title: '',
-    description: '',
+    title: "",
+    description: "",
     sport_id: 0,
-    event_date: '',
-    start_time: '',
-    end_time: '',
-    location_name: '',
+    event_date: "",
+    start_time: "",
+    end_time: "",
+    location_name: "",
     location_lat: 37.874641,
     location_long: 32.493156,
-    max_participants: 0
+    max_participants: 0,
   });
 
-  const [errors, setErrors] = useState<Partial<Record<keyof CreateEventForm, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof CreateEventForm, string>>
+  >({});
   const [isLoading, setIsLoading] = useState(false);
   const [isLocationModalVisible, setIsLocationModalVisible] = useState(false);
-  
+
   // Date states
   const [eventDate, setEventDate] = useState<Date | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -53,33 +59,33 @@ export default function CreateEventScreen() {
     const newErrors: Partial<Record<keyof CreateEventForm, string>> = {};
 
     if (!form.title.trim()) {
-      newErrors.title = 'Etkinlik başlığı gereklidir';
+      newErrors.title = "Etkinlik başlığı gereklidir";
     }
     if (!form.description.trim()) {
-      newErrors.description = 'Etkinlik açıklaması gereklidir';
+      newErrors.description = "Etkinlik açıklaması gereklidir";
     }
     if (!form.sport_id) {
-      newErrors.sport_id = 'Spor türü seçilmelidir';
+      newErrors.sport_id = "Spor türü seçilmelidir";
     }
     if (!eventDate) {
-      newErrors.event_date = 'Etkinlik tarihi gereklidir';
+      newErrors.event_date = "Etkinlik tarihi gereklidir";
     }
     if (!startTime) {
-      newErrors.start_time = 'Başlangıç saati gereklidir';
+      newErrors.start_time = "Başlangıç saati gereklidir";
     }
     if (!endTime) {
-      newErrors.end_time = 'Bitiş saati gereklidir';
+      newErrors.end_time = "Bitiş saati gereklidir";
     }
     if (!form.location_name) {
-      newErrors.location_name = 'Konum seçilmelidir';
+      newErrors.location_name = "Konum seçilmelidir";
     }
     if (form.max_participants <= 0) {
-      newErrors.max_participants = 'Geçerli bir katılımcı sayısı girilmelidir';
+      newErrors.max_participants = "Geçerli bir katılımcı sayısı girilmelidir";
     }
 
     // Başlangıç ve bitiş saati kontrolü
     if (startTime && endTime && startTime >= endTime) {
-      newErrors.end_time = 'Bitiş saati başlangıç saatinden sonra olmalıdır';
+      newErrors.end_time = "Bitiş saati başlangıç saatinden sonra olmalıdır";
     }
 
     setErrors(newErrors);
@@ -88,12 +94,12 @@ export default function CreateEventScreen() {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      showToast('Lütfen tüm gerekli alanları doldurun', 'error');
+      showToast("Lütfen tüm gerekli alanları doldurun", "error");
       return;
     }
 
     // Tarihleri API formatına çevir
-    const formattedEventDate = eventDate?.toISOString().split('T')[0];
+    const formattedEventDate = eventDate?.toISOString().split("T")[0];
     const formattedStartTime = startTime?.toISOString();
     const formattedEndTime = endTime?.toISOString();
 
@@ -106,15 +112,16 @@ export default function CreateEventScreen() {
 
     setIsLoading(true);
     try {
-      const response = await apiClient.post('/api/events', submitData);
-      if (response.data.status === 'success') {
-        showToast('Etkinlik başarıyla oluşturuldu', 'success');
+      const response = await apiClient.post("/api/events", submitData);
+      if (response.data.status === "success") {
+        showToast("Etkinlik başarıyla oluşturuldu", "success");
         router.back();
       }
     } catch (error: any) {
       showToast(
-        error.response?.data?.message || 'Etkinlik oluşturulurken bir hata oluştu',
-        'error'
+        error.response?.data?.message ||
+          "Etkinlik oluşturulurken bir hata oluştu",
+        "error"
       );
     } finally {
       setIsLoading(false);
@@ -125,11 +132,11 @@ export default function CreateEventScreen() {
     locationName: string,
     coordinates: { latitude: number; longitude: number }
   ) => {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       location_name: locationName,
       location_lat: coordinates.latitude,
-      location_long: coordinates.longitude
+      location_long: coordinates.longitude,
     }));
   };
 
@@ -144,7 +151,9 @@ export default function CreateEventScreen() {
             <InputField
               placeholder="Etkinlik başlığını girin"
               value={form.title}
-              onChangeText={(text: string) => setForm(prev => ({ ...prev, title: text }))}
+              onChangeText={(text: string) =>
+                setForm((prev) => ({ ...prev, title: text }))
+              }
             />
           </Input>
           {errors.title && <FormControlError>{errors.title}</FormControlError>}
@@ -156,18 +165,24 @@ export default function CreateEventScreen() {
             <InputField
               placeholder="Etkinlik açıklamasını girin"
               value={form.description}
-              onChangeText={(text: string) => setForm(prev => ({ ...prev, description: text }))}
+              onChangeText={(text: string) =>
+                setForm((prev) => ({ ...prev, description: text }))
+              }
               multiline
               numberOfLines={4}
             />
           </Input>
-          {errors.description && <FormControlError>{errors.description}</FormControlError>}
+          {errors.description && (
+            <FormControlError>{errors.description}</FormControlError>
+          )}
         </FormControl>
 
         <SportSelector
           label="Spor Türü"
           value={form.sport_id}
-          onChange={(sportId) => setForm(prev => ({ ...prev, sport_id: sportId }))}
+          onChange={(sportId) =>
+            setForm((prev) => ({ ...prev, sport_id: sportId }))
+          }
           error={errors.sport_id}
         />
 
@@ -199,10 +214,14 @@ export default function CreateEventScreen() {
         <LocationSelector
           label="Konum"
           value={form.location_name}
-          coordinates={form.location_lat && form.location_long ? {
-            latitude: form.location_lat,
-            longitude: form.location_long
-          } : undefined}
+          coordinates={
+            form.location_lat && form.location_long
+              ? {
+                  latitude: form.location_lat,
+                  longitude: form.location_long,
+                }
+              : undefined
+          }
           onPress={() => setIsLocationModalVisible(true)}
           error={errors.location_name}
         />
@@ -213,11 +232,11 @@ export default function CreateEventScreen() {
             <InputField
               placeholder="Maksimum katılımcı sayısını girin"
               value={form.max_participants.toString()}
-            onChangeText={(text) => {
-              const number = parseInt(text) || 0;
-              setForm(prev => ({ ...prev, max_participants: number }));
-            }}
-            keyboardType="numeric"
+              onChangeText={(text) => {
+                const number = parseInt(text) || 0;
+                setForm((prev) => ({ ...prev, max_participants: number }));
+              }}
+              keyboardType="numeric"
             />
           </Input>
           {errors.max_participants && (
@@ -230,36 +249,40 @@ export default function CreateEventScreen() {
           isDisabled={isLoading}
           style={styles.submitButton}
         >
-          <ButtonText>{isLoading ? 'Oluşturuluyor...' : 'Etkinlik Oluştur'}</ButtonText>
+          <ButtonText>
+            {isLoading ? "Etkinlik Oluşturuluyor..." : "Etkinlik Oluştur"}
+          </ButtonText>
         </Button>
       </Box>
 
       <LocationSelectorModal
-      
         visible={isLocationModalVisible}
-        onSelect={handleLocationSelect}
         onClose={() => setIsLocationModalVisible(false)}
+        onSelect={handleLocationSelect}
       />
     </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#F7F9FC",
   },
   content: {
     padding: 16,
-    gap: 16,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginBottom: 24,
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 20,
+    color: "#334155",
   },
   submitButton: {
     marginTop: 24,
+    marginBottom: 40,
+    backgroundColor: "#4e54c8",
   },
 });
+
+export default CreateEventScreen;

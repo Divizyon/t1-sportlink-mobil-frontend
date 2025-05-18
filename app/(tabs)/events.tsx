@@ -9,7 +9,7 @@ export default function Events() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["top", "right", "left"]}>
+    <SafeAreaView style={{ flex: 1 }} edges={["right", "left"]}>
       <EventsScreen initialTab="active" onEventPress={handleEventPress} />
     </SafeAreaView>
   );

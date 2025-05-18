@@ -7,8 +7,17 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  StatusBar,
 } from "react-native";
-import { ArrowLeft, Clock, AlertCircle } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Clock,
+  AlertCircle,
+  Flag,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+} from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { eventsApi } from "@/services/api/events";
 
@@ -82,16 +91,30 @@ const UserReportsScreen = () => {
   };
 
   // Raporun durum rengini belirle
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): string => {
     switch (status) {
       case "pending":
-        return "#f39c12"; // Amber
+        return "#F39C12"; // Turuncu
       case "resolved":
-        return "#2ecc71"; // Yeşil
+        return "#2ECC71"; // Yeşil
       case "rejected":
-        return "#e74c3c"; // Kırmızı
+        return "#E74C3C"; // Kırmızı
       default:
-        return "#7f8c8d"; // Gri
+        return "#95A5A6"; // Gri
+    }
+  };
+
+  // Durum ikonu belirle
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <AlertTriangle size={16} color="#FFF" />;
+      case "resolved":
+        return <CheckCircle2 size={16} color="#FFF" />;
+      case "rejected":
+        return <XCircle size={16} color="#FFF" />;
+      default:
+        return null;
     }
   };
 
@@ -112,34 +135,41 @@ const UserReportsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+
       {/* Başlık */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <ArrowLeft size={24} color="#333" />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBack}
+          activeOpacity={0.7}
+        >
+          <ArrowLeft size={22} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Raporlarım</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: 22 }} />
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#10B981" />
+          <ActivityIndicator size="large" color="#4e54c8" />
           <Text style={styles.loadingText}>Raporlarınız yükleniyor...</Text>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
-          <AlertCircle size={50} color="#e74c3c" />
+          <AlertCircle size={60} color="#e74c3c" />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={fetchUserReports}
+            activeOpacity={0.8}
           >
             <Text style={styles.retryButtonText}>Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
       ) : reports.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <AlertCircle size={50} color="#7f8c8d" />
+          <Flag size={60} color="#7f8c8d" />
           <Text style={styles.emptyText}>Henüz rapor oluşturmadınız</Text>
           <Text style={styles.emptySubText}>
             Etkinlik detay sayfasındaki bayrak simgesine tıklayarak uygunsuz
@@ -147,10 +177,17 @@ const UserReportsScreen = () => {
           </Text>
         </View>
       ) : (
-        <ScrollView style={styles.scrollView}>
-          <Text style={styles.sectionTitle}>
-            Gönderilen Raporlar ({reports.length})
-          </Text>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollViewContent}
+        >
+          <View style={styles.sectionTitleContainer}>
+            <Flag size={20} color="#4e54c8" style={{ marginRight: 8 }} />
+            <Text style={styles.sectionTitle}>
+              Gönderilen Raporlar ({reports.length})
+            </Text>
+          </View>
 
           {reports.map((report) => (
             <View key={report.id} style={styles.reportCard}>
@@ -158,7 +195,7 @@ const UserReportsScreen = () => {
                 <View style={styles.eventInfo}>
                   <Text style={styles.eventTitle}>{getEventTitle(report)}</Text>
                   <View style={styles.dateContainer}>
-                    <Clock size={14} color="#7f8c8d" />
+                    <Clock size={14} color="#64748B" />
                     <Text style={styles.reportDate}>
                       {formatDate(report.report_date)}
                     </Text>
@@ -170,6 +207,7 @@ const UserReportsScreen = () => {
                     { backgroundColor: getStatusColor(report.status) },
                   ]}
                 >
+                  {getStatusIcon(report.status)}
                   <Text style={styles.statusText}>
                     {getStatusText(report.status)}
                   </Text>
@@ -193,46 +231,66 @@ const UserReportsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#FFFFFF",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    marginTop: 10,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   backButton: {
     padding: 8,
+    marginTop: 10,
+    borderRadius: 100,
+    backgroundColor: "#F1F5F9",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    marginTop: 10,
+    fontWeight: "700",
     color: "#0F172A",
   },
   scrollView: {
     flex: 1,
+  },
+  scrollViewContent: {
     padding: 16,
+    paddingBottom: 32,
+  },
+  sectionTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#64748B",
-    marginBottom: 16,
+    fontWeight: "700",
+    color: "#4e54c8",
   },
   reportCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 16,
     padding: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
   },
   reportHeader: {
     flexDirection: "row",
@@ -241,12 +299,13 @@ const styles = StyleSheet.create({
   },
   eventInfo: {
     flex: 1,
+    marginRight: 12,
   },
   eventTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#0F172A",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   dateContainer: {
     flexDirection: "row",
@@ -255,42 +314,52 @@ const styles = StyleSheet.create({
   reportDate: {
     fontSize: 14,
     color: "#64748B",
-    marginLeft: 4,
+    marginLeft: 6,
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: 8,
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
   },
   statusText: {
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
     color: "#FFFFFF",
+    marginLeft: 4,
   },
   separator: {
     height: 1,
-    backgroundColor: "#E2E8F0",
-    marginVertical: 12,
+    backgroundColor: "#F1F5F9",
+    marginVertical: 14,
   },
   reportContent: {
     marginTop: 4,
   },
   reasonLabel: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
     color: "#64748B",
-    marginBottom: 4,
+    marginBottom: 8,
   },
   reasonText: {
     fontSize: 15,
-    color: "#0F172A",
-    lineHeight: 20,
+    color: "#334155",
+    lineHeight: 22,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#FFFFFF",
   },
   loadingText: {
     marginTop: 16,
@@ -302,6 +371,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
+    backgroundColor: "#FFFFFF",
   },
   errorText: {
     marginTop: 16,
@@ -311,35 +381,42 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: "#3498db",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: "#4e54c8",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   retryButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 30,
+    backgroundColor: "#FFFFFF",
   },
   emptyText: {
-    marginTop: 16,
+    marginTop: 20,
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#0F172A",
     textAlign: "center",
   },
   emptySubText: {
-    marginTop: 8,
+    marginTop: 12,
     fontSize: 14,
     color: "#64748B",
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 22,
+    maxWidth: "90%",
   },
 });
 

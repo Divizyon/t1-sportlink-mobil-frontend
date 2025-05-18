@@ -26,7 +26,13 @@ import notificationsService, {
   MobileNotification,
 } from "../../services/api/notifications";
 import { Linking } from "react-native";
-import { AlertTriangle, RefreshCw } from "lucide-react-native";
+import {
+  AlertTriangle,
+  RefreshCw,
+  Bell,
+  CheckCircle,
+} from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 // API isteği için timeout değeri (ms)
 const API_TIMEOUT = 15000;
@@ -235,7 +241,7 @@ export default function NotificationsScreen() {
 
     // Bildirim tıklaması için yönlendirme yapma - sadece okundu olarak işaretlemek yeterli
     console.log("Bildirim okundu olarak işaretlendi:", notification.id);
-    
+
     // İsteğe bağlı olarak bildirim içeriğiyle ilgili bir mesaj gösterebilirsiniz
     /*
     Alert.alert(
@@ -428,6 +434,13 @@ export default function NotificationsScreen() {
 
     return (
       <View style={styles.emptyContainer}>
+        <LinearGradient
+          colors={["#4e54c833", "#8f94fb20"]}
+          style={styles.emptyGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+        <Bell size={60} color="#4e54c8" style={styles.emptyIcon} />
         <Text style={styles.emptyTitle}>
           {activeTab === "all"
             ? "Henüz bildiriminiz yok"
@@ -448,6 +461,12 @@ export default function NotificationsScreen() {
 
     return (
       <View style={styles.requestsContainer}>
+        <LinearGradient
+          colors={["#4e54c820", "#8f94fb10"]}
+          style={styles.requestsGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
         <View style={styles.requestsHeader}>
           <Text style={styles.requestsTitle}>Arkadaşlık İstekleri</Text>
           {friendRequests.length > 3 && (
@@ -492,19 +511,27 @@ export default function NotificationsScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" backgroundColor="#fff" />
 
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Bildirimler</Text>
+      <LinearGradient
+        colors={["#4e54c8", "#8f94fb"]}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>Bildirimler</Text>
+          </View>
 
-        {/* Tümünü Okundu Olarak İşaretle Butonu */}
-        {notifications.length > 0 && (
-          <TouchableOpacity
-            style={styles.markAllButton}
-            onPress={handleMarkAllAsRead}
-          >
-            <Text style={styles.markAllText}>Tümünü Okundu İşaretle</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+          {/* Tümünü Okundu Olarak İşaretle Butonu */}
+          {notifications.length > 0 && (
+            <TouchableOpacity
+              style={styles.markAllButton}
+              onPress={handleMarkAllAsRead}
+            >
+              <CheckCircle size={16} color="#fff" style={{ marginRight: 5 }} />
+              <Text style={styles.markAllText}>Tümünü Okundu İşaretle</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </LinearGradient>
 
       <View style={styles.tabsContainer}>
         <TouchableOpacity
@@ -537,12 +564,18 @@ export default function NotificationsScreen() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2ecc71" />
+          <ActivityIndicator size="large" color="#4e54c8" />
           <Text style={styles.loadingText}>Bildirimler yükleniyor...</Text>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
-          <AlertTriangle size={48} color="#e74c3c" />
+          <LinearGradient
+            colors={["#ff6b6b20", "#ff6b6b10"]}
+            style={styles.errorGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          />
+          <AlertTriangle size={60} color="#ff6b6b" />
           <Text style={styles.errorTitle}>Bir Sorun Oluştu</Text>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity
@@ -571,8 +604,8 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#2ecc71"]}
-              tintColor="#2ecc71"
+              colors={["#4e54c8"]}
+              tintColor="#4e54c8"
             />
           }
           ListHeaderComponent={renderHeader}
@@ -589,158 +622,226 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
-  screenTitle: {
-    lineHeight: 0,
-    fontSize: 24,
-    fontWeight: "bold",
+  headerGradient: {
+    paddingTop: 10,
+    paddingBottom: 15,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    marginTop: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    zIndex: 10,
   },
-  tabContainer: {
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === "ios" ? 50 : 10,
+    paddingBottom: 10,
     flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#fff",
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    backgroundColor: "#fff",
+    marginTop: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: "#f0f0f0",
   },
   tab: {
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 24,
+    paddingHorizontal: 20,
+    marginRight: 15,
   },
   activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: "#2ecc71",
+    borderBottomWidth: 3,
+    borderBottomColor: "#4e54c8",
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#95a5a6",
+    fontWeight: "500",
   },
   activeTabText: {
-    color: "#2ecc71",
-    fontWeight: "600",
+    color: "#4e54c8",
+    fontWeight: "700",
   },
   boldText: {
     fontWeight: "bold",
   },
-  listContent: {
-    padding: 16,
-  },
-  clearAllButton: {
-    paddingVertical: 6,
+  markAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     paddingHorizontal: 12,
-    backgroundColor: "#f5f5f5",
+    paddingVertical: 8,
     borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  clearAllText: {
+  markAllText: {
     fontSize: 12,
-    color: "#666",
+    fontWeight: "bold",
+    color: "#fff",
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 30,
+    marginTop: 50,
+    position: "relative",
+    overflow: "hidden",
   },
-  emptyTitle: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-  },
-  emptyDescription: {
-    fontSize: 14,
-    color: "#bdc3c7",
-    textAlign: "center",
-    paddingHorizontal: 32,
-    marginTop: 8,
-  },
-  header: {
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  clearText: {
-    fontSize: 12,
-    color: "#666",
-  },
-  disabledText: {
-    opacity: 0.5,
-  },
-  tabsContainer: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  sectionHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#f5f5f5",
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#666",
-  },
-  friendRequestsContainer: {
-    padding: 16,
-    backgroundColor: "white",
-  },
-  loadingContainer: {
+  emptyGradient: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    alignItems: "center",
+    borderRadius: 20,
+  },
+  emptyIcon: {
+    marginBottom: 20,
+    opacity: 0.8,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#4e54c8",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  emptyDescription: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    paddingHorizontal: 32,
+  },
+  loadingContainer: {
+    flex: 1,
     justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#fff",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+    marginTop: 50,
+    position: "relative",
+    overflow: "hidden",
+  },
+  errorGradient: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 20,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#ff6b6b",
+    marginVertical: 15,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 20,
   },
   retryButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: "#3498db",
-    borderRadius: 24,
-    marginTop: 16,
+    backgroundColor: "#4e54c8",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  retryButtonText: {
-    fontSize: 14,
+  retryText: {
+    fontSize: 16,
     fontWeight: "bold",
     color: "#fff",
     marginLeft: 8,
   },
-  emptyListContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-  },
-  networkTip: {
-    marginTop: 16,
-    fontSize: 12,
-    color: "#7f8c8d",
-    textAlign: "center",
-    paddingHorizontal: 32,
+  listContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 15,
   },
   requestsContainer: {
     padding: 16,
-    backgroundColor: "white",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    position: "relative",
+    overflow: "hidden",
+  },
+  requestsGradient: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   requestsHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginBottom: 15,
   },
   requestsTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
-    color: "#666",
+    color: "#4e54c8",
   },
   viewAllButton: {
-    padding: 8,
-    backgroundColor: "#2ecc71",
+    backgroundColor: "#4e54c8",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 1,
   },
   viewAllText: {
     fontSize: 12,
@@ -749,46 +850,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: "#e0e0e0",
-    marginVertical: 16,
-  },
-  markAllButton: {
-    padding: 8,
-    backgroundColor: "#2ecc71",
-    borderRadius: 20,
-  },
-  markAllText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 14,
-    color: "#666",
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  errorTitle: {
-    fontSize: 16,
-    color: "#e74c3c",
-    marginBottom: 16,
-  },
-  errorText: {
-    fontSize: 14,
-    color: "#666",
-  },
-  retryText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#fff",
-    marginLeft: 8,
-  },
-  listContainer: {
-    padding: 16,
+    backgroundColor: "rgba(78, 84, 200, 0.15)",
+    marginVertical: 10,
   },
 });

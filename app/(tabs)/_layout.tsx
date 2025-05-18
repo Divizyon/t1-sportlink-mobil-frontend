@@ -12,23 +12,6 @@ export default function TabLayout() {
 
   return (
     <>
-      <Stack.Screen
-        name="create-event"
-        options={{
-          presentation: 'modal',
-          headerShown: true,
-          headerTitle: 'Yeni Etkinlik',
-          headerTitleStyle: {
-            color: '#0F172A',
-            fontSize: 18,
-            fontWeight: '600',
-          },
-          headerShadowVisible: false,
-          headerStyle: {
-            backgroundColor: '#FFFFFF',
-          },
-        }}
-      />
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -87,7 +70,7 @@ export default function TabLayout() {
                 size={24}
               />
             ),
-            href: "/news"
+            href: "/news",
           }}
         />
         <Tabs.Screen

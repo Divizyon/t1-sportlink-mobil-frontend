@@ -2,6 +2,7 @@ import { Text } from "@/components/ui/text";
 import Slider from "@react-native-community/slider";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   ArrowLeft,
   Calendar,
@@ -11,6 +12,7 @@ import {
   UserPlus,
   X,
   User as UserIcon,
+  CheckCircle,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -25,6 +27,7 @@ import {
   View,
   Alert,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { friendshipsApi } from "@/services/api/friendships";
 import { usersApi, User } from "@/services/api/users";
@@ -364,8 +367,22 @@ export default function FindFriendsScreen() {
     );
 
     return (
-      <TouchableOpacity onPress={() => handleViewProfile(item.id)}>
+      <TouchableOpacity
+        key={`user_${item.id}`}
+        onPress={() => handleViewProfile(item.id)}
+      >
         <View style={styles.userCard}>
+          <LinearGradient
+            colors={["#4e54c8", "#8f94fb"]}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 60,
+              opacity: 0.1,
+            }}
+          />
           <View style={styles.userHeader}>
             <View style={styles.userAvatarContainer}>
               {item.avatar_url ? (
@@ -375,93 +392,85 @@ export default function FindFriendsScreen() {
                 />
               ) : (
                 <View style={styles.defaultAvatarContainer}>
-                  <UserIcon size={30} color="#666" />
+                  <UserIcon size={40} color="#666" />
                 </View>
               )}
               {item.is_online && <View style={styles.onlineIndicator} />}
             </View>
 
             <View style={styles.userInfo}>
-              <View style={styles.userNameRow}>
+              <View style={styles.userNameContainer}>
                 <Text
                   style={styles.userName}
                   numberOfLines={1}
-                  ellipsizeMode="tail"
                 >{`${item.first_name} ${item.last_name}`}</Text>
 
-                <View style={styles.buttonContainer}>
-                  {isFriend ? (
-                    <View
-                      style={[styles.friendRequestButton, styles.friendButton]}
-                    >
-                      <Text style={styles.friendRequestButtonText}>
-                        Arkadaş
-                      </Text>
+                <View style={styles.ageContainer}>
+                  <Calendar size={14} color="#666" />
+                  <Text style={styles.userLocation}>
+                    {item.age || 25} yaşında
+                  </Text>
+                </View>
+
+                <View style={styles.statusContainer}>
+                  {item.is_online ? (
+                    <View style={styles.onlineStatusContainer}>
+                      <View style={styles.statusDot} />
+                      <Text style={styles.onlineStatusText}>Çevrimiçi</Text>
                     </View>
                   ) : (
-                    <TouchableOpacity
-                      style={[
-                        styles.friendRequestButton,
-                        hasPendingRequest && styles.requestSentButton,
-                      ]}
-                      onPress={() =>
-                        hasPendingRequest
-                          ? handleCancelRequest(item.id)
-                          : handleFriendRequest(item.id)
-                      }
-                    >
-                      {hasPendingRequest ? (
-                        <>
-                          <X size={14} color="#fff" />
-                          <Text style={styles.friendRequestButtonText}>
-                            İptal
-                          </Text>
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus size={14} color="#fff" />
-                          <Text style={styles.friendRequestButtonText}>
-                            Takip
-                          </Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
+                    <View style={styles.offlineStatusContainer}>
+                      <View style={styles.offlineStatusDot} />
+                      <Text style={styles.offlineStatusText}>Çevrimdışı</Text>
+                    </View>
                   )}
-
-                  <TouchableOpacity
-                    style={styles.messageButton}
-                    onPress={() => handleSendMessage(item.id)}
-                  >
-                    <MessageCircle size={14} color="#fff" />
-                    <Text style={styles.messageButtonText}>Mesaj</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
 
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginTop: 2,
-                }}
-              >
-                <Calendar size={12} color="#888" />
-                <Text style={styles.userLocation}>
-                  {item.age || 25} yaşında
-                </Text>
-              </View>
-              <View style={styles.statusContainer}>
-                {item.is_online ? (
-                  <View style={styles.onlineStatusContainer}>
-                    <View style={styles.statusDot} />
-                    <Text style={styles.onlineStatusText}>Çevrimiçi</Text>
+              <View style={styles.buttonsColumn}>
+                {isFriend ? (
+                  <View
+                    style={[styles.friendRequestButton, styles.friendButton]}
+                  >
+                    <Text style={styles.friendRequestButtonText}>Arkadaş</Text>
                   </View>
                 ) : (
-                  <View style={styles.offlineStatusContainer}>
-                    <View style={styles.offlineStatusDot} />
-                    <Text style={styles.offlineStatusText}>Çevrimdışı</Text>
-                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.friendRequestButton,
+                      hasPendingRequest && styles.requestSentButton,
+                    ]}
+                    onPress={() =>
+                      hasPendingRequest
+                        ? handleCancelRequest(item.id)
+                        : handleFriendRequest(item.id)
+                    }
+                  >
+                    {hasPendingRequest ? (
+                      <>
+                        <X size={14} color="#fff" />
+                        <Text style={styles.friendRequestButtonText}>
+                          İptal
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus size={14} color="#fff" />
+                        <Text style={styles.friendRequestButtonText}>
+                          Takip
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
                 )}
+
+                <TouchableOpacity
+                  style={styles.messageButton}
+                  onPress={() => handleSendMessage(item.id)}
+                >
+                  <MessageCircle size={14} color="#fff" />
+                  <Text style={styles.messageButtonText}>Mesaj</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -643,19 +652,33 @@ export default function FindFriendsScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
 
-      {/* Filter Modal */}
+      {/* Yaş filtresi modalı */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={isFilterModalVisible}
         onRequestClose={() => setIsFilterModalVisible(false)}
+        statusBarTranslucent={true}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Yaş Filtresi</Text>
-              <TouchableOpacity onPress={() => setIsFilterModalVisible(false)}>
-                <X size={24} color="#333" />
+        <View style={styles.modernModalOverlay}>
+          <LinearGradient
+            colors={["rgba(0,0,0,0.7)", "rgba(0,0,0,0.5)"]}
+            style={styles.modernModalBackground}
+          />
+          <TouchableOpacity
+            style={styles.modernModalDismissArea}
+            activeOpacity={1}
+            onPress={() => setIsFilterModalVisible(false)}
+          />
+          <View style={styles.modernModalContent}>
+            <View style={styles.modernModalHandle} />
+            <View style={styles.modernModalHeader}>
+              <Text style={styles.modernModalTitle}>Yaş Filtresi</Text>
+              <TouchableOpacity
+                style={styles.modernCloseButton}
+                onPress={() => setIsFilterModalVisible(false)}
+              >
+                <X size={20} color="#fff" />
               </TouchableOpacity>
             </View>
 
@@ -678,9 +701,9 @@ export default function FindFriendsScreen() {
                 onValueChange={(value: number) =>
                   setTempAgeRange([value, tempAgeRange[1]])
                 }
-                minimumTrackTintColor="#3498db"
-                maximumTrackTintColor="#d3d3d3"
-                thumbTintColor="#3498db"
+                minimumTrackTintColor="#4e54c8"
+                maximumTrackTintColor="#e0e0e0"
+                thumbTintColor="#4e54c8"
               />
 
               <Text style={styles.sliderLabel}>
@@ -695,9 +718,9 @@ export default function FindFriendsScreen() {
                 onValueChange={(value: number) =>
                   setTempAgeRange([tempAgeRange[0], value])
                 }
-                minimumTrackTintColor="#3498db"
-                maximumTrackTintColor="#d3d3d3"
-                thumbTintColor="#3498db"
+                minimumTrackTintColor="#4e54c8"
+                maximumTrackTintColor="#e0e0e0"
+                thumbTintColor="#4e54c8"
               />
 
               <View style={styles.filterActionButtons}>
@@ -720,69 +743,76 @@ export default function FindFriendsScreen() {
         </View>
       </Modal>
 
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.screenTitle}>Arkadaş Bul</Text>
-        </View>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Search size={20} color="#888" style={{ marginRight: 8 }} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="İsim ara (en az 2 karakter)"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="words"
-          />
-          {searchQuery.length > 0 && (
+      <LinearGradient
+        colors={["#4e54c8", "#8f94fb"]}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
             <TouchableOpacity
-              onPress={() => {
-                setSearchQuery("");
-                setError(null);
-              }}
-              style={{ padding: 8 }}
+              style={styles.backButton}
+              onPress={() => router.back()}
             >
-              <X size={16} color="#888" />
+              <ArrowLeft size={22} color="#000" />
             </TouchableOpacity>
-          )}
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            isAgeFilterActive && styles.filterButtonActive,
-          ]}
-          onPress={() => setIsFilterModalVisible(true)}
-        >
-          <Filter size={20} color={isAgeFilterActive ? "#fff" : "#666"} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Filter indicators */}
-      {isAgeFilterActive && (
-        <View style={styles.activeFiltersContainer}>
-          <View style={styles.activeFilterBadge}>
-            <Text style={styles.activeFilterText}>
-              Yaş: {ageRange[0]}-{ageRange[1]}
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                setIsAgeFilterActive(false);
-                setAgeRange([18, 60]);
-              }}
-            >
-              <X size={16} color="#666" />
-            </TouchableOpacity>
+            <Text style={styles.screenTitle}>Arkadaş Bul</Text>
           </View>
         </View>
-      )}
+
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Search size={18} color="#888" style={{ marginRight: 8 }} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="İsim ara (en az 2 karakter)"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="words"
+              placeholderTextColor="#aaa"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchQuery("");
+                  setError(null);
+                }}
+                style={{ padding: 8 }}
+              >
+                <X size={16} color="#888" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              isAgeFilterActive && styles.filterButtonActive,
+            ]}
+            onPress={() => setIsFilterModalVisible(true)}
+          >
+            <Filter size={18} color={isAgeFilterActive ? "#fff" : "#666"} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Filter indicators */}
+        {isAgeFilterActive && (
+          <View style={styles.activeFiltersContainer}>
+            <View style={styles.activeFilterBadge}>
+              <Text style={styles.activeFilterText}>
+                Yaş: {ageRange[0]}-{ageRange[1]}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setIsAgeFilterActive(false);
+                  setAgeRange([18, 60]);
+                }}
+              >
+                <X size={14} color="#666" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </LinearGradient>
 
       <View style={styles.resultsContainer}>
         <View style={styles.resultHeader}>
@@ -793,7 +823,7 @@ export default function FindFriendsScreen() {
 
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#4dabf7" />
+            <ActivityIndicator size="large" color="#4e54c8" />
           </View>
         ) : error ? (
           <View style={styles.errorContainer}>
@@ -809,7 +839,7 @@ export default function FindFriendsScreen() {
           <FlatList
             data={filteredUsers}
             renderItem={renderUserItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => `user_${item.id}`}
             contentContainerStyle={[
               styles.usersList,
               filteredUsers.length === 0 && {
@@ -838,7 +868,7 @@ export default function FindFriendsScreen() {
             ListFooterComponent={
               !isSearching && currentPage < totalPages ? (
                 <View style={styles.listFooter}>
-                  <ActivityIndicator size="small" color="#4dabf7" />
+                  <ActivityIndicator size="small" color="#4e54c8" />
                   <Text style={styles.loadingMoreText}>
                     Daha fazla kullanıcı yükleniyor...
                   </Text>
@@ -855,62 +885,481 @@ export default function FindFriendsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#fff",
+  },
+  headerGradient: {
+    paddingTop: 10,
+    paddingBottom: 15,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    zIndex: 10,
   },
   header: {
-    padding: 16,
-    backgroundColor: "#fff",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
   },
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
   },
   backButton: {
-    marginRight: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   screenTitle: {
-    lineHeight: 0,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#333",
   },
   searchContainer: {
-    padding: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 15,
+    marginTop: 15,
+    gap: 10,
   },
   searchInputContainer: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f1f3f5",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    backgroundColor: "#fff",
     borderRadius: 12,
-    marginRight: 10,
+    paddingHorizontal: 15,
+    height: 50,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   searchInput: {
     flex: 1,
+    height: 50,
     fontSize: 16,
     color: "#333",
   },
-  categoriesContainer: {
-    padding: 16,
+  filterButton: {
     backgroundColor: "#fff",
-    marginTop: 8,
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  categoriesScrollContent: {
-    paddingVertical: 12,
-    paddingRight: 20,
+  filterButtonActive: {
+    backgroundColor: "#4e54c8",
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+  activeFiltersContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 15,
+    marginTop: 10,
+  },
+  activeFilterBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f4ff",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#d0dbff",
+  },
+  activeFilterText: {
+    fontSize: 13,
+    color: "#4e54c8",
+    marginRight: 6,
+    fontWeight: "500",
+  },
+  resultsContainer: {
+    flex: 1,
+    backgroundColor: "#f8f9fa",
+  },
+  resultHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+  },
+  resultCount: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
+  },
+  usersList: {
+    padding: 16,
+    paddingTop: 8,
+  },
+  userCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 15,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 0,
+    overflow: "hidden",
+  },
+  userHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    position: "relative",
+  },
+  userAvatarContainer: {
+    position: "relative",
+    marginRight: 15,
+  },
+  userAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: "#ffffff",
+  },
+  defaultAvatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#f5f5f8",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: "#ffffff",
+  },
+  onlineIndicator: {
+    position: "absolute",
+    width: 16,
+    height: 16,
+    backgroundColor: "#4cd137",
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#fff",
+    right: 0,
+    bottom: 0,
+  },
+  userInfo: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  userNameContainer: {
+    flex: 1,
+  },
+  ageContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  buttonsColumn: {
+    width: 100,
+    justifyContent: "center",
+    gap: 8,
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: "bold",
     color: "#333",
+    marginBottom: 6,
+  },
+  userLocation: {
+    fontSize: 13,
+    color: "#666",
+    marginLeft: 5,
+  },
+  statusContainer: {
+    marginTop: 4,
+  },
+  onlineStatusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#4cd137",
+    marginRight: 5,
+  },
+  onlineStatusText: {
+    fontSize: 12,
+    color: "#4cd137",
+    fontWeight: "500",
+  },
+  offlineStatusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  offlineStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ff6b6b",
+    marginRight: 5,
+  },
+  offlineStatusText: {
+    fontSize: 12,
+    color: "#ff6b6b",
+    fontWeight: "500",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  messageButton: {
+    flexDirection: "row",
+    backgroundColor: "#4e54c8",
+    padding: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    height: 32,
+    minWidth: 80,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  messageButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 12,
+    marginLeft: 4,
+    textAlign: "center",
+  },
+  friendRequestButton: {
+    flexDirection: "row",
+    backgroundColor: "#12b886",
+    padding: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    height: 32,
+    minWidth: 80,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  requestSentButton: {
+    backgroundColor: "#ff6b6b",
+  },
+  friendButton: {
+    backgroundColor: "#868e96",
+  },
+  friendRequestButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 12,
+    marginLeft: 4,
+    textAlign: "center",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#ff6b6b",
+    textAlign: "center",
+    marginBottom: 15,
+  },
+  retryButton: {
+    backgroundColor: "#4e54c8",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  emptyResultsContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 30,
+  },
+  emptyResultsText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+  },
+  listFooter: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  loadingMoreText: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 10,
+  },
+  // Modal stil özellikleri
+  modernModalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modernModalBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  modernModalDismissArea: {
+    flex: 1,
+  },
+  modernModalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    maxHeight: "80%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -5 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modernModalHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 5,
+    backgroundColor: "#ddd",
+    borderRadius: 3,
+    marginTop: 10,
+    marginBottom: 15,
+  },
+  modernModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  modernModalTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  modernCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#4e54c8",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  modalBody: {
+    paddingHorizontal: 10,
+    paddingBottom: 20,
+  },
+  ageRangeContainer: {
+    alignItems: "center",
+    marginBottom: 25,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    paddingVertical: 15,
+  },
+  ageRangeText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#4e54c8",
+  },
+  sliderLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#333",
+    marginBottom: 12,
+  },
+  slider: {
+    width: "100%",
+    height: 40,
+    marginBottom: 20,
+  },
+  filterActionButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  resetButton: {
+    backgroundColor: "#f1f3f5",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1,
+    marginRight: 10,
+  },
+  resetButtonText: {
+    color: "#666",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  applyButton: {
+    backgroundColor: "#4e54c8",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1,
+  },
+  applyButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   categoryItem: {
     alignItems: "center",
@@ -923,7 +1372,7 @@ const styles = StyleSheet.create({
     minWidth: 90,
   },
   selectedCategoryItem: {
-    backgroundColor: "#4dabf7",
+    backgroundColor: "#4e54c8",
   },
   categoryIcon: {
     fontSize: 20,
@@ -937,367 +1386,5 @@ const styles = StyleSheet.create({
   selectedCategoryName: {
     color: "#fff",
     fontWeight: "500",
-  },
-  resultsContainer: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-    paddingTop: 8,
-  },
-  resultHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  resultCount: {
-    fontSize: 14,
-    color: "#666",
-  },
-  usersList: {
-    padding: 16,
-    paddingTop: 8,
-  },
-  userCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  userHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  userAvatarContainer: {
-    position: "relative",
-    marginRight: 10,
-  },
-  userAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  defaultAvatarContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#e9ecef",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#dee2e6",
-  },
-  onlineIndicator: {
-    position: "absolute",
-    width: 12,
-    height: 12,
-    backgroundColor: "#4cd137",
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: "#fff",
-    right: 0,
-    bottom: 0,
-  },
-  userInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  userNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    marginBottom: 4,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    flex: 1,
-    marginRight: 10,
-  },
-  userLocation: {
-    fontSize: 13,
-    color: "#666",
-    marginLeft: 4,
-  },
-  userBody: {
-    marginBottom: 12,
-  },
-  sportTagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 12,
-  },
-  sportTag: {
-    backgroundColor: "#f1f3f5",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  selectedSportTag: {
-    backgroundColor: "#e3f2fd",
-  },
-  sportTagText: {
-    fontSize: 12,
-    color: "#666",
-  },
-  selectedSportTagText: {
-    color: "#1c7ed6",
-    fontWeight: "500",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  messageButton: {
-    flexDirection: "row",
-    backgroundColor: "#4dabf7",
-    padding: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
-    height: 28,
-    minWidth: 70,
-  },
-  messageButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 11,
-    marginLeft: 4,
-    textAlign: "center",
-  },
-  friendRequestButton: {
-    flexDirection: "row",
-    backgroundColor: "#12b886",
-    padding: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
-    height: 28,
-    minWidth: 70,
-  },
-  requestSentButton: {
-    backgroundColor: "#ff6b6b",
-  },
-  friendButton: {
-    backgroundColor: "#868e96",
-  },
-  friendRequestButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 11,
-    marginLeft: 4,
-    textAlign: "center",
-  },
-  filterButton: {
-    backgroundColor: "#f1f3f5",
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  filterButtonActive: {
-    backgroundColor: "#4dabf7",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "white",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingVertical: 20,
-    paddingHorizontal: 15,
-    maxHeight: "70%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  modalBody: {
-    paddingHorizontal: 10,
-  },
-  ageRangeContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  ageRangeText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  sliderLabel: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 8,
-  },
-  slider: {
-    width: "100%",
-    height: 40,
-    marginBottom: 20,
-  },
-  filterActionButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
-  },
-  resetButton: {
-    flex: 1,
-    backgroundColor: "#f1f3f5",
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginRight: 10,
-    alignItems: "center",
-  },
-  resetButtonText: {
-    color: "#666",
-    fontWeight: "bold",
-  },
-  applyButton: {
-    flex: 1,
-    backgroundColor: "#4dabf7",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  applyButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  activeFiltersContainer: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: "#fff",
-    flexWrap: "wrap",
-  },
-  activeFilterBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#e9f5ff",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  activeFilterText: {
-    color: "#4dabf7",
-    fontSize: 14,
-    marginRight: 8,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  errorText: {
-    color: "#ff6b6b",
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: "#4dabf7",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  listFooter: {
-    padding: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  loadingMoreText: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 8,
-  },
-  emptyResultsContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  emptyResultsText: {
-    fontSize: 16,
-    color: "#94A3B8",
-    textAlign: "center",
-    marginTop: 16,
-  },
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 2,
-  },
-  onlineStatusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 8,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#4cd137",
-    marginRight: 3,
-  },
-  onlineStatusText: {
-    fontSize: 12,
-    color: "#4cd137",
-    fontWeight: "600",
-  },
-  offlineStatusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 8,
-  },
-  offlineStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#ff6b6b",
-    marginRight: 3,
-  },
-  offlineStatusText: {
-    fontSize: 12,
-    color: "#ff6b6b",
-    fontWeight: "600",
   },
 });

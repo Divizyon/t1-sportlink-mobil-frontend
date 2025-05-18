@@ -10,7 +10,6 @@ import {
   ScrollView,
   TextInput,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
 // Icons
@@ -29,6 +28,7 @@ import { EventCard } from "../components/EventCard";
 import { SearchBar } from "../components/SearchBar";
 import { SportFilter } from "../components/SportFilter";
 import { TimeFilter } from "../components/TimeFilter";
+import colors from "@/constants/colors";
 
 // Interface tanımlamaları
 interface Event {
@@ -301,11 +301,12 @@ const EventsScreen: React.FC<Props> = ({
 
   // Görünüm bileşeni
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Başlık ve Arama Bölümü */}
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>Etkinlikler</Text>
+          <View style={styles.headerSeparator} />
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={styles.iconButton}
@@ -451,7 +452,7 @@ const EventsScreen: React.FC<Props> = ({
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -459,25 +460,30 @@ const EventsScreen: React.FC<Props> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FA",
+    backgroundColor: "#ffffff",
   },
   header: {
     paddingHorizontal: 16,
     paddingTop: 10,
-    backgroundColor: "#FFFFFF",
+    paddingBottom: 16,
+    marginTop: 10,
+    backgroundColor: colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+    borderBottomColor: colors.lightGray,
   },
   titleContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
+    paddingTop: 8,
+
+    marginTop: 10,
   },
   title: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: "bold",
-    color: "#333333",
+    color: colors.text,
   },
   headerActions: {
     flexDirection: "row",
@@ -598,6 +604,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+  },
+  headerSeparator: {
+    width: 1,
+    height: 24,
+    backgroundColor: colors.lightGray,
+    marginHorizontal: 12,
   },
 });
 

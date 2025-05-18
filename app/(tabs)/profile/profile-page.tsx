@@ -2,6 +2,7 @@ import { Text } from "@/components/ui/text";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   ArrowLeft,
   Bell,
@@ -118,24 +119,6 @@ const sportsCategories = [
   "Yoga",
   "Yürüyüş",
 ];
-
-// Örnek kullanıcı bilgileri
-const userData = {
-  firstName: "Özgür",
-  lastName: "Eren",
-  name: "Özgür Eren",
-  email: "ozgur.eren@example.com",
-  memberSince: "Nisan 2023",
-  profileImage: "https://randomuser.me/api/portraits/men/32.jpg",
-  birthDate: "1995-06-15",
-  biography:
-    "Spor tutkunu, aktif yaşam tarzını seven ve yeni insanlar tanımayı seven biriyim. Haftada en az 3 kez koşu ve fitness yapıyorum. Özellikle takım sporlarına ilgi duyuyorum.",
-  stats: {
-    events: 12,
-    friends: 28,
-  },
-  interests: ["Basketbol", "Futbol", "Yüzme", "Koşu", "Tenis"],
-};
 
 // Varsayılan profil fotoğrafı URL'si
 const DEFAULT_PROFILE_IMAGE = "https://randomuser.me/api/portraits/lego/1.jpg";
@@ -283,16 +266,7 @@ const menuItems: MenuItem[] = [
     title: "Yardım ve Destek",
     icon: <HelpCircle size={22} color="#9b59b6" />,
   },
-  {
-    id: "account",
-    title: "Hesap Ayarları",
-    icon: <Settings size={22} color="#3498db" />,
-  },
-  {
-    id: "reports",
-    title: "Raporlarım",
-    icon: <AlertCircle size={22} color="#e74c3c" />,
-  },
+
   {
     id: "logout",
     title: "Çıkış Yap",
@@ -543,6 +517,7 @@ export default function ProfileScreen() {
       setError(null);
       console.log("Profil bilgileri getiriliyor...");
 
+      // API endpointi: GET /api/profile
       const profileData = await profileService.getProfile();
       console.log("Alınan profil verileri:", profileData);
 
@@ -693,7 +668,7 @@ export default function ProfileScreen() {
 
       console.log("Gönderilen güncelleme verileri:", updateData);
 
-      // Backende güncelleme isteği gönder
+      // API endpointi: PUT /api/profile
       await profileService.updateProfile(updateData);
 
       // Güncel profil bilgilerini getir
@@ -862,19 +837,61 @@ export default function ProfileScreen() {
       if (!result.canceled) {
         try {
           setLoading(true);
-          // Avatar yükle
+
+          // API endpointi: POST /api/profile/avatar
+          console.log("Fotoğraf yükleniyor...");
           const avatarUrl = await profileService.uploadAvatar(
             result.assets[0].uri
           );
 
-          // Düzenleme modalında görüntüyü güncelle
-          setEditedProfile({
-            ...editedProfile,
-            profileImage: avatarUrl || result.assets[0].uri,
-          });
+          console.log("Alınan avatar URL:", avatarUrl);
 
-          // Profil verilerini yeniden yükle
-          await fetchProfileData();
+          if (avatarUrl) {
+            // Düzenleme modalında görüntüyü güncelle
+            setEditedProfile({
+              ...editedProfile,
+              profileImage: avatarUrl,
+            });
+
+            // userProfile state'ini de direkt güncelle
+            if (userProfile) {
+              setUserProfile({
+                ...userProfile,
+                avatar: avatarUrl,
+              });
+            }
+
+            Alert.alert(
+              "Başarılı",
+              "Profil fotoğrafınız başarıyla güncellendi."
+            );
+          } else {
+            // Profil verilerini yeniden yükle ve güncel avatar bilgisini al
+            const updatedProfile = await profileService.getProfile();
+
+            console.log("Güncel profil verisi:", updatedProfile);
+
+            if (updatedProfile?.avatar) {
+              // Hem editedProfile hem de userProfile'ı güncelle
+              setEditedProfile({
+                ...editedProfile,
+                profileImage: updatedProfile.avatar,
+              });
+
+              if (userProfile) {
+                setUserProfile({
+                  ...userProfile,
+                  avatar: updatedProfile.avatar,
+                });
+              }
+            }
+
+            Alert.alert(
+              "Bilgi",
+              "Profil fotoğrafı yüklendi. Profil sayfası yenilendikten sonra görünecektir."
+            );
+          }
+
           setLoading(false);
         } catch (error) {
           console.error("Profil fotoğrafı yükleme hatası:", error);
@@ -918,19 +935,61 @@ export default function ProfileScreen() {
       if (!result.canceled) {
         try {
           setLoading(true);
-          // Avatar yükle
+
+          // API endpointi: POST /api/profile/avatar (resimdeki endpointe göre)
+          console.log("Galeriden seçilen fotoğraf yükleniyor...");
           const avatarUrl = await profileService.uploadAvatar(
             result.assets[0].uri
           );
 
-          // Düzenleme modalında görüntüyü güncelle
-          setEditedProfile({
-            ...editedProfile,
-            profileImage: avatarUrl || result.assets[0].uri,
-          });
+          console.log("Alınan avatar URL:", avatarUrl);
 
-          // Profil verilerini yeniden yükle
-          await fetchProfileData();
+          if (avatarUrl) {
+            // Düzenleme modalında görüntüyü güncelle
+            setEditedProfile({
+              ...editedProfile,
+              profileImage: avatarUrl,
+            });
+
+            // userProfile state'ini de direkt güncelle
+            if (userProfile) {
+              setUserProfile({
+                ...userProfile,
+                avatar: avatarUrl,
+              });
+            }
+
+            Alert.alert(
+              "Başarılı",
+              "Profil fotoğrafınız başarıyla güncellendi."
+            );
+          } else {
+            // Profil verilerini yeniden yükle ve güncel avatar bilgisini al
+            const updatedProfile = await profileService.getProfile();
+
+            console.log("Güncel profil verisi:", updatedProfile);
+
+            if (updatedProfile?.avatar) {
+              // Hem editedProfile hem de userProfile'ı güncelle
+              setEditedProfile({
+                ...editedProfile,
+                profileImage: updatedProfile.avatar,
+              });
+
+              if (userProfile) {
+                setUserProfile({
+                  ...userProfile,
+                  avatar: updatedProfile.avatar,
+                });
+              }
+            }
+
+            Alert.alert(
+              "Bilgi",
+              "Profil fotoğrafı yüklendi. Profil sayfası yenilendikten sonra görünecektir."
+            );
+          }
+
           setLoading(false);
         } catch (error) {
           console.error("Profil fotoğrafı yükleme hatası:", error);
@@ -1031,7 +1090,7 @@ export default function ProfileScreen() {
 
     console.log("Şifre değiştirme isteği gönderiliyor");
 
-    // Doğrudan şifre değiştirme isteği gönder, önce profil kontrolü yapma
+    // API endpointi: PUT /api/profile/password
     profileService
       .changePassword({
         currentPassword,
@@ -1328,19 +1387,51 @@ export default function ProfileScreen() {
             try {
               setLoading(true);
 
-              // Backend'den avatarı sil
-              await profileService.deleteAvatar();
+              // API endpointi: DELETE /api/profile/avatar
+              const result = await profileService.deleteAvatar();
 
-              // Yerel profil resmini varsayılana ayarla
-              setEditedProfile({
-                ...editedProfile,
-                profileImage: DEFAULT_PROFILE_IMAGE,
-              });
+              if (result.success) {
+                console.log(
+                  "Silme sonrası varsayılan avatar:",
+                  result.defaultAvatarUrl
+                );
 
-              // Profil verilerini yeniden yükle
-              await fetchProfileData();
+                // Backend'den gelen varsayılan avatar URL'ini kullan
+                const newAvatarUrl =
+                  result.defaultAvatarUrl || DEFAULT_PROFILE_IMAGE;
 
-              Alert.alert("Başarılı", "Profil fotoğrafınız başarıyla silindi.");
+                // Profil verilerini yeniden yükle
+                const updatedProfile = await profileService.getProfile();
+
+                console.log("Güncellenen profil verileri:", {
+                  backendAvatar: updatedProfile?.avatar,
+                  defaultFromResult: result.defaultAvatarUrl,
+                  usingAvatar: updatedProfile?.avatar || newAvatarUrl,
+                });
+
+                // Profil resmini backend'den gelen avatar ile güncelle veya varsayılan resmi kullan
+                setEditedProfile({
+                  ...editedProfile,
+                  profileImage: updatedProfile?.avatar || newAvatarUrl,
+                });
+
+                if (userProfile) {
+                  setUserProfile({
+                    ...userProfile,
+                    avatar: updatedProfile?.avatar || newAvatarUrl,
+                  });
+                }
+
+                Alert.alert(
+                  "Başarılı",
+                  result.message || "Profil fotoğrafınız başarıyla silindi."
+                );
+              } else {
+                Alert.alert(
+                  "Hata",
+                  "Profil fotoğrafı silinirken bir sorun oluştu."
+                );
+              }
               setLoading(false);
             } catch (error) {
               console.error("Profil fotoğrafı silme hatası:", error);
@@ -1555,16 +1646,25 @@ export default function ProfileScreen() {
         return;
       }
 
-      // Batch API'ye gönderilecek veri
-      const updateData = {
-        add: sportsToAdd.length > 0 ? sportsToAdd : [],
-        remove: sportsToRemove.length > 0 ? sportsToRemove : [],
-      };
+      // API ile her bir işlemi tek tek gerçekleştir
+      const updates = [];
 
-      console.log("İlgi alanları güncelleniyor:", updateData);
+      // Eklenecek sporları işle - POST /api/profile/sports
+      for (const sportId of sportsToAdd) {
+        updates.push(profileService.addSport(sportId));
+      }
 
-      // API çağrısı (POST metodu kullanılıyor)
-      await apiClient.post("/profile/sports/batch", updateData);
+      // Kaldırılacak sporları işle - DELETE /api/profile/sports/{sportId}
+      for (const sportId of sportsToRemove) {
+        updates.push(profileService.removeSport(sportId));
+      }
+
+      console.log(
+        `İlgi alanları güncelleniyor: ${sportsToAdd.length} spor ekleniyor, ${sportsToRemove.length} spor kaldırılıyor`
+      );
+
+      // Tüm isteklerin tamamlanmasını bekle
+      await Promise.all(updates);
 
       // Profil bilgilerini güncelle
       await fetchProfileData();
@@ -1602,17 +1702,23 @@ export default function ProfileScreen() {
     return sportsToAdd.length > 0 || sportsToRemove.length > 0;
   };
 
-  // İlgi alanları modalını açma fonksiyonu
+  // İlgi alanları modalını açma fonksiyonu - GET /sports endpoint'i ile
   const openSportsModal = async () => {
     try {
       setLoading(true);
-      // Tüm mevcut sporları getir
-      await fetchAvailableSports();
+      // Tüm mevcut sporları getir - API endpointi: GET /sports
+      const availableSportsData = await profileService.getAllSports();
+      console.log(`${availableSportsData.length} spor dalı başarıyla yüklendi`);
+      setAvailableSports(availableSportsData);
 
-      // Kullanıcının seçili sporlarını ayarla
+      // Kullanıcının seçili sporlarını ayarla - API endpointi: GET /api/profile/sports
+      // ile önceden çekilmiş sporları kullan
       const userSportIds = sports.map((s) => s.sport.id);
       setSelectedSports(userSportIds);
 
+      console.log(
+        `Kullanıcının mevcut ${userSportIds.length} ilgi alanı seçildi`
+      );
       setIsSportsModalVisible(true);
     } catch (error) {
       console.error("İlgi alanları yüklenirken hata oluştu:", error);
@@ -1652,119 +1758,272 @@ export default function ProfileScreen() {
                   router.push("/(tabs)/profile/find-friends" as any)
                 }
               >
-                <Users size={24} color="#333" />
+                <Users size={24} color="#4e54c8" />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.headerButton}
                 onPress={() => setIsSettingsVisible(true)}
               >
-                <Settings size={24} color="#333" />
+                <Settings size={24} color="#4e54c8" />
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Profil Bilgileri */}
-          <View style={styles.profileSection}>
-            <View style={styles.profileHeader}>
-              <Image
-                source={{ uri: userProfile?.avatar || DEFAULT_PROFILE_IMAGE }}
-                style={styles.profileImage}
-              />
-              <View style={styles.profileInfo}>
-                <Text style={styles.userName}>
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 20,
+              marginHorizontal: 15,
+              marginBottom: 20,
+              paddingBottom: 15,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.1,
+              shadowRadius: 15,
+              elevation: 10,
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <LinearGradient
+              colors={["#4e54c8", "#8f94fb"]}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 120,
+              }}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            />
+
+            <View
+              style={{
+                paddingHorizontal: 15,
+                paddingTop: 15,
+                flexDirection: "row",
+              }}
+            >
+              <View style={{ position: "relative", marginRight: 15 }}>
+                <Image
+                  source={{ uri: userProfile?.avatar || DEFAULT_PROFILE_IMAGE }}
+                  style={{
+                    width: 90,
+                    height: 90,
+                    borderRadius: 45,
+                    borderWidth: 4,
+                    borderColor: "#ffffff",
+                  }}
+                />
+                <TouchableOpacity
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    right: 0,
+                    backgroundColor: "#4e54c8",
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 3,
+                    elevation: 3,
+                  }}
+                  onPress={handleEditProfile}
+                >
+                  <Edit3 size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ flex: 1, paddingTop: 10 }}>
+                <Text
+                  style={{
+                    fontSize: 22,
+                    fontWeight: "bold",
+                    color: "#ffffff",
+                    marginBottom: 8,
+                    textShadowColor: "rgba(0, 0, 0, 0.2)",
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 2,
+                  }}
+                >
                   {userProfile?.name || "Kullanıcı Adı"}
                 </Text>
 
-                <View style={styles.joinDateContainer}>
-                  <Mail size={14} color="#7f8c8d" />
-                  <Text> {userProfile?.email || "Belirtilmemiş"}</Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: 6,
+                  }}
+                >
+                  <Mail size={14} color="#ffffff" />
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: "#ffffff",
+                      marginLeft: 8,
+                      opacity: 0.9,
+                    }}
+                  >
+                    {userProfile?.email || "Belirtilmemiş"}
+                  </Text>
                 </View>
 
                 {userProfile?.birthday_date && (
-                  <View style={styles.ageContainer}>
-                    <Cake size={14} color="#7f8c8d" />
-                    <Text style={styles.ageText}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginBottom: 15,
+                    }}
+                  >
+                    <Cake size={14} color="#ffffff" />
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color: "#ffffff",
+                        marginLeft: 8,
+                        opacity: 0.9,
+                      }}
+                    >
                       {calculateAge(userProfile.birthday_date)} Yaşında
                     </Text>
                   </View>
                 )}
               </View>
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={handleEditProfile}
-              >
-                <Edit3 size={18} color="#fff" />
-              </TouchableOpacity>
             </View>
 
-            {/* Biyografi */}
             {userProfile?.bio && (
-              <View style={styles.biographyContainer}>
-                <Text style={styles.biographyText}>{userProfile.bio}</Text>
+              <View
+                style={{
+                  marginTop: 20,
+                  marginHorizontal: 15,
+                  padding: 15,
+                  backgroundColor: "#f8f9fa",
+                  borderRadius: 10,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 14, color: "#636e72", lineHeight: 20 }}
+                >
+                  {userProfile.bio}
+                </Text>
               </View>
             )}
 
             {/* İstatistikler */}
-            <View style={styles.statsContainer}>
+            <View
+              style={{
+                flexDirection: "row",
+                marginTop: 20,
+                paddingHorizontal: 15,
+              }}
+            >
               <TouchableOpacity
-                style={styles.statItem}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#f5f6fa",
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  borderRadius: 50,
+                }}
                 onPress={() =>
                   router.push("/(tabs)/profile/friends-list" as any)
                 }
               >
-                <Text style={styles.statNumber}>
+                <Users size={16} color="#4e54c8" style={{ marginRight: 5 }} />
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "bold",
+                    color: "#4e54c8",
+                    marginRight: 5,
+                  }}
+                >
                   {userProfile?.friend_count || 0}
                 </Text>
-                <Text style={styles.statLabel}>Arkadaş</Text>
+                <Text style={{ fontSize: 14, color: "#636e72" }}>Arkadaş</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* İlgi Alanları */}
-          <View style={styles.section}>
+          <View style={styles.interestsSection}>
+            <LinearGradient
+              colors={["#f8f9fa", "#e9ecef"]}
+              style={styles.interestsBackground}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            />
+
             <View style={styles.sectionHeaderWithAction}>
-              <Text style={styles.sectionTitle}>İlgi Alanları</Text>
+              <View style={styles.interestsTitleContainer}>
+                <Text style={styles.interestsTitle}>İlgi Alanları</Text>
+              </View>
               <TouchableOpacity
                 style={styles.editInterestsButton}
                 onPress={openSportsModal}
               >
-                <Edit3 size={18} color="#3498db" />
+                <Edit3 size={18} color="#ffffff" />
               </TouchableOpacity>
             </View>
+
             <View style={styles.interestsContainer}>
               {sports.length > 0 ? (
                 sports.map((sportItem) => (
                   <View key={sportItem.sport_id} style={styles.interestTag}>
+                    <Text style={styles.sportIconText}>
+                      {sportItem.sport.icon}
+                    </Text>
                     <Text style={styles.interestTagText}>
-                      {sportItem.sport.icon} {sportItem.sport.name}
+                      {sportItem.sport.name}
                     </Text>
                   </View>
                 ))
               ) : (
-                <Text style={styles.noInterestsText}>
-                  Henüz ilgi alanı eklenmemiş
-                </Text>
+                <View style={styles.noInterestsContainer}>
+                  <Text style={styles.noInterestsText}>
+                    Henüz ilgi alanı eklenmemiş
+                  </Text>
+                </View>
               )}
             </View>
           </View>
 
           {/* Raporlarım */}
-          <View style={styles.section}>
+          <View style={styles.reportsSection}>
+            <LinearGradient
+              colors={["#fff0f0", "#ffe9e9"]}
+              style={styles.reportsBackground}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            />
+
             <View style={styles.sectionHeaderWithAction}>
-              <Text style={styles.sectionTitle}>Raporlarım</Text>
+              <View style={styles.reportsTitleContainer}>
+                <Text style={styles.reportsTitle}>Raporlarım</Text>
+              </View>
               <TouchableOpacity
-                style={styles.editInterestsButton}
+                style={styles.reportsActionButton}
                 onPress={() => router.push("/(tabs)/profile/user-reports")}
               >
-                <ChevronRight size={18} color="#3498db" />
+                <ChevronRight size={18} color="#ffffff" />
               </TouchableOpacity>
             </View>
+
             <TouchableOpacity
-              style={styles.reportsContainer}
+              style={styles.reportsCard}
               onPress={() => router.push("/(tabs)/profile/user-reports")}
             >
               <View style={styles.reportsInfoContainer}>
-                <AlertCircle size={22} color="#e74c3c" />
+                <AlertCircle size={24} color="#e74c3c" />
                 <Text style={styles.reportsText}>
                   Gönderdiğiniz raporları görüntülemek için tıklayın
                 </Text>
@@ -1773,58 +2032,71 @@ export default function ProfileScreen() {
           </View>
 
           {/* Katıldığım Etkinlikler */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderContainer}>
-              <Text style={styles.sectionTitle}>Katıldığım Etkinlikler</Text>
+          <View style={styles.eventsSection}>
+            <LinearGradient
+              colors={["#e6f7ff", "#e1f5fe"]}
+              style={styles.eventsBackground}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            />
+
+            <View style={styles.eventsSectionHeader}>
+              <View style={styles.eventsTitleContainer}>
+                <Text style={styles.eventsTitle}>Katıldığım Etkinlikler</Text>
+              </View>
               <View style={styles.eventHeaderActions}>
                 <TouchableOpacity
-                  style={styles.refreshButton}
+                  style={styles.eventsRefreshButton}
                   onPress={fetchParticipatedEvents}
                   disabled={eventsLoading}
                 >
-                  <RefreshCw size={18} color="#3498db" />
+                  <RefreshCw size={18} color="#ffffff" />
                 </TouchableOpacity>
-                <View style={styles.eventCountBadge}>
-                  <Text style={styles.eventCountText}>
+                <View style={styles.eventsCountBadge}>
+                  <Text style={styles.eventsCountText}>
                     {participatedEvents.length}
                   </Text>
                 </View>
               </View>
             </View>
 
-            {eventsLoading ? (
-              <View style={styles.loadingEventsContainer}>
-                <ActivityIndicator size="small" color="#3498db" />
-                <Text style={styles.loadingEventsText}>
-                  Etkinlikler yükleniyor...
-                </Text>
-              </View>
-            ) : eventsError ? (
-              <View style={styles.noEventsMessage}>
-                <Text style={styles.errorText}>{eventsError}</Text>
-                <TouchableOpacity
-                  style={styles.retryButton}
-                  onPress={fetchParticipatedEvents}
-                >
-                  <Text style={styles.retryButtonText}>Tekrar Dene</Text>
-                </TouchableOpacity>
-              </View>
-            ) : participatedEvents.length > 0 ? (
-              participatedEvents.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event as any}
-                  onPress={handleEventPress}
-                  onJoin={handleJoinEvent}
-                />
-              ))
-            ) : (
-              <View style={styles.noEventsMessage}>
-                <Text style={styles.noEventsText}>
-                  Henüz katıldığın bir etkinlik bulunmuyor.
-                </Text>
-              </View>
-            )}
+            <View style={styles.eventsContent}>
+              {eventsLoading ? (
+                <View style={styles.loadingEventsContainer}>
+                  <ActivityIndicator size="small" color="#3498db" />
+                  <Text style={styles.loadingEventsText}>
+                    Etkinlikler yükleniyor...
+                  </Text>
+                </View>
+              ) : eventsError ? (
+                <View style={styles.eventsErrorContainer}>
+                  <Text style={styles.errorText}>{eventsError}</Text>
+                  <TouchableOpacity
+                    style={styles.eventsRetryButton}
+                    onPress={fetchParticipatedEvents}
+                  >
+                    <Text style={styles.eventsRetryButtonText}>
+                      Tekrar Dene
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : participatedEvents.length > 0 ? (
+                participatedEvents.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event as any}
+                    onPress={handleEventPress}
+                    onJoin={handleJoinEvent}
+                  />
+                ))
+              ) : (
+                <View style={styles.noEventsContainer}>
+                  <Text style={styles.noEventsText}>
+                    Henüz katıldığın bir etkinlik bulunmuyor.
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
           <View style={styles.footer}>
             <Text style={styles.versionText}>Uygulama Sürümü: 1.0.0</Text>
@@ -1832,24 +2104,75 @@ export default function ProfileScreen() {
         </ScrollView>
       )}
 
-      {/* Ayarlar Modal */}
+      {/* Ayarlar Modal - Modern Tasarım */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={isSettingsVisible}
         onRequestClose={() => setIsSettingsVisible(false)}
+        statusBarTranslucent={true}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Ayarlar</Text>
-              <TouchableOpacity onPress={() => setIsSettingsVisible(false)}>
-                <X size={24} color="#333" />
+        <View style={styles.modernModalOverlay}>
+          <LinearGradient
+            colors={["rgba(0,0,0,0.7)", "rgba(0,0,0,0.5)"]}
+            style={styles.modernModalBackground}
+          />
+          <TouchableOpacity
+            style={styles.modernModalDismissArea}
+            activeOpacity={1}
+            onPress={() => setIsSettingsVisible(false)}
+          />
+          <View style={styles.modernModalContent}>
+            <View style={styles.modernModalHandle} />
+
+            <View style={styles.modernModalHeader}>
+              <Text style={styles.modernModalTitle}>Ayarlar</Text>
+              <TouchableOpacity
+                style={styles.modernCloseButton}
+                onPress={() => setIsSettingsVisible(false)}
+              >
+                <X size={20} color="#fff" />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.modalBody}>
-              {menuItems.map(renderMenuItem)}
+            <View style={styles.modernMenuItems}>
+              {menuItems.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.modernMenuItem}
+                  onPress={() => {
+                    setIsSettingsVisible(false);
+                    handleMenuItemPress(item.id);
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.modernMenuIconContainer,
+                      item.id === "logout" && styles.logoutIconContainer,
+                    ]}
+                  >
+                    {item.icon}
+                  </View>
+                  <Text
+                    style={[
+                      styles.modernMenuItemText,
+                      item.id === "logout" && styles.logoutText,
+                    ]}
+                  >
+                    {item.title}
+                  </Text>
+                  <ChevronRight
+                    size={18}
+                    color={item.id === "logout" ? "#e74c3c" : "#4e54c8"}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.modernAppVersionContainer}>
+              <Text style={styles.modernVersionText}>
+                Uygulama Sürümü: 1.0.0
+              </Text>
             </View>
           </View>
         </View>
@@ -1862,50 +2185,55 @@ export default function ProfileScreen() {
         visible={isEditProfileModalVisible}
         onRequestClose={() => setIsEditProfileModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Profili Düzenle</Text>
+        <View style={styles.editProfileModalOverlay}>
+          <View style={styles.editProfileModalContent}>
+            <View style={styles.editProfileModalHeader}>
+              <Text style={styles.editProfileModalTitle}>Profili Düzenle</Text>
               <TouchableOpacity
+                style={styles.editProfileCloseButton}
                 onPress={() => setIsEditProfileModalVisible(false)}
               >
-                <X size={24} color="#333" />
+                <X size={22} color="#fff" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalBody}>
+            <ScrollView style={styles.editProfileModalBody}>
               {/* Profile Picture Section */}
-              <View style={styles.profilePictureSection}>
-                <Image
-                  source={{ uri: editedProfile.profileImage }}
-                  style={styles.editProfileImage}
-                />
-                <View style={styles.photoButtonsContainer}>
+              <View style={styles.editProfilePictureSection}>
+                <View style={styles.editProfileImageContainer}>
+                  <Image
+                    source={{ uri: editedProfile.profileImage }}
+                    style={styles.editProfileImageStyle}
+                  />
+                </View>
+                <View style={styles.editProfilePhotoButtonsContainer}>
                   <TouchableOpacity
-                    style={styles.changePhotoButton}
+                    style={styles.editChangePhotoButton}
                     onPress={handleChangeProfilePicture}
                   >
-                    <Text style={styles.changePhotoText}>
+                    <Camera size={18} color="#fff" style={{ marginRight: 6 }} />
+                    <Text style={styles.editChangePhotoText}>
                       Fotoğrafı Değiştir
                     </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={[
-                      styles.deletePhotoButton,
+                      styles.editDeletePhotoButton,
                       editedProfile.profileImage === DEFAULT_PROFILE_IMAGE &&
-                        styles.deletePhotoButtonDisabled,
+                        styles.editDeletePhotoButtonDisabled,
                     ]}
                     onPress={handleDeleteProfilePicture}
                     disabled={
                       editedProfile.profileImage === DEFAULT_PROFILE_IMAGE
                     }
                   >
+                    <X size={18} color="#fff" style={{ marginRight: 6 }} />
                     <Text
                       style={[
-                        styles.deletePhotoText,
+                        styles.editDeletePhotoText,
                         editedProfile.profileImage === DEFAULT_PROFILE_IMAGE &&
-                          styles.deletePhotoTextDisabled,
+                          styles.editDeletePhotoTextDisabled,
                       ]}
                     >
                       Fotoğrafı Sil
@@ -1914,64 +2242,82 @@ export default function ProfileScreen() {
                 </View>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Ad</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={editedProfile.firstName}
-                  onChangeText={(text) =>
-                    handleProfileChange("firstName", text)
-                  }
-                  placeholder="Adınız"
-                  autoCapitalize="words"
-                />
-              </View>
+              <View style={styles.editProfileFieldsContainer}>
+                <View style={styles.editProfileInputGroup}>
+                  <Text style={styles.editProfileInputLabel}>Ad</Text>
+                  <TextInput
+                    style={styles.editProfileTextInput}
+                    value={editedProfile.firstName}
+                    onChangeText={(text) =>
+                      handleProfileChange("firstName", text)
+                    }
+                    placeholder="Adınız"
+                    placeholderTextColor="#aaa"
+                    autoCapitalize="words"
+                  />
+                </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Soyad</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={editedProfile.lastName}
-                  onChangeText={(text) => handleProfileChange("lastName", text)}
-                  placeholder="Soyadınız"
-                  autoCapitalize="words"
-                />
-              </View>
+                <View style={styles.editProfileInputGroup}>
+                  <Text style={styles.editProfileInputLabel}>Soyad</Text>
+                  <TextInput
+                    style={styles.editProfileTextInput}
+                    value={editedProfile.lastName}
+                    onChangeText={(text) =>
+                      handleProfileChange("lastName", text)
+                    }
+                    placeholder="Soyadınız"
+                    placeholderTextColor="#aaa"
+                    autoCapitalize="words"
+                  />
+                </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Doğum Tarihi</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={editedProfile.birthDate}
-                  onChangeText={(text) => {
-                    const formattedDate = formatBirthDate(text);
-                    handleProfileChange("birthDate", formattedDate);
-                  }}
-                  placeholder="YYYY-MM-DD"
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={10}
-                />
-              </View>
+                <View style={styles.editProfileInputGroup}>
+                  <Text style={styles.editProfileInputLabel}>Doğum Tarihi</Text>
+                  <View style={styles.editProfileDateInputContainer}>
+                    <TextInput
+                      style={styles.editProfileTextInput}
+                      value={editedProfile.birthDate}
+                      onChangeText={(text) => {
+                        const formattedDate = formatBirthDate(text);
+                        handleProfileChange("birthDate", formattedDate);
+                      }}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor="#aaa"
+                      keyboardType="numbers-and-punctuation"
+                      maxLength={10}
+                    />
+                    <Calendar
+                      size={18}
+                      color="#777"
+                      style={{ position: "absolute", right: 12, bottom: 10 }}
+                    />
+                  </View>
+                </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Biyografi</Text>
-                <TextInput
-                  style={[styles.textInput, styles.biographyInput]}
-                  value={editedProfile.biography}
-                  onChangeText={(text) =>
-                    handleProfileChange("biography", text)
-                  }
-                  placeholder="Kendinizi kısaca tanıtın..."
-                  multiline={true}
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
+                <View style={styles.editProfileInputGroup}>
+                  <Text style={styles.editProfileInputLabel}>Biyografi</Text>
+                  <TextInput
+                    style={[
+                      styles.editProfileTextInput,
+                      styles.editProfileBiographyInput,
+                    ]}
+                    value={editedProfile.biography}
+                    onChangeText={(text) =>
+                      handleProfileChange("biography", text)
+                    }
+                    placeholder="Kendinizi kısaca tanıtın..."
+                    placeholderTextColor="#aaa"
+                    multiline={true}
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                  />
+                </View>
               </View>
 
               <TouchableOpacity
                 style={[
-                  styles.saveButton,
-                  !isProfileChanged && styles.saveButtonDisabled,
+                  styles.editProfileSaveButton,
+                  !isProfileChanged && styles.editProfileSaveButtonDisabled,
                 ]}
                 onPress={handleSaveProfile}
                 disabled={loading || !isProfileChanged}
@@ -1979,7 +2325,7 @@ export default function ProfileScreen() {
                 {loading ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.saveButtonText}>Kaydet</Text>
+                  <Text style={styles.editProfileSaveButtonText}>Kaydet</Text>
                 )}
               </TouchableOpacity>
             </ScrollView>
@@ -1987,89 +2333,106 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Bildirim Ayarları Modal */}
+      {/* Bildirim Ayarları Modal - Modern Tasarım */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={isNotificationsModalVisible}
         onRequestClose={() => setIsNotificationsModalVisible(false)}
+        statusBarTranslucent={true}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Bildirim Ayarları</Text>
+        <View style={styles.modernModalOverlay}>
+          <LinearGradient
+            colors={["rgba(0,0,0,0.7)", "rgba(0,0,0,0.5)"]}
+            style={styles.modernModalBackground}
+          />
+          <TouchableOpacity
+            style={styles.modernModalDismissArea}
+            activeOpacity={1}
+            onPress={() => setIsNotificationsModalVisible(false)}
+          />
+          <View style={styles.modernModalContent}>
+            <View style={styles.modernModalHandle} />
+
+            <View style={styles.modernModalHeader}>
+              <Text style={styles.modernModalTitle}>Bildirim Ayarları</Text>
               <TouchableOpacity
+                style={styles.modernCloseButton}
                 onPress={() => setIsNotificationsModalVisible(false)}
               >
-                <X size={24} color="#333" />
+                <X size={20} color="#fff" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalBody}>
-              {/* Main notification toggle */}
-              <View style={styles.notificationToggleContainer}>
-                <View style={styles.notificationToggleInfo}>
-                  <Bell size={22} color="#f39c12" style={{ marginRight: 12 }} />
+            <ScrollView style={styles.modernNotificationBody}>
+              {/* Ana bildirim açma/kapatma düğmesi */}
+              <View style={styles.modernMainToggleContainer}>
+                <View style={styles.modernToggleInfo}>
+                  <View style={styles.modernNotificationIconContainer}>
+                    <Bell size={20} color="#fff" />
+                  </View>
                   <View>
-                    <Text style={styles.notificationToggleTitle}>
+                    <Text style={styles.modernToggleTitle}>
                       Tüm Bildirimleri Etkinleştir
                     </Text>
-                    <Text style={styles.notificationToggleDesc}>
+                    <Text style={styles.modernToggleDescription}>
                       Tüm bildirimleri açıp kapatın
                     </Text>
                   </View>
                 </View>
                 <Switch
-                  trackColor={{ false: "#e0e0e0", true: "#bde0fe" }}
-                  thumbColor={notificationsEnabled ? "#3498db" : "#f4f3f4"}
+                  trackColor={{ false: "#e0e0e0", true: "#8f94fb" }}
+                  thumbColor={notificationsEnabled ? "#4e54c8" : "#f4f3f4"}
                   ios_backgroundColor="#e0e0e0"
                   onValueChange={toggleNotifications}
                   value={notificationsEnabled}
                 />
               </View>
 
-              <View style={styles.notificationCategoriesHeader}>
-                <Text style={styles.notificationCategoriesTitle}>
+              <View style={styles.modernCategoryHeaderContainer}>
+                <Text style={styles.modernCategoryHeaderTitle}>
                   Bildirim Tercihleri
                 </Text>
               </View>
 
-              {/* Notification category toggles */}
-              {notificationCategories.map((category) => (
-                <View key={category.id} style={styles.notificationCategoryItem}>
-                  <View style={styles.notificationCategoryInfo}>
-                    <Text style={styles.notificationCategoryTitle}>
-                      {category.title}
-                    </Text>
-                    <Text style={styles.notificationCategoryDesc}>
-                      {category.description}
-                    </Text>
+              {/* Bildirim kategorileri */}
+              <View style={styles.modernCategoryContainer}>
+                {notificationCategories.map((category) => (
+                  <View key={category.id} style={styles.modernCategoryItem}>
+                    <View style={styles.modernCategoryItemInfo}>
+                      <Text style={styles.modernCategoryTitle}>
+                        {category.title}
+                      </Text>
+                      <Text style={styles.modernCategoryDescription}>
+                        {category.description}
+                      </Text>
+                    </View>
+                    <Switch
+                      trackColor={{ false: "#e0e0e0", true: "#8f94fb" }}
+                      thumbColor={category.enabled ? "#4e54c8" : "#f4f3f4"}
+                      ios_backgroundColor="#e0e0e0"
+                      onValueChange={(value) =>
+                        toggleNotificationCategory(category.id, value)
+                      }
+                      value={category.enabled}
+                      disabled={!notificationsEnabled}
+                    />
                   </View>
-                  <Switch
-                    trackColor={{ false: "#e0e0e0", true: "#bde0fe" }}
-                    thumbColor={category.enabled ? "#3498db" : "#f4f3f4"}
-                    ios_backgroundColor="#e0e0e0"
-                    onValueChange={(value) =>
-                      toggleNotificationCategory(category.id, value)
-                    }
-                    value={category.enabled}
-                    disabled={!notificationsEnabled}
-                  />
-                </View>
-              ))}
+                ))}
+              </View>
 
               <TouchableOpacity
-                style={styles.saveButton}
+                style={styles.modernSaveButton}
                 onPress={handleSaveNotificationSettings}
               >
-                <Text style={styles.saveButtonText}>Kaydet</Text>
+                <Text style={styles.modernSaveButtonText}>Kaydet</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
         </View>
       </Modal>
 
-      {/* Gizlilik ve Güvenlik Modal */}
+      {/* Gizlilik ve Güvenlik Modal - Modern Tasarım */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -2078,11 +2441,26 @@ export default function ProfileScreen() {
           setActivePrivacySection(null);
           setIsPrivacyModalVisible(false);
         }}
+        statusBarTranslucent={true}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+        <View style={styles.modernModalOverlay}>
+          <LinearGradient
+            colors={["rgba(0,0,0,0.7)", "rgba(0,0,0,0.5)"]}
+            style={styles.modernModalBackground}
+          />
+          <TouchableOpacity
+            style={styles.modernModalDismissArea}
+            activeOpacity={1}
+            onPress={() => {
+              setActivePrivacySection(null);
+              setIsPrivacyModalVisible(false);
+            }}
+          />
+          <View style={styles.modernModalContent}>
+            <View style={styles.modernModalHandle} />
+
+            <View style={styles.modernModalHeader}>
+              <Text style={styles.modernModalTitle}>
                 {activePrivacySection === null
                   ? "Gizlilik ve Güvenlik"
                   : activePrivacySection === "password"
@@ -2092,19 +2470,23 @@ export default function ProfileScreen() {
                   : "Hesabı Sil"}
               </Text>
               {activePrivacySection !== null ? (
-                <TouchableOpacity onPress={handleBackToPrivacyMenu}>
-                  <ArrowLeft size={24} color="#333" />
+                <TouchableOpacity
+                  style={styles.modernCloseButton}
+                  onPress={handleBackToPrivacyMenu}
+                >
+                  <ArrowLeft size={20} color="#fff" />
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
+                  style={styles.modernCloseButton}
                   onPress={() => setIsPrivacyModalVisible(false)}
                 >
-                  <X size={24} color="#333" />
+                  <X size={20} color="#fff" />
                 </TouchableOpacity>
               )}
             </View>
 
-            <ScrollView style={styles.modalBody}>
+            <ScrollView style={styles.modernNotificationBody}>
               {activePrivacySection === null ? (
                 // Main Privacy and Security Menu
                 <View>
@@ -2335,17 +2717,22 @@ export default function ProfileScreen() {
         visible={isSportsModalVisible}
         onRequestClose={() => setIsSportsModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>İlgi Alanlarını Düzenle</Text>
-              <TouchableOpacity onPress={() => setIsSportsModalVisible(false)}>
-                <X size={24} color="#333" />
+        <View style={styles.editProfileModalOverlay}>
+          <View style={styles.editProfileModalContent}>
+            <View style={styles.editProfileModalHeader}>
+              <Text style={styles.editProfileModalTitle}>
+                İlgi Alanlarını Düzenle
+              </Text>
+              <TouchableOpacity
+                style={styles.editProfileCloseButton}
+                onPress={() => setIsSportsModalVisible(false)}
+              >
+                <X size={22} color="#fff" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalBody}>
-              <Text style={styles.modalDescription}>
+            <ScrollView style={styles.editProfileModalBody}>
+              <Text style={styles.sportsModalDescription}>
                 İlgilendiğiniz spor dallarını seçin. Birden fazla seçim
                 yapabilirsiniz.
               </Text>
@@ -2355,24 +2742,27 @@ export default function ProfileScreen() {
                   <TouchableOpacity
                     key={sport.id}
                     style={[
-                      styles.sportItem,
+                      styles.modernSportItem,
                       selectedSports.includes(sport.id) &&
-                        styles.selectedSportItem,
+                        styles.modernSelectedSportItem,
                     ]}
                     onPress={() => toggleSportSelection(sport.id)}
+                    activeOpacity={0.7}
                   >
-                    <Text style={styles.sportEmoji}>{sport.icon}</Text>
+                    <Text style={styles.modernSportEmoji}>{sport.icon}</Text>
                     <Text
                       style={[
-                        styles.sportItemText,
+                        styles.modernSportItemText,
                         selectedSports.includes(sport.id) &&
-                          styles.selectedSportItemText,
+                          styles.modernSelectedSportItemText,
                       ]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
                     >
                       {sport.name}
                     </Text>
                     {selectedSports.includes(sport.id) && (
-                      <View style={styles.checkmarkContainer}>
+                      <View style={styles.modernCheckmarkContainer}>
                         <Check size={16} color="#fff" />
                       </View>
                     )}
@@ -2382,9 +2772,9 @@ export default function ProfileScreen() {
 
               <TouchableOpacity
                 style={[
-                  styles.saveButton,
+                  styles.editProfileSaveButton,
                   (!isUserSportsChanged() || loading) &&
-                    styles.saveButtonDisabled,
+                    styles.editProfileSaveButtonDisabled,
                 ]}
                 onPress={updateUserSports}
                 disabled={!isUserSportsChanged() || loading}
@@ -2392,7 +2782,7 @@ export default function ProfileScreen() {
                 {loading ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.saveButtonText}>Kaydet</Text>
+                  <Text style={styles.editProfileSaveButtonText}>Kaydet</Text>
                 )}
               </TouchableOpacity>
             </ScrollView>
@@ -2423,6 +2813,113 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8f9fa",
+  },
+  // Modern Ayarlar Modal Stilleri
+  modernModalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modernModalBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  modernModalDismissArea: {
+    flex: 1,
+  },
+  modernModalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === "ios" ? 40 : 20,
+    maxHeight: "80%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -5 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modernModalHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 5,
+    backgroundColor: "#ddd",
+    borderRadius: 3,
+    marginTop: 10,
+    marginBottom: 15,
+  },
+  modernModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  modernModalTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  modernCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#4e54c8",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  modernMenuItems: {
+    marginBottom: 20,
+  },
+  modernMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f5f5f5",
+  },
+  modernMenuIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#f0f4ff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+  },
+  logoutIconContainer: {
+    backgroundColor: "#ffeaea",
+  },
+  modernMenuItemText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#333",
+  },
+  logoutText: {
+    color: "#e74c3c",
+    fontWeight: "600",
+  },
+  modernAppVersionContainer: {
+    alignItems: "center",
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  modernVersionText: {
+    fontSize: 14,
+    color: "#95a5a6",
+    fontWeight: "500",
   },
   loadingContainer: {
     flex: 1,
@@ -2480,6 +2977,82 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   profileSection: {
+    position: "relative",
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    marginHorizontal: 15,
+    marginBottom: 20,
+    paddingBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 10,
+    overflow: "hidden",
+  },
+  profileBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 110,
+  },
+  profileContent: {
+    flexDirection: "row",
+    paddingTop: 30,
+    paddingHorizontal: 20,
+  },
+  profileImageContainer: {
+    position: "relative",
+    marginRight: 15,
+  },
+  profileImage: {
+    width: 85,
+    height: 85,
+    borderRadius: 42.5,
+    borderWidth: 4,
+    borderColor: "#ffffff",
+  },
+  profileDetails: {
+    flex: 1,
+    paddingTop: 10,
+  },
+  userName: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#ffffff",
+    marginBottom: 8,
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  infoText: {
+    fontSize: 14,
+    color: "#ffffff",
+    marginLeft: 8,
+    opacity: 0.9,
+  },
+  bioContainer: {
+    marginTop: 12,
+    marginHorizontal: 20,
+    padding: 15,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 10,
+  },
+  bioText: {
+    fontSize: 14,
+    color: "#636e72",
+    lineHeight: 20,
+  },
+  statIcon: {
+    marginRight: 5,
+  },
+  profileSection_old: {
     backgroundColor: "#fff",
     borderRadius: 15,
     marginHorizontal: 15,
@@ -2497,7 +3070,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 15,
   },
-  profileImage: {
+  profileImage_old: {
     width: 70,
     height: 70,
     borderRadius: 35,
@@ -2508,7 +3081,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 15,
   },
-  userName: {
+  userName_old: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#333",
@@ -2540,7 +3113,7 @@ const styles = StyleSheet.create({
   ageContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 12,
   },
   ageText: {
     fontSize: 14,
@@ -2626,19 +3199,27 @@ const styles = StyleSheet.create({
   interestsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
+    paddingHorizontal: 15,
+    paddingTop: 5,
   },
   interestTag: {
-    backgroundColor: "#e8f4fc",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e9e9ef",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
+    marginRight: 10,
+    marginBottom: 10,
   },
   interestTagText: {
-    color: "#3498db",
-    fontSize: 14,
+    color: "#333",
+    fontSize: 13,
     fontWeight: "500",
+  },
+  sportIconText: {
+    fontSize: 16,
+    marginRight: 8,
   },
   menuContainer: {
     backgroundColor: "#fff",
@@ -3019,6 +3600,175 @@ const styles = StyleSheet.create({
   deletePhotoTextDisabled: {
     color: "#f8e8e7",
   },
+  // Edit Profile Modal Styles
+  editProfileModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "flex-end",
+  },
+  editProfileModalContent: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    maxHeight: "92%",
+    minHeight: "50%",
+    paddingBottom: 30,
+  },
+  editProfileModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eaeaea",
+    backgroundColor: "#4e54c8",
+  },
+  editProfileModalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  editProfileCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  editProfileModalBody: {
+    padding: 20,
+  },
+  editProfilePictureSection: {
+    alignItems: "center",
+    marginBottom: 30,
+  },
+  editProfileImageContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    marginBottom: 20,
+    borderWidth: 3,
+    borderColor: "#4e54c8",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  editProfileImageStyle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
+  editProfilePhotoButtonsContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    width: "100%",
+    gap: 15,
+  },
+  editChangePhotoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#4e54c8",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  editDeletePhotoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#e74c3c",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  editDeletePhotoButtonDisabled: {
+    backgroundColor: "#f1c1bd",
+    opacity: 0.7,
+  },
+  editChangePhotoText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  editDeletePhotoText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  editDeletePhotoTextDisabled: {
+    color: "#f8e8e7",
+  },
+  editProfileFieldsContainer: {
+    marginBottom: 20,
+  },
+  editProfileInputGroup: {
+    marginBottom: 20,
+  },
+  editProfileInputLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
+  },
+  editProfileTextInput: {
+    backgroundColor: "#f5f7fa",
+    borderRadius: 12,
+    padding: 15,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#e0e6ed",
+    color: "#333",
+  },
+  editProfileDateInputContainer: {
+    position: "relative",
+  },
+  editProfileBiographyInput: {
+    height: 120,
+    textAlignVertical: "top",
+    paddingTop: 15,
+  },
+  editProfileSaveButton: {
+    backgroundColor: "#4e54c8",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  editProfileSaveButtonDisabled: {
+    backgroundColor: "#a0a3db",
+    opacity: 0.7,
+  },
+  editProfileSaveButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
   sportSelectionLabel: {
     fontSize: 14,
     fontWeight: "500",
@@ -3285,7 +4035,7 @@ const styles = StyleSheet.create({
   settingsButton: {
     marginLeft: 16,
   },
-  profileImageContainer: {
+  profileImageContainer_old: {
     flexDirection: "row",
     alignItems: "center",
   },
@@ -3300,7 +4050,7 @@ const styles = StyleSheet.create({
   memberIcon: {
     marginRight: 4,
   },
-  bioText: {
+  bioText_old: {
     fontSize: 14,
     color: "#666",
     marginBottom: 15,
@@ -3389,21 +4139,72 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     textAlign: "center",
-    marginVertical: 10,
+    marginVertical: 15,
+    fontStyle: "italic",
   },
   sectionHeaderWithAction: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 15,
+    paddingHorizontal: 15,
+    paddingTop: 15,
   },
   editInterestsButton: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 18,
-    backgroundColor: "#f0f8ff",
+    borderRadius: 20,
+    backgroundColor: "#786cff",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  interestsSection: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    marginHorizontal: 15,
+    marginBottom: 20,
+    overflow: "hidden",
+    paddingBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 8,
+    position: "relative",
+  },
+  interestsBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 70,
+  },
+  interestsTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  interestsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 4,
+  },
+  sportIconText_old: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  noInterestsContainer: {
+    padding: 15,
+    alignItems: "center",
+    justifyContent: "center",
   },
   modalDescription: {
     fontSize: 14,
@@ -3456,6 +4257,105 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+  eventsSection: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    marginHorizontal: 15,
+    marginBottom: 20,
+    overflow: "hidden",
+    paddingBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 8,
+    position: "relative",
+  },
+  eventsBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 70,
+  },
+  eventsSectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 15,
+    paddingTop: 15,
+    marginBottom: 15,
+  },
+  eventsTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  eventsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 4,
+  },
+  eventsRefreshButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 20,
+    backgroundColor: "#3498db",
+    marginRight: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  eventsCountBadge: {
+    backgroundColor: "#3498db",
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  eventsCountText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  eventsContent: {
+    paddingHorizontal: 15,
+  },
+  eventsErrorContainer: {
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff8f8",
+    borderRadius: 12,
+    marginBottom: 15,
+  },
+  eventsRetryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#3498db",
+    borderRadius: 20,
+    marginTop: 10,
+  },
+  eventsRetryButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  noEventsContainer: {
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+  },
   modalContainer: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -3479,14 +4379,239 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#e74c3c",
   },
+  reportsSection: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    marginHorizontal: 15,
+    marginBottom: 20,
+    overflow: "hidden",
+    paddingBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 8,
+    position: "relative",
+  },
+  reportsBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 70,
+  },
+  reportsTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  reportsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 4,
+  },
+  reportsActionButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 20,
+    backgroundColor: "#e74c3c",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  reportsCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 15,
+    marginTop: 10,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   reportsInfoContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
   },
   reportsText: {
     fontSize: 14,
     color: "#e74c3c",
-    marginLeft: 5,
+    marginLeft: 12,
+    flex: 1,
+  },
+  sportsModalDescription: {
+    fontSize: 15,
+    color: "#555",
+    lineHeight: 20,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modernSportItem: {
+    width: "48%",
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    backgroundColor: "#f5f7fa",
+    borderWidth: 1,
+    borderColor: "#e0e6ed",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  modernSelectedSportItem: {
+    backgroundColor: "#e3effd",
+    borderColor: "#4e54c8",
+  },
+  modernSportEmoji: {
+    fontSize: 22,
+    marginRight: 8,
+  },
+  modernSportItemText: {
+    fontSize: 14,
+    color: "#333",
+    flex: 1,
+    fontWeight: "500",
+  },
+  modernSelectedSportItemText: {
+    color: "#4e54c8",
+    fontWeight: "600",
+  },
+  modernCheckmarkContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#4e54c8",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
+  },
+  // Modern Bildirim Ayarları Stilleri
+  modernNotificationBody: {
+    paddingHorizontal: 5,
+  },
+  modernMainToggleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 18,
+    marginVertical: 10,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 16,
+    paddingHorizontal: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  modernToggleInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  modernNotificationIconContainer: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#4e54c8",
+    borderRadius: 20,
+    marginRight: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  modernToggleTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  modernToggleDescription: {
+    fontSize: 13,
+    color: "#777",
+  },
+  modernCategoryHeaderContainer: {
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+    marginBottom: 10,
+  },
+  modernCategoryHeaderTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#4e54c8",
+  },
+  modernCategoryContainer: {
+    marginBottom: 15,
+  },
+  modernCategoryItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    marginBottom: 10,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  modernCategoryItemInfo: {
+    flex: 1,
+    paddingRight: 15,
+  },
+  modernCategoryTitle: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#333",
+    marginBottom: 4,
+  },
+  modernCategoryDescription: {
+    fontSize: 13,
+    color: "#777",
+    lineHeight: 18,
+  },
+  modernSaveButton: {
+    backgroundColor: "#4e54c8",
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  modernSaveButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
