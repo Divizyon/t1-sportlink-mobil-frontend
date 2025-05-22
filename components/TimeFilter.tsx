@@ -27,6 +27,7 @@ export const TimeFilter: React.FC<TimeFilterProps> = ({
             selectedFilter === filter.name && styles.selectedFilter,
           ]}
           onPress={() => onSelectFilter(filter.name)}
+          activeOpacity={0.7}
         >
           <Text
             style={[
@@ -36,6 +37,7 @@ export const TimeFilter: React.FC<TimeFilterProps> = ({
           >
             {filter.name}
           </Text>
+          {selectedFilter === filter.name && <View style={styles.indicator} />}
         </TouchableOpacity>
       ))}
     </View>
@@ -45,25 +47,32 @@ export const TimeFilter: React.FC<TimeFilterProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    paddingBottom: 10,
   },
   filter: {
-    marginRight: 16,
-    paddingBottom: 4,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
+    marginRight: 24,
+    paddingVertical: 6,
+    position: "relative",
   },
-  selectedFilter: {
-    borderBottomColor: "#4CAF50",
-  },
+  selectedFilter: {},
   filterText: {
     fontSize: 14,
-    color: "#757575",
+    color: "#64748b",
+    fontWeight: "500",
   },
   selectedFilterText: {
-    color: "#4CAF50",
-    fontWeight: "500",
+    color: "#10b981",
+    fontWeight: "600",
+  },
+  indicator: {
+    position: "absolute",
+    bottom: -2,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: "#10b981",
+    borderRadius: 1.5,
   },
 });

@@ -30,9 +30,12 @@ import CreateEventButton from "@/components/dashboard/CreateEventButton";
 import { Event as ApiEvent, eventsApi } from "../../../services/api/events";
 import { showToast } from "../../../src/utils/toastHelper";
 import { Sport, sportsApi } from "../../../services/api/sports";
-import { logDetailedEvent, eventMatchesSportId } from "../../../src/utils/loggingUtils";
+import {
+  logDetailedEvent,
+  eventMatchesSportId,
+} from "../../../src/utils/loggingUtils";
 import { useMessages } from "@/src/contexts/MessageContext";
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar } from "expo-status-bar";
 
 // Renk teması - fotoğraftaki açık yeşil
 const theme = {
@@ -57,8 +60,8 @@ const theme = {
     Bisiklet: "#EF4444", // Kırmızı
     Okçuluk: "#6366F1", // İndigo
     "Akıl Oyunları": "#8B5CF6", // Mor
-    "Diğer": "#64748B", // Gri (Diğer kategorisi için)
-    "Yürüyüş": "#10B981", // Yeşil
+    Diğer: "#64748B", // Gri (Diğer kategorisi için)
+    Yürüyüş: "#10B981", // Yeşil
   },
 };
 
@@ -87,9 +90,19 @@ const calculateDistance = (
   lon2: number
 ): number => {
   // Early validation to prevent NaN results
-  if (!lat1 || !lon1 || !lat2 || !lon2 || 
-      isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
-    console.log(`Geçersiz koordinatlar - mesafe hesaplanamıyor: (${lat1}, ${lon1}) ve (${lat2}, ${lon2})`);
+  if (
+    !lat1 ||
+    !lon1 ||
+    !lat2 ||
+    !lon2 ||
+    isNaN(lat1) ||
+    isNaN(lon1) ||
+    isNaN(lat2) ||
+    isNaN(lon2)
+  ) {
+    console.log(
+      `Geçersiz koordinatlar - mesafe hesaplanamıyor: (${lat1}, ${lon1}) ve (${lat2}, ${lon2})`
+    );
     return 9999; // Geçersiz koordinat için büyük bir değer döndür (filtrelemede kullanılacak)
   }
 
@@ -133,9 +146,7 @@ interface Event {
 }
 
 // Spor kategorileri veri seti - artık API'den alınacak
-const defaultSportCategories = [
-  { id: 0, name: "Tümü", icon: "🏆" },
-];
+const defaultSportCategories = [{ id: 0, name: "Tümü", icon: "🏆" }];
 
 // Haftanın günleri
 const daysOfWeek = ["Pzr", "Pzt", "Sal", "Çrş", "Per", "Cum", "Cmt"];
@@ -152,7 +163,9 @@ export default function DashboardScreen() {
   const [isLocationLoading, setIsLocationLoading] = useState(true);
   const [showPOI, setShowPOI] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [sportCategories, setSportCategories] = useState(defaultSportCategories);
+  const [sportCategories, setSportCategories] = useState(
+    defaultSportCategories
+  );
   const [sportCategoriesLoading, setSportCategoriesLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -170,7 +183,7 @@ export default function DashboardScreen() {
     try {
       return useMessages().unreadCount;
     } catch (error) {
-      console.warn('Could not access message context:', error);
+      console.warn("Could not access message context:", error);
       return userData.unreadMessages;
     }
   };
@@ -184,14 +197,14 @@ export default function DashboardScreen() {
       try {
         console.log("Fetching sport categories from API...");
         const sports = await sportsApi.getAllSports();
-        
+
         if (Array.isArray(sports)) {
           // Add "Tümü" (All) category at the beginning
           const allCategories = [
-            { id: 0, name: "Tümü", icon: "🏆" }, 
-            ...sports
+            { id: 0, name: "Tümü", icon: "🏆" },
+            ...sports,
           ];
-          
+
           console.log(`Retrieved ${sports.length} sport categories from API`);
           setSportCategories(allCategories);
         } else {
@@ -205,24 +218,26 @@ export default function DashboardScreen() {
         setSportCategoriesLoading(false);
       }
     };
-    
+
     fetchSportCategories();
   }, []);
 
   // Update distance filter
   const handleDistanceFilterChange = (distance: number) => {
     if (distance !== distanceFilter) {
-      console.log(`Distance filter changed: ${distanceFilter}km → ${distance}km`);
-      
+      console.log(
+        `Distance filter changed: ${distanceFilter}km → ${distance}km`
+      );
+
       // Set loading state first for UI feedback
       setIsLoading(true);
-      
+
       // Immediately clear existing filtered events to prevent showing irrelevant results
       setFilteredEvents([]);
-      
+
       // Update the UI state
       setDistanceFilter(distance);
-      
+
       // API calls will be handled by the dependency effect
       // Use a small timeout to let the loading state render first
       setTimeout(() => {
@@ -233,17 +248,17 @@ export default function DashboardScreen() {
 
   const handleTabChange = (tab: string) => {
     console.log(`Tab değişimi: ${activeTab} -> ${tab}`);
-    
+
     // Immediately set loading state
     setIsLoading(true);
-    
+
     // Clear existing events when switching tabs to avoid showing stale data
     setFilteredEvents([]);
     setEventData([]);
-    
+
     // Update the active tab
     setActiveTab(tab);
-    
+
     // Force a fetch of new events with a slight delay
     setTimeout(() => {
       fetchEvents();
@@ -258,18 +273,18 @@ export default function DashboardScreen() {
   const handleDateSelect = (date: Date) => {
     // Immediately set loading state to prevent showing old data
     setIsLoading(true);
-    
+
     // Clear existing events lists immediately
     setFilteredEvents([]);
     setEventData([]);
-    
+
     // Update the selected date
     setSelectedDate(date);
-    
+
     // Log for debugging
     const dateStr = formatDateToString(date);
     console.log(`Selected date: ${dateStr}`);
-    
+
     // Fetch events for the selected date with small delay
     setTimeout(() => {
       fetchEvents();
@@ -281,34 +296,36 @@ export default function DashboardScreen() {
     // Make sure we always start from today when app first loads
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     if (isFirstLoad.current) {
       setSelectedDate(today);
       isFirstLoad.current = false;
-      
+
       // We don't need to fetch events here as the dependency effect will handle it
     }
   }, []);
 
   const handleCategorySelect = (category: string) => {
     console.log(`Kategori seçildi: ${category}`);
-    
+
     // Immediately set loading state
     setIsLoading(true);
-    
+
     // Clear existing events to avoid showing irrelevant data during transition
     setFilteredEvents([]);
     setEventData([]);
-    
+
     // Update category state
     setSelectedCategory(category);
-    
+
     // Find the corresponding sport ID
     if (category === "Tümü") {
       setSelectedSportId(null);
       console.log("Tüm kategoriler seçildi, sportId=null");
     } else {
-      const selectedSport = sportCategories.find(sport => sport.name === category);
+      const selectedSport = sportCategories.find(
+        (sport) => sport.name === category
+      );
       if (selectedSport) {
         setSelectedSportId(selectedSport.id);
         console.log(`Kategori ID: ${selectedSport.id} (${category})`);
@@ -327,38 +344,46 @@ export default function DashboardScreen() {
       try {
         setIsLocationLoading(true);
         console.log("Konum izni isteniyor...");
-        
+
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") {
-          console.log("Konum izni verilmedi, etkinlik konumları gösterilemeyebilir");
-          showToast("Konum izni verilmedi. Bazı özellikler çalışmayabilir.", "warning");
+          console.log(
+            "Konum izni verilmedi, etkinlik konumları gösterilemeyebilir"
+          );
+          showToast(
+            "Konum izni verilmedi. Bazı özellikler çalışmayabilir.",
+            "warning"
+          );
           setIsLocationLoading(false);
           return;
         }
 
         console.log("Konum izni verildi, mevcut konum alınıyor...");
-        
+
         // Gerçek konum bilgisini al
         const currentLocation = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High
+          accuracy: Location.Accuracy.High,
         });
-        
+
         console.log("Konum başarıyla alındı:", {
           latitude: currentLocation.coords.latitude,
-          longitude: currentLocation.coords.longitude
+          longitude: currentLocation.coords.longitude,
         });
-        
+
         // Hemen koordinatları güncelle ve etkinlikleri getirmeye başla
         setUserCoordinates({
           latitude: currentLocation.coords.latitude,
-          longitude: currentLocation.coords.longitude
+          longitude: currentLocation.coords.longitude,
         });
 
         setIsLocationLoading(false);
         // API çağrısı ana useEffect tarafından yapılacak
       } catch (error) {
         console.error("Konum alınamadı:", error);
-        showToast("Konum alınamadı. Lütfen konum servislerinizi kontrol edin.", "error");
+        showToast(
+          "Konum alınamadı. Lütfen konum servislerinizi kontrol edin.",
+          "error"
+        );
         setIsLocationLoading(false);
       }
     })();
@@ -366,74 +391,98 @@ export default function DashboardScreen() {
 
   // Tüm filtre değişikliklerini takip et
   useEffect(() => {
-    if (!isLocationLoading && userCoordinates.latitude && userCoordinates.longitude) {
+    if (
+      !isLocationLoading &&
+      userCoordinates.latitude &&
+      userCoordinates.longitude
+    ) {
       console.log("Bağımlılıklar değişti, etkinlikleri yeniden getiriyorum:");
       console.log(`- Tab: ${activeTab}`);
       console.log(`- Mesafe: ${distanceFilter}km`);
-      console.log(`- Kategori: ${selectedCategory}${selectedSportId ? ` (ID: ${selectedSportId})` : ''}`);
-      
+      console.log(
+        `- Kategori: ${selectedCategory}${
+          selectedSportId ? ` (ID: ${selectedSportId})` : ""
+        }`
+      );
+
       // Tarih formatını YYYY-MM-DD'ye çevir (loglama için)
       const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+      const day = String(selectedDate.getDate()).padStart(2, "0");
       const formattedDate = `${year}-${month}-${day}`;
       console.log(`- Tarih: ${formattedDate}`);
-      console.log(`- Konum: ${userCoordinates.latitude.toFixed(6)}, ${userCoordinates.longitude.toFixed(6)}`);
-      
+      console.log(
+        `- Konum: ${userCoordinates.latitude.toFixed(
+          6
+        )}, ${userCoordinates.longitude.toFixed(6)}`
+      );
+
       // Clear any pending debounced operation
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
-      
+
       // Set a loading state only for initial load or tab changes
       // for other filter changes, we'll keep showing existing data until new data arrives
       if (isFirstLoad.current || prevActiveTabRef.current !== activeTab) {
         setIsLoading(true);
       }
-      
+
       // Use different delay for different types of filter changes
       // - Quick update for tab changes
       // - Moderate delay for minor filter adjustments (distance, category)
-      const delay = isFirstLoad.current || prevActiveTabRef.current !== activeTab ? 0 : 300;
-      
+      const delay =
+        isFirstLoad.current || prevActiveTabRef.current !== activeTab ? 0 : 300;
+
       isFirstLoad.current = false;
       prevActiveTabRef.current = activeTab;
-      
+
       debounceTimerRef.current = setTimeout(() => {
         fetchEvents();
       }, delay);
     }
-  }, [activeTab, selectedSportId, distanceFilter, selectedDate, userCoordinates, isLocationLoading]);
+  }, [
+    activeTab,
+    selectedSportId,
+    distanceFilter,
+    selectedDate,
+    userCoordinates,
+    isLocationLoading,
+  ]);
 
   // Harita üzerinden filtreleme değişikliği
   const handleMapFilterChange = (newCategory: string, newDistance: number) => {
     // Track if we need to fetch new data
     let shouldFetchEvents = false;
-    
+
     // Only log significant changes
     if (newDistance !== distanceFilter || newCategory !== selectedCategory) {
-      console.log(`Harita filtresi değişti: Kategori="${newCategory}", Mesafe=${newDistance}km`);
-      
+      console.log(
+        `Harita filtresi değişti: Kategori="${newCategory}", Mesafe=${newDistance}km`
+      );
+
       // Immediately show loading state
       setIsLoading(true);
-      
+
       // Clear current results to prevent flickering of irrelevant data
       setFilteredEvents([]);
     }
-    
+
     // Update distance if changed
     if (newDistance !== distanceFilter) {
       setDistanceFilter(newDistance);
       shouldFetchEvents = true;
     }
-    
+
     // Update category if changed
     if (newCategory !== selectedCategory) {
       // Find the corresponding sport ID
       if (newCategory === "Tümü") {
         setSelectedSportId(null);
       } else {
-        const category = sportCategories.find(cat => cat.name === newCategory);
+        const category = sportCategories.find(
+          (cat) => cat.name === newCategory
+        );
         if (category) {
           setSelectedSportId(category.id);
         }
@@ -441,14 +490,14 @@ export default function DashboardScreen() {
       setSelectedCategory(newCategory);
       shouldFetchEvents = true;
     }
-    
+
     // Only fetch events if necessary
     if (shouldFetchEvents) {
       // Clear existing debounce timer
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
-      
+
       // Fetch events after a short delay
       debounceTimerRef.current = setTimeout(() => {
         fetchEvents();
@@ -462,19 +511,24 @@ export default function DashboardScreen() {
       console.log("Konum yükleniyor, etkinlikler getirilemedi");
       return;
     }
-    
+
     // Koordinat kontrolü
     if (!userCoordinates.latitude || !userCoordinates.longitude) {
       console.log("Geçerli koordinatlar yok, etkinlikler getirilemedi");
-      showToast("Konum bilgisi alınamadı. Lütfen konum izinlerini kontrol edin.", "error");
+      showToast(
+        "Konum bilgisi alınamadı. Lütfen konum izinlerini kontrol edin.",
+        "error"
+      );
       return;
     }
 
     setIsLoading(true);
     try {
       console.log(`Etkinlikler getiriliyor... Tab: ${activeTab}`);
-      console.log(`Konum bilgisi: lat=${userCoordinates.latitude}, lng=${userCoordinates.longitude}`);
-      
+      console.log(
+        `Konum bilgisi: lat=${userCoordinates.latitude}, lng=${userCoordinates.longitude}`
+      );
+
       // Ensure date is a valid Date object first
       let dateToUse = selectedDate;
       if (!(dateToUse instanceof Date) || isNaN(dateToUse.getTime())) {
@@ -482,27 +536,33 @@ export default function DashboardScreen() {
         // Use today's date as fallback
         dateToUse = new Date();
       }
-      
+
       // Format date as required by API (YYYY-MM-DD) using our helper
       const formattedDate = formatDateToString(dateToUse);
-      
-      console.log(`Filtre bilgileri: Tarih=${formattedDate}, Kategori=${selectedCategory}, Mesafe=${distanceFilter}km`);
-      
+
+      console.log(
+        `Filtre bilgileri: Tarih=${formattedDate}, Kategori=${selectedCategory}, Mesafe=${distanceFilter}km`
+      );
+
       // Ek parametreler
       const additionalParams: Record<string, any> = {
-        date: formattedDate // Tarih filtresi - Bu parametre adı backend API ile eşleşmeli
+        date: formattedDate, // Tarih filtresi - Bu parametre adı backend API ile eşleşmeli
       };
-      
+
       // Kategori filtresi ekle (Tümü değilse)
       if (selectedSportId) {
         additionalParams.sport_id = selectedSportId;
-        console.log(`Kategori filtresi: ${selectedCategory} (ID: ${selectedSportId})`);
+        console.log(
+          `Kategori filtresi: ${selectedCategory} (ID: ${selectedSportId})`
+        );
       }
-      
+
       if (activeTab === "nearby") {
         // Yakındaki etkinlikleri getir
-        console.log(`Yakındaki etkinlikler için API isteği: lat=${userCoordinates.latitude}, lng=${userCoordinates.longitude}, mesafe=${distanceFilter}km`);
-        
+        console.log(
+          `Yakındaki etkinlikler için API isteği: lat=${userCoordinates.latitude}, lng=${userCoordinates.longitude}, mesafe=${distanceFilter}km`
+        );
+
         const events = await eventsApi.getNearbyEvents(
           userCoordinates.latitude,
           userCoordinates.longitude,
@@ -511,37 +571,68 @@ export default function DashboardScreen() {
           50,
           additionalParams
         );
-        
+
         // Debug için orijinal API yanıtını ayrıntılı incele
         if (events && events.length > 0) {
-          console.log('***** DETAYLI API YANITI *****');
+          console.log("***** DETAYLI API YANITI *****");
           console.log(`API ${events.length} etkinlik buldu, işleniyor...`);
-          
+
           // İlk etkinliğin tam içeriğini ayrıntılı logla
           const firstEvent = events[0];
           logDetailedEvent(firstEvent);
-          
+
           // Log tarihleri kontrol etmek için
           console.log("Etkinlik tarihleri kontrolü:");
           events.forEach((event: ApiEvent, index: number) => {
-            console.log(`Etkinlik #${index+1} (ID: ${event.id}): ${event.event_date}, Başlık: ${event.title}`);
+            console.log(
+              `Etkinlik #${index + 1} (ID: ${event.id}): ${
+                event.event_date
+              }, Başlık: ${event.title}`
+            );
           });
           console.log(`Seçili tarih: ${formattedDate}`);
-          
+
           // Koordinat formatı kontrolü
-          const hasLatLong = 'location_lat' in firstEvent && 'location_long' in firstEvent;
-          const hasLatitudeLongitude = 'location_latitude' in firstEvent && 'location_longitude' in firstEvent;
-          
-          console.log(`Konum formatı: ${hasLatLong ? 'location_lat/long' : (hasLatitudeLongitude ? 'location_latitude/longitude' : 'bilinmeyen')}`);
-          
+          const hasLatLong =
+            "location_lat" in firstEvent && "location_long" in firstEvent;
+          const hasLatitudeLongitude =
+            "location_latitude" in firstEvent &&
+            "location_longitude" in firstEvent;
+
+          console.log(
+            `Konum formatı: ${
+              hasLatLong
+                ? "location_lat/long"
+                : hasLatitudeLongitude
+                ? "location_latitude/longitude"
+                : "bilinmeyen"
+            }`
+          );
+
           if (hasLatLong) {
-            console.log(`location_lat: ${firstEvent.location_lat}, Tipi: ${typeof firstEvent.location_lat}`);
-            console.log(`location_long: ${firstEvent.location_long}, Tipi: ${typeof firstEvent.location_long}`);
+            console.log(
+              `location_lat: ${
+                firstEvent.location_lat
+              }, Tipi: ${typeof firstEvent.location_lat}`
+            );
+            console.log(
+              `location_long: ${
+                firstEvent.location_long
+              }, Tipi: ${typeof firstEvent.location_long}`
+            );
           } else if (hasLatitudeLongitude) {
             const firstEventAny = firstEvent as any;
-            console.log(`location_latitude: ${firstEventAny.location_latitude}, Tipi: ${typeof firstEventAny.location_latitude}`);
-            console.log(`location_longitude: ${firstEventAny.location_longitude}, Tipi: ${typeof firstEventAny.location_longitude}`);
-            
+            console.log(
+              `location_latitude: ${
+                firstEventAny.location_latitude
+              }, Tipi: ${typeof firstEventAny.location_latitude}`
+            );
+            console.log(
+              `location_longitude: ${
+                firstEventAny.location_longitude
+              }, Tipi: ${typeof firstEventAny.location_longitude}`
+            );
+
             // Tüm etkinliklere standart format ile koordinat ekle
             events.forEach((event: ApiEvent) => {
               const eventAny = event as any;
@@ -552,15 +643,19 @@ export default function DashboardScreen() {
                 event.location_long = Number(eventAny.location_longitude);
               }
             });
-            
-            console.log('Etkinlikler standart koordinat formatına dönüştürüldü');
+
+            console.log(
+              "Etkinlikler standart koordinat formatına dönüştürüldü"
+            );
           } else {
-            console.log('Etkinlik koordinatları eksik, manuel olarak güncelleniyor...');
+            console.log(
+              "Etkinlik koordinatları eksik, manuel olarak güncelleniyor..."
+            );
             const manualCoordinates = {
-              latitude: 38.0089744,  // Konya
-              longitude: 32.5217585  // Konya
+              latitude: 38.0089744, // Konya
+              longitude: 32.5217585, // Konya
             };
-            
+
             // Tüm etkinliklere koordinat ekle
             events.forEach((event: ApiEvent) => {
               // @ts-ignore - Dinamik alan ekleme
@@ -568,80 +663,95 @@ export default function DashboardScreen() {
               // @ts-ignore - Dinamik alan ekleme
               event.location_long = manualCoordinates.longitude;
             });
-            
-            console.log('Etkinlikler güncellenmiş koordinatlarla kaydedildi');
+
+            console.log("Etkinlikler güncellenmiş koordinatlarla kaydedildi");
           }
-          
+
           // API yanıtını UI formatına dönüştür - Artık backend filtrelemesi kullanıldığı için
           // frontend'de tekrar sport_id ve event_date filtrelemeleri yapmıyoruz
           const mappedEvents = mapApiEventsToUIEvents(events);
-          
+
           // Sort events by distance (closest first)
           const sortedEvents = [...mappedEvents].sort((a, b) => {
-            const distA = typeof a.calculatedDistance === 'number' && !isNaN(a.calculatedDistance) 
-              ? a.calculatedDistance 
-              : 9999;
-            const distB = typeof b.calculatedDistance === 'number' && !isNaN(b.calculatedDistance) 
-              ? b.calculatedDistance 
-              : 9999;
-            
+            const distA =
+              typeof a.calculatedDistance === "number" &&
+              !isNaN(a.calculatedDistance)
+                ? a.calculatedDistance
+                : 9999;
+            const distB =
+              typeof b.calculatedDistance === "number" &&
+              !isNaN(b.calculatedDistance)
+                ? b.calculatedDistance
+                : 9999;
+
             return distA - distB;
           });
-          
+
           setEventData(sortedEvents);
           setFilteredEvents(sortedEvents); // Doğrudan göster
-          
-          console.log(`${sortedEvents.length} etkinlik başarıyla işlendi ve mesafeye göre sıralandı`);
+
+          console.log(
+            `${sortedEvents.length} etkinlik başarıyla işlendi ve mesafeye göre sıralandı`
+          );
         } else {
           console.log("API'den etkinlik bulunamadı");
           setEventData([]);
           setFilteredEvents([]);
         }
-      } 
-      else if (activeTab === "joined") {
+      } else if (activeTab === "joined") {
         // Katıldığım etkinlikleri getir - sadece ACTIVE durumundakiler
         console.log("Katıldığım ACTIVE etkinlikler için API isteği yapılıyor");
-        
+
         // ACTIVE parametresini ekle (sadece aktif etkinlikleri göster)
         const status = "ACTIVE";
-        
+
         const events = await eventsApi.getUserParticipatedEvents(1, 50, status);
-        
+
         if (events && events.length > 0) {
           console.log(`API ${events.length} aktif katılınan etkinlik buldu`);
-          
+
           // API yanıtını UI formatına dönüştür
           let mappedEvents = mapApiEventsToUIEvents(events);
-          
+
           // Backend date parameter desteği olmadığı için burada client-side tarih filtreleme yapıyoruz
           if (formattedDate) {
-            console.log(`Client-side tarih filtrelemesi uygulanıyor: ${formattedDate}`);
-            
+            console.log(
+              `Client-side tarih filtrelemesi uygulanıyor: ${formattedDate}`
+            );
+
             // Tarih formatını kontrol et ve eşleştir
-            mappedEvents = mappedEvents.filter(event => {
+            mappedEvents = mappedEvents.filter((event) => {
               // Etkinlik tarihini al (API event verisinden)
               const apiEvent = events.find((e: ApiEvent) => e.id === event.id);
               if (!apiEvent || !apiEvent.event_date) return false;
-              
+
               // Etkinlik tarihini Date nesnesine çevir
               const eventDate = new Date(apiEvent.event_date);
               if (isNaN(eventDate.getTime())) return false;
-              
+
               // Tarih karşılaştırması için YYYY-MM-DD formatında string'e çevir
               const eventDateStr = formatDateToString(eventDate);
-              
+
               // Tarihler eşleşiyor mu kontrol et
               const isMatch = eventDateStr === formattedDate;
-              console.log(`Etkinlik: ${event.title}, Tarih: ${eventDateStr}, Seçili Tarih: ${formattedDate}, Eşleşme: ${isMatch ? 'Evet' : 'Hayır'}`);
-              
+              console.log(
+                `Etkinlik: ${
+                  event.title
+                }, Tarih: ${eventDateStr}, Seçili Tarih: ${formattedDate}, Eşleşme: ${
+                  isMatch ? "Evet" : "Hayır"
+                }`
+              );
+
               return isMatch;
             });
-            
-            console.log(`Tarih filtrelemesi sonrası ${mappedEvents.length} etkinlik görüntüleniyor`);
+
+            console.log(
+              `Tarih filtrelemesi sonrası ${mappedEvents.length} etkinlik görüntüleniyor`
+            );
           } else {
             console.log("Tarih filtresi yok, tüm etkinlikler gösteriliyor");
           }
-          
+
           setEventData(mappedEvents);
           setFilteredEvents(mappedEvents); // Doğrudan göster
         } else {
@@ -666,55 +776,67 @@ export default function DashboardScreen() {
       console.log("API yanıtı bir dizi değil:", apiEvents);
       return [];
     }
-    
+
     // Format the selected date for comparison with event dates
     const formattedSelectedDate = formatDateToString(selectedDate);
     console.log(`Seçili tarih için filtreleme: ${formattedSelectedDate}`);
-    
+
     // Check if we should be strict with date filtering
     // We will always apply date filtering from the backend
     // The shouldFilterByDate flag is removed since we handle this on the server side
-    
-    console.log(`API'den gelen ${apiEvents.length} etkinlik gösteriliyor. Tarih filtresi backend tarafından uygulandı.`);
-    
-    return apiEvents.map(event => {
+
+    console.log(
+      `API'den gelen ${apiEvents.length} etkinlik gösteriliyor. Tarih filtresi backend tarafından uygulandı.`
+    );
+
+    return apiEvents.map((event) => {
       // Tarihi biçimlendir
       const eventDate = new Date(event.event_date);
       const day = eventDate.getDate();
-      const month = new Intl.DateTimeFormat('tr-TR', { month: 'long' }).format(eventDate);
-      
+      const month = new Intl.DateTimeFormat("tr-TR", { month: "long" }).format(
+        eventDate
+      );
+
       // Zamanı biçimlendir
-      const startTime = new Date(event.start_time).toLocaleTimeString('tr-TR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      const startTime = new Date(event.start_time).toLocaleTimeString("tr-TR", {
+        hour: "2-digit",
+        minute: "2-digit",
       });
-      
-      const endTime = new Date(event.end_time).toLocaleTimeString('tr-TR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+
+      const endTime = new Date(event.end_time).toLocaleTimeString("tr-TR", {
+        hour: "2-digit",
+        minute: "2-digit",
       });
-      
+
       // Koordinat validasyonu
       // Farklı API yanıtlarında farklı koordinat alanları olabilir (location_lat veya location_latitude)
       const defaultLat = 38.0089744; // Varsayılan enlem (Konya)
       const defaultLng = 32.5217585; // Varsayılan boylam (Konya)
-      
+
       // Farklı olası alan adlarını kontrol et - TypeScript uyumlu
       const eventAny = event as any; // Geçici tip dönüşümü yaparak erişim sağla
-      
-      const latitude = 
-        ('location_lat' in event) ? Number(event.location_lat) :
-        ('location_latitude' in eventAny) ? Number(eventAny.location_latitude) : 
-        defaultLat;
-        
-      const longitude = 
-        ('location_long' in event) ? Number(event.location_long) :
-        ('location_longitude' in eventAny) ? Number(eventAny.location_longitude) : 
-        defaultLng;
-      
+
+      const latitude =
+        "location_lat" in event
+          ? Number(event.location_lat)
+          : "location_latitude" in eventAny
+          ? Number(eventAny.location_latitude)
+          : defaultLat;
+
+      const longitude =
+        "location_long" in event
+          ? Number(event.location_long)
+          : "location_longitude" in eventAny
+          ? Number(eventAny.location_longitude)
+          : defaultLng;
+
       // Log for debugging
-      console.log(`[Event ${event.id}] Koordinatlar: ${latitude}, ${longitude} (${isNaN(latitude) || isNaN(longitude) ? 'Geçersiz' : 'Geçerli'})`);
-      
+      console.log(
+        `[Event ${event.id}] Koordinatlar: ${latitude}, ${longitude} (${
+          isNaN(latitude) || isNaN(longitude) ? "Geçersiz" : "Geçerli"
+        })`
+      );
+
       // Mesafeyi hesapla - geçersiz koordinatlar için 0 uzaklık
       let distance = 0;
       if (!isNaN(latitude) && !isNaN(longitude)) {
@@ -726,17 +848,27 @@ export default function DashboardScreen() {
         );
         console.log(`[Event ${event.id}] Mesafe: ${distance.toFixed(1)}km`);
       } else {
-        console.log(`[Event ${event.id}] Geçersiz koordinatlar nedeniyle mesafe hesaplanamadı`);
+        console.log(
+          `[Event ${event.id}] Geçersiz koordinatlar nedeniyle mesafe hesaplanamadı`
+        );
       }
-      
+
       // Spor bilgisini güvenli şekilde çıkar
       let sportName = "Diğer";
-      
+
       // API yanıtında farklı spor alan adları olabilir
-      if (eventAny.sport && typeof eventAny.sport === 'object' && 'name' in eventAny.sport) {
+      if (
+        eventAny.sport &&
+        typeof eventAny.sport === "object" &&
+        "name" in eventAny.sport
+      ) {
         // sport: {id: 6, icon: "🎾", name: "Tenis"} formatı
         sportName = eventAny.sport.name;
-      } else if (eventAny.Sports && typeof eventAny.Sports === 'object' && 'name' in eventAny.Sports) {
+      } else if (
+        eventAny.Sports &&
+        typeof eventAny.Sports === "object" &&
+        "name" in eventAny.Sports
+      ) {
         // Sports: {id: 6, icon: "🎾", name: "Tenis"} formatı
         sportName = eventAny.Sports.name;
       } else if (event.sport_name) {
@@ -749,30 +881,35 @@ export default function DashboardScreen() {
       const matchedSport = sportCategories.find(
         (cat) => cat.name.toLowerCase() === sportName.toLowerCase()
       );
-      
+
       const finalSportName = matchedSport ? matchedSport.name : sportName;
-      console.log(`[Event ${event.id}] Spor kategorisi: ${finalSportName} (Orijinal: ${sportName})`);
-      
+      console.log(
+        `[Event ${event.id}] Spor kategorisi: ${finalSportName} (Orijinal: ${sportName})`
+      );
+
       // Oluşturucu bilgisini güvenli şekilde çıkar
       let creatorName = "İsimsiz";
-      
+
       // API yanıtında farklı creator alan adları olabilir
-      if (eventAny.creator && typeof eventAny.creator === 'object') {
-        if ('first_name' in eventAny.creator && 'last_name' in eventAny.creator) {
+      if (eventAny.creator && typeof eventAny.creator === "object") {
+        if (
+          "first_name" in eventAny.creator &&
+          "last_name" in eventAny.creator
+        ) {
           creatorName = `${eventAny.creator.first_name} ${eventAny.creator.last_name}`;
-        } else if ('full_name' in eventAny.creator) {
+        } else if ("full_name" in eventAny.creator) {
           creatorName = eventAny.creator.full_name;
         }
-      } else if (eventAny.users && typeof eventAny.users === 'object') {
-        if ('first_name' in eventAny.users && 'last_name' in eventAny.users) {
+      } else if (eventAny.users && typeof eventAny.users === "object") {
+        if ("first_name" in eventAny.users && "last_name" in eventAny.users) {
           creatorName = `${eventAny.users.first_name} ${eventAny.users.last_name}`;
         }
       } else if (event.creator_name) {
         creatorName = event.creator_name;
       }
-      
+
       console.log(`[Event ${event.id}] Oluşturucu: ${creatorName}`);
-      
+
       return {
         id: event.id,
         title: event.title,
@@ -782,8 +919,8 @@ export default function DashboardScreen() {
         time: `${startTime}-${endTime}`,
         location: event.location_name || "Konum bilgisi yok",
         coordinates: {
-          latitude, 
-          longitude
+          latitude,
+          longitude,
         },
         distance: `${distance.toFixed(1)} km`,
         participantCount: event.participant_count || 0,
@@ -792,10 +929,10 @@ export default function DashboardScreen() {
         organizer: {
           id: event.creator_id || "",
           name: creatorName,
-          isVerified: true
+          isVerified: true,
         },
         description: event.description || "",
-        calculatedDistance: distance
+        calculatedDistance: distance,
       };
     });
   };
@@ -803,8 +940,8 @@ export default function DashboardScreen() {
   // Helper function to format a date object to YYYY-MM-DD string
   const formatDateToString = (date: Date): string => {
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
 
@@ -813,12 +950,12 @@ export default function DashboardScreen() {
     const days = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
-    
+
     // Create array of 30 days starting from today
     for (let i = 0; i < 30; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() + i);
-      
+
       days.push({
         dayName: daysOfWeek[date.getDay()],
         dayNumber: date.getDate(),
@@ -827,7 +964,7 @@ export default function DashboardScreen() {
         isSelected: date.toDateString() === selectedDate.toDateString(),
       });
     }
-    
+
     return days;
   };
 
@@ -835,9 +972,9 @@ export default function DashboardScreen() {
 
   const handleJoinEvent = async (eventId: string) => {
     try {
-      const currentEvent = eventData.find(e => e.id === eventId);
+      const currentEvent = eventData.find((e) => e.id === eventId);
       const isJoined = currentEvent?.isJoined;
-      
+
       if (isJoined) {
         // Etkinlikten ayrıl
         await eventsApi.leaveEvent(eventId);
@@ -847,7 +984,7 @@ export default function DashboardScreen() {
         await eventsApi.joinEvent(eventId);
         showToast("Etkinliğe katıldınız", "success");
       }
-      
+
       // Etkinlikleri yenile
       fetchEvents();
     } catch (error) {
@@ -884,10 +1021,15 @@ export default function DashboardScreen() {
     if (mismatchedCategories.length > 0) {
       console.log("UYARI: Eşleşmeyen kategoriler:", mismatchedCategories);
     }
-    
+
     // Seçili kategori kontrol ediliyor
-    if (selectedCategory !== "Tümü" && !eventCategories.includes(selectedCategory)) {
-      console.log(`UYARI: Seçili kategori '${selectedCategory}' API'den dönen kategoriler arasında bulunamadı`);
+    if (
+      selectedCategory !== "Tümü" &&
+      !eventCategories.includes(selectedCategory)
+    ) {
+      console.log(
+        `UYARI: Seçili kategori '${selectedCategory}' API'den dönen kategoriler arasında bulunamadı`
+      );
     }
   };
 
@@ -910,7 +1052,13 @@ export default function DashboardScreen() {
       // Clean up timer on next effect run
       return () => clearTimeout(debounceTimer);
     }
-  }, [activeTab, selectedCategory, distanceFilter, isLocationLoading, selectedDate]);
+  }, [
+    activeTab,
+    selectedCategory,
+    distanceFilter,
+    isLocationLoading,
+    selectedDate,
+  ]);
 
   // Tab değişiminde event'lerin görüntülenmesi için ek bir güvenlik önlemi
   useEffect(() => {
@@ -922,7 +1070,7 @@ export default function DashboardScreen() {
       console.log(
         `Yakındakiler sekmesinde etkinlik bulunamadı - Tüm etkinlikler yükleniyor`
       );
-      
+
       // Yakındakiler için - Mesafeye bakılmaksızın tüm etkinlikleri göster
       setFilteredEvents(eventData);
     }
@@ -974,10 +1122,12 @@ export default function DashboardScreen() {
 
     // Mesafe bilgisini günlük
     if (activeTab === "nearby" && eventsWithDistance.length > 0) {
-      eventsWithDistance.forEach(event => {
+      eventsWithDistance.forEach((event) => {
         const calculatedDistance = event.calculatedDistance || 0;
         console.log(
-          `Etkinlik: ${event.title}, Mesafe: ${calculatedDistance.toFixed(1)} km, Filtre: ${distanceFilter} km, Eşleşme: ${
+          `Etkinlik: ${event.title}, Mesafe: ${calculatedDistance.toFixed(
+            1
+          )} km, Filtre: ${distanceFilter} km, Eşleşme: ${
             calculatedDistance <= distanceFilter ? "Evet" : "Hayır"
           }`
         );
@@ -992,17 +1142,23 @@ export default function DashboardScreen() {
       filteredResult = filteredResult.filter(
         (event) => event.category === selectedCategory
       );
-      console.log(`Kategori filtrelemesi sonrası ${filteredResult.length} etkinlik`);
+      console.log(
+        `Kategori filtrelemesi sonrası ${filteredResult.length} etkinlik`
+      );
     }
 
     // Mesafe filtrelemesi
     filteredResult = filteredResult.filter(
       (event) => (event.calculatedDistance || 0) <= distanceFilter
     );
-    console.log(`Mesafe filtrelemesi sonrası ${filteredResult.length} etkinlik`);
+    console.log(
+      `Mesafe filtrelemesi sonrası ${filteredResult.length} etkinlik`
+    );
 
     // Sonuçları güncelle
-    console.log(`Toplam ${filteredResult.length} etkinlik filtreleme sonrası görüntüleniyor`);
+    console.log(
+      `Toplam ${filteredResult.length} etkinlik filtreleme sonrası görüntüleniyor`
+    );
     setFilteredEvents(filteredResult);
   }, [activeTab, distanceFilter, eventData, userCoordinates, selectedCategory]);
 
@@ -1013,7 +1169,7 @@ export default function DashboardScreen() {
   const handleEventPress = (eventId: string | number) => {
     // Convert to string if number
     const id = typeof eventId === "number" ? eventId.toString() : eventId;
-    
+
     // Navigate to event details
     router.push({
       pathname: "event-details/[id]",
@@ -1037,16 +1193,16 @@ export default function DashboardScreen() {
         </View>
       );
     }
-    
+
     // Geçerli koordinat kontrolü - 0,0 veya null/undefined koordinatlar geçersiz
-    const hasValidCoordinates = 
-      userCoordinates && 
-      typeof userCoordinates.latitude === 'number' &&
-      typeof userCoordinates.longitude === 'number' &&
+    const hasValidCoordinates =
+      userCoordinates &&
+      typeof userCoordinates.latitude === "number" &&
+      typeof userCoordinates.longitude === "number" &&
       (userCoordinates.latitude !== 0 || userCoordinates.longitude !== 0) &&
-      !isNaN(userCoordinates.latitude) && 
+      !isNaN(userCoordinates.latitude) &&
       !isNaN(userCoordinates.longitude);
-    
+
     if (!hasValidCoordinates) {
       console.error("Geçersiz kullanıcı koordinatları:", userCoordinates);
       return (
@@ -1054,25 +1210,27 @@ export default function DashboardScreen() {
           <Text style={styles.loadingText}>
             Konum bilgisi alınamadı. Lütfen konum izinlerini kontrol edin.
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.retryButton}
             onPress={() => {
               // Konumu tekrar almayı dene
               setIsLocationLoading(true);
               Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.High
-              }).then(location => {
-                console.log("Yeni konum alındı:", location.coords);
-                setUserCoordinates({
-                  latitude: location.coords.latitude,
-                  longitude: location.coords.longitude
+                accuracy: Location.Accuracy.High,
+              })
+                .then((location) => {
+                  console.log("Yeni konum alındı:", location.coords);
+                  setUserCoordinates({
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                  });
+                  setIsLocationLoading(false);
+                  fetchEvents();
+                })
+                .catch((error) => {
+                  console.error("Konum tekrar alınamadı:", error);
+                  setIsLocationLoading(false);
                 });
-                setIsLocationLoading(false);
-                fetchEvents();
-              }).catch(error => {
-                console.error("Konum tekrar alınamadı:", error);
-                setIsLocationLoading(false);
-              });
             }}
           >
             <Text style={styles.retryButtonText}>Tekrar Dene</Text>
@@ -1080,7 +1238,7 @@ export default function DashboardScreen() {
         </View>
       );
     }
-    
+
     if (isLoading) {
       return (
         <View style={styles.loadingContainer}>
@@ -1089,7 +1247,7 @@ export default function DashboardScreen() {
         </View>
       );
     }
-    
+
     // Harita için geçerli etkinlikleri hazırla
     const mapEvents = filteredEvents.map((event, index) => ({
       id: Number(event.id),
@@ -1097,7 +1255,7 @@ export default function DashboardScreen() {
       coordinates: event.coordinates,
       category: event.category,
     }));
-    
+
     // Return the map directly without additional wrapper
     return (
       <EventMap
@@ -1118,7 +1276,7 @@ export default function DashboardScreen() {
     return (
       <TouchableOpacity
         style={styles.createEventButton}
-        onPress={() => router.push('/dashboard/create-event')}
+        onPress={() => router.push("/dashboard/create-event")}
       >
         <HStack style={styles.createEventButtonContent}>
           <Plus size={24} color="#FFFFFF" />
@@ -1131,38 +1289,38 @@ export default function DashboardScreen() {
   // Handle refresh when pull-to-refresh is triggered
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    
+
     // Reset state as needed for a fresh load
     setFilteredEvents([]);
     setEventData([]);
-    
+
     try {
       // Refresh location if needed
       if (userCoordinates.latitude === 0 || userCoordinates.longitude === 0) {
         console.log("Refreshing location data...");
         try {
           const location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High
+            accuracy: Location.Accuracy.High,
           });
-          
+
           setUserCoordinates({
             latitude: location.coords.latitude,
-            longitude: location.coords.longitude
+            longitude: location.coords.longitude,
           });
           console.log("Location refreshed successfully");
         } catch (error) {
           console.error("Failed to refresh location:", error);
         }
       }
-      
+
       // Refresh sport categories
       console.log("Refreshing sport categories...");
       try {
         const sports = await sportsApi.getAllSports();
         if (Array.isArray(sports)) {
           const allCategories = [
-            { id: 0, name: "Tümü", icon: "🏆" }, 
-            ...sports
+            { id: 0, name: "Tümü", icon: "🏆" },
+            ...sports,
           ];
           setSportCategories(allCategories);
           console.log("Sport categories refreshed successfully");
@@ -1170,12 +1328,11 @@ export default function DashboardScreen() {
       } catch (error) {
         console.error("Failed to refresh sport categories:", error);
       }
-      
+
       // Fetch fresh event data
       console.log("Refreshing events data...");
       await fetchEvents();
       console.log("Events refreshed successfully");
-      
     } catch (error) {
       console.error("Error during refresh:", error);
       showToast("Yenileme sırasında bir hata oluştu", "error");
@@ -1190,12 +1347,12 @@ export default function DashboardScreen() {
 
       {/* Header with unread message count */}
       <Header unreadMessages={unreadMessages} />
-      
+
       <View style={styles.headerWrapper}>
         <TabSelector activeTab={activeTab} onTabChange={handleTabChange} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -1212,9 +1369,10 @@ export default function DashboardScreen() {
         {/* Date Selector */}
         <DateSelector
           currentDay={selectedDate.getDate()}
-          currentMonth={
-            selectedDate.toLocaleString('tr-TR', { month: 'long', year: 'numeric' })
-          }
+          currentMonth={selectedDate.toLocaleString("tr-TR", {
+            month: "long",
+            year: "numeric",
+          })}
           days={days}
           onDateSelect={handleDateSelect}
         />
@@ -1236,7 +1394,8 @@ export default function DashboardScreen() {
                   key={sport.id}
                   style={[
                     styles.categoryButton,
-                    selectedCategory === sport.name && styles.categoryButtonActive,
+                    selectedCategory === sport.name &&
+                      styles.categoryButtonActive,
                   ]}
                   onPress={() => handleCategorySelect(sport.name)}
                 >
@@ -1272,11 +1431,10 @@ export default function DashboardScreen() {
         {/* No events message - with create button */}
         {!isLoading && filteredEvents.length === 0 ? (
           <View style={styles.noEventsCard}>
-            <Text style={styles.noEventsCardTitle}>
-              Etkinlik Bulunamadı
-            </Text>
+            <Text style={styles.noEventsCardTitle}>Etkinlik Bulunamadı</Text>
             <Text style={styles.noEventsCardText}>
-              Seçilen filtrelere uygun etkinlik bulunamadı. Lütfen filtrelerinizi değiştirin veya yeni bir etkinlik oluşturun.
+              Seçilen filtrelere uygun etkinlik bulunamadı. Lütfen
+              filtrelerinizi değiştirin veya yeni bir etkinlik oluşturun.
             </Text>
           </View>
         ) : (
@@ -1288,7 +1446,10 @@ export default function DashboardScreen() {
                   <Text style={styles.sectionTitle}>Harita</Text>
                   <HStack style={styles.sectionActions}>
                     <TouchableOpacity
-                      style={[styles.actionButton, showPOI && styles.actionButtonActive]}
+                      style={[
+                        styles.actionButton,
+                        showPOI && styles.actionButtonActive,
+                      ]}
                       onPress={togglePOI}
                     >
                       <MapPin
@@ -1296,15 +1457,18 @@ export default function DashboardScreen() {
                         color={showPOI ? theme.primary : theme.textSecondary}
                         strokeWidth={2}
                       />
-                      <Text style={[styles.actionButtonText, showPOI && styles.actionButtonTextActive]}>
+                      <Text
+                        style={[
+                          styles.actionButtonText,
+                          showPOI && styles.actionButtonTextActive,
+                        ]}
+                      >
                         Tesisler
                       </Text>
                     </TouchableOpacity>
                   </HStack>
                 </View>
-                <View style={styles.mapContainer}>
-                  {renderMap()}
-                </View>
+                <View style={styles.mapContainer}>{renderMap()}</View>
               </View>
             )}
 
@@ -1313,11 +1477,17 @@ export default function DashboardScreen() {
               <View style={styles.eventsListContainer}>
                 <View style={styles.sectionHeaderWithAction}>
                   <Text style={styles.sectionTitle}>Etkinlikler</Text>
-                  <Text style={styles.eventCountText}>{filteredEvents.length} etkinlik</Text>
+                  <Text style={styles.eventCountText}>
+                    {filteredEvents.length} etkinlik
+                  </Text>
                 </View>
 
                 {isLoading ? (
-                  <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 20 }} />
+                  <ActivityIndicator
+                    size="large"
+                    color={theme.primary}
+                    style={{ marginTop: 20 }}
+                  />
                 ) : (
                   filteredEvents.map((event) => (
                     <TouchableOpacity
@@ -1356,10 +1526,7 @@ export default function DashboardScreen() {
                           onPress={() => handleJoinEvent(event.id)}
                         >
                           {event.isJoined ? (
-                            <CheckCircle
-                              size={18}
-                              color="white"
-                            />
+                            <CheckCircle size={18} color="white" />
                           ) : (
                             <Text style={styles.joinButtonText}>Katıl</Text>
                           )}
@@ -1378,7 +1545,9 @@ export default function DashboardScreen() {
                             },
                           ]}
                         >
-                          <Text style={styles.categoryTagText}>{event.category}</Text>
+                          <Text style={styles.categoryTagText}>
+                            {event.category}
+                          </Text>
                         </View>
                         <Text style={styles.eventTime}>{event.time}</Text>
                       </HStack>
@@ -1456,7 +1625,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(226, 232, 240, 0.6)",
     position: "relative",
     padding: 12,
-    width: '100%',
+    width: "100%",
   },
   dateBox: {
     width: 65,
@@ -1644,7 +1813,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.8)",
     borderRadius: 12,
     height: 300,
-    width: '100%',
+    width: "100%",
   },
   loadingText: {
     fontSize: 14,
@@ -1668,7 +1837,7 @@ const styles = StyleSheet.create({
   mapContainer: {
     height: 300,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: theme.background,
     marginTop: 8,
     borderWidth: 1,
@@ -1713,7 +1882,7 @@ const styles = StyleSheet.create({
   },
   eventsListContainer: {
     padding: 16,
-    width: '100%',
+    width: "100%",
   },
   actionButton: {
     flexDirection: "row",
@@ -1768,14 +1937,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   createEventButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     right: 20,
-    backgroundColor: '#4F46E5',
+    backgroundColor: "#4F46E5",
     borderRadius: 30,
     padding: 16,
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -1784,13 +1953,13 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   createEventButtonContent: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 8,
   },
   createEventButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   eventCardHeader: {
     flexDirection: "row",
@@ -1868,8 +2037,8 @@ const styles = StyleSheet.create({
   },
   categoriesLoadingContainer: {
     height: 80,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   sectionHeaderWithAction: {
     flexDirection: "row",

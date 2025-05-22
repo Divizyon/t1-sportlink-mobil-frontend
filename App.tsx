@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { websocketService } from '@/services/websocket';
+import { useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { websocketService } from "@/services/websocket";
 
 export default function App() {
   const { token } = useAuth();
@@ -16,4 +16,4 @@ export default function App() {
   }, [token]);
 
   // ... existing code ...
-} 
+}

@@ -11,7 +11,11 @@ import {
   Alert,
   Modal,
   TextInput,
+  Platform,
+  StatusBar,
+  Pressable,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   ArrowLeft,
@@ -85,7 +89,10 @@ const UserProfileScreen = () => {
         throw new Error("Kullanıcı bulunamadı");
       }
 
-      console.log("Kullanıcı profil verileri:", userData);
+      console.log(
+        "Kullanıcı profil verileri:",
+        JSON.stringify(userData, null, 2)
+      );
       setUserProfile(userData);
 
       // Arkadaş durumunu kontrol et
@@ -296,11 +303,20 @@ const UserProfileScreen = () => {
         onRequestClose={handleCloseReportModal}
       >
         <View style={styles.modalContainer}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={handleCloseReportModal}
+          />
           <View style={styles.modalContent}>
+            <View style={styles.modalDragHandle} />
+
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Kullanıcıyı Raporla</Text>
-              <TouchableOpacity onPress={handleCloseReportModal}>
-                <X size={24} color="#0F172A" />
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={handleCloseReportModal}
+              >
+                <X size={18} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
 
@@ -322,17 +338,16 @@ const UserProfileScreen = () => {
 
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalCancelButton]}
+                style={styles.modalCancelButton}
                 onPress={handleCloseReportModal}
                 disabled={isReporting}
               >
-                <X size={18} color="#FFFFFF" />
+                <X size={16} color="#FFFFFF" />
                 <Text style={styles.modalButtonText}>İptal</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
-                  styles.modalButton,
                   styles.submitButton,
                   (!reportReason || reportReason.trim() === "") && {
                     opacity: 0.5,
@@ -347,7 +362,7 @@ const UserProfileScreen = () => {
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
-                    <Send size={18} color="#FFFFFF" />
+                    <Send size={16} color="#FFFFFF" />
                     <Text style={styles.modalButtonText}>Gönder</Text>
                   </>
                 )}
@@ -361,23 +376,32 @@ const UserProfileScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Başlık */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <ArrowLeft size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Kullanıcı Profili</Text>
-        <TouchableOpacity
-          style={styles.reportButton}
-          onPress={handleShowReportModal}
-        >
-          <Flag size={20} color="#ef4444" />
-        </TouchableOpacity>
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#4e54c8" />
+
+      {/* Mor gradient başlık arka planı */}
+      <LinearGradient
+        colors={["#4e54c8", "#8f94fb"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+            <ArrowLeft size={22} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Kullanıcı Profili</Text>
+          <TouchableOpacity
+            style={styles.reportButton}
+            onPress={handleShowReportModal}
+          >
+            <Flag size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
+          <ActivityIndicator size="large" color="#4e54c8" />
           <Text style={styles.loadingText}>Profil yükleniyor...</Text>
         </View>
       ) : error ? (
@@ -401,14 +425,19 @@ const UserProfileScreen = () => {
                   style={styles.profileImage}
                 />
               ) : (
-                <View style={styles.defaultAvatarContainer}>
-                  <UserIcon size={40} color="#666" />
-                </View>
+                <LinearGradient
+                  colors={["#4e54c8", "#8f94fb"]}
+                  style={styles.defaultAvatarContainer}
+                >
+                  <UserIcon size={40} color="#fff" />
+                </LinearGradient>
               )}
               <View style={styles.profileInfo}>
-                <Text style={styles.userName}>
-                  {userProfile.first_name} {userProfile.last_name}
-                </Text>
+                {userProfile && (
+                  <Text style={styles.userName}>
+                    {userProfile.first_name || ""} {userProfile.last_name || ""}
+                  </Text>
+                )}
 
                 <View style={styles.emailContainer}>
                   <Mail size={14} color="#7f8c8d" />
@@ -461,7 +490,7 @@ const UserProfileScreen = () => {
               </View>
             )}
 
-            {/* Butonlar */}
+            {/* Butonlar - Tek Mesaj Gönder Butonu */}
             <View style={styles.buttonsContainer}>
               {isFriend ? (
                 <TouchableOpacity
@@ -497,19 +526,9 @@ const UserProfileScreen = () => {
                   ) : (
                     <>
                       <UserIcon size={18} color="#fff" />
-                      <Text style={styles.buttonText}>Takip Et</Text>
+                      <Text style={styles.buttonText}>Arkadaş Ekle</Text>
                     </>
                   )}
-                </TouchableOpacity>
-              )}
-
-              {isFriend && (
-                <TouchableOpacity
-                  style={styles.messageButton}
-                  onPress={handleSendMessage}
-                >
-                  <MessageCircle size={18} color="#fff" />
-                  <Text style={styles.buttonText}>Mesaj Gönder</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -544,26 +563,38 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9fa",
   },
+  headerGradient: {
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0,
+    paddingBottom: 16,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
   },
   backButton: {
     padding: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#0f172a",
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#fff",
   },
   reportButton: {
     padding: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   loadingContainer: {
     flex: 1,
@@ -573,7 +604,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#64748b",
+    color: "#4e54c8",
   },
   errorContainer: {
     flex: 1,
@@ -589,7 +620,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: "#3498db",
+    backgroundColor: "#4e54c8",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -600,14 +631,14 @@ const styles = StyleSheet.create({
   },
   profileSection: {
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     margin: 16,
-    padding: 16,
+    padding: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   profileHeader: {
     flexDirection: "row",
@@ -617,56 +648,56 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
+    borderWidth: 2,
+    borderColor: "#f8fafc",
   },
   defaultAvatarContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#e9ecef",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#dee2e6",
   },
   profileInfo: {
     marginLeft: 16,
     flex: 1,
   },
   userName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "bold",
-    color: "#333",
-    marginBottom: 4,
+    color: "#000000",
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
   emailContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   emailText: {
     fontSize: 14,
-    color: "#7f8c8d",
-    marginLeft: 5,
+    color: "#64748b",
+    marginLeft: 8,
   },
   ageContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   ageText: {
     fontSize: 14,
-    color: "#7f8c8d",
-    marginLeft: 5,
+    color: "#64748b",
+    marginLeft: 8,
   },
   locationContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   locationText: {
     fontSize: 14,
-    color: "#7f8c8d",
-    marginLeft: 5,
+    color: "#64748b",
+    marginLeft: 8,
   },
   onlineStatusContainer: {
     flexDirection: "row",
@@ -679,16 +710,16 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   onlineIndicator: {
-    backgroundColor: "#2ecc71",
+    backgroundColor: "#4e54c8",
   },
   onlineStatusText: {
     fontSize: 14,
-    color: "#2ecc71",
+    color: "#4e54c8",
   },
   lastSeenText: {
     fontSize: 14,
-    color: "#7f8c8d",
-    marginLeft: 6,
+    color: "#64748b",
+    marginLeft: 8,
   },
   biographyContainer: {
     marginTop: 16,
@@ -708,9 +739,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   buttonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 16,
+    marginTop: 20,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: "#f1f5f9",
@@ -719,50 +748,46 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#10b981",
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 1,
-    marginRight: 8,
+    borderRadius: 12,
+    backgroundColor: "#4e54c8",
   },
   messageButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#3b82f6",
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 1,
+    borderRadius: 12,
+    backgroundColor: "#4e54c8",
   },
   cancelButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ef4444",
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 1,
-    marginRight: 8,
+    borderRadius: 12,
+    backgroundColor: "#ef4444",
   },
   buttonText: {
     color: "#fff",
     fontWeight: "600",
     marginLeft: 8,
+    fontSize: 15,
   },
   section: {
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     marginHorizontal: 16,
     marginBottom: 16,
-    padding: 16,
+    padding: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   sectionTitle: {
     fontSize: 18,
@@ -775,96 +800,140 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   interestTag: {
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#f0f1fa",
     borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     margin: 4,
   },
   interestTagText: {
     fontSize: 14,
-    color: "#475569",
+    color: "#4e54c8",
     fontWeight: "500",
   },
   modalContainer: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-end",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    padding: 20,
+  },
+  modalBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
   },
   modalContent: {
     backgroundColor: "white",
-    borderRadius: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 20,
     width: "100%",
-    maxWidth: 500,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 20,
+    alignItems: "center",
+  },
+  modalDragHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: "#CBD5E1",
+    borderRadius: 2.5,
+    marginBottom: 16,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    width: "100%",
+    marginBottom: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    borderBottomColor: "#E2E8F0",
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#0f172a",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#4e54c8",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalLabel: {
     fontSize: 16,
-    color: "#64748b",
+    fontWeight: "500",
+    color: "#475569",
     marginBottom: 12,
+    alignSelf: "flex-start",
   },
   reportInput: {
-    backgroundColor: "#f8fafc",
-    borderRadius: 8,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    padding: 12,
+    borderColor: "#E2E8F0",
+    padding: 16,
     fontSize: 16,
     color: "#334155",
-    minHeight: 120,
+    width: "100%",
+    minHeight: 140,
     textAlignVertical: "top",
   },
   charCountText: {
     fontSize: 12,
-    color: "#94a3b8",
+    color: "#94A3B8",
     textAlign: "right",
-    marginTop: 4,
+    marginTop: 8,
+    marginBottom: 20,
+    alignSelf: "flex-end",
   },
   modalActions: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 20,
+    width: "100%",
   },
-  modalButton: {
+  modalCancelButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     flex: 1,
-  },
-  modalCancelButton: {
-    backgroundColor: "#ef4444",
-    marginRight: 8,
+    marginRight: 12,
+    backgroundColor: "#EF4444",
+    shadowColor: "#EF4444",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
   submitButton: {
-    backgroundColor: "#3b82f6",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    flex: 1,
+    backgroundColor: "#4e54c8",
+    shadowColor: "#4e54c8",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
   modalButtonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontWeight: "600",
+    fontSize: 16,
     marginLeft: 8,
   },
 });

@@ -119,9 +119,13 @@ export default function SignInPage() {
     if (validateForm()) {
       setLoading(true);
       try {
-        console.log("Giriş yapılıyor: ", form.email);
+        if (process.env.NODE_ENV === "development") {
+          console.log("Giriş yapılıyor: ", form.email);
+        }
         const user = await login(form.email, form.password);
-        console.log("Giriş başarılı:", user);
+        if (process.env.NODE_ENV === "development") {
+          console.log("Giriş başarılı:", user);
+        }
 
         // Başarılı giriş sonrası ana sayfaya yönlendir
         // router.navigate yerine router.replace kullanarak
@@ -129,60 +133,76 @@ export default function SignInPage() {
         // giriş sayfasına dönmeyecek
         router.replace("/(tabs)/dashboard");
       } catch (error: any) {
-        console.error("Giriş hatası:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Giriş hatası:", error);
+        }
 
         // Kullanıcıya hata mesajı göster
-        let errorMessage = "Giriş yapılırken bir hata oluştu. Lütfen tekrar deneyin.";
+        let errorMessage =
+          "Giriş yapılırken bir hata oluştu. Lütfen tekrar deneyin.";
         let needsEmailVerification = false;
-        
+
         if (error.response?.data) {
           if (error.response.data.message) {
             errorMessage = error.response.data.message;
             // Check if the error is related to email verification
-            if (errorMessage.toLowerCase().includes("doğrula") || 
-                errorMessage.toLowerCase().includes("verify") ||
-                errorMessage.toLowerCase().includes("onay")) {
+            if (
+              errorMessage.toLowerCase().includes("doğrula") ||
+              errorMessage.toLowerCase().includes("verify") ||
+              errorMessage.toLowerCase().includes("onay")
+            ) {
               needsEmailVerification = true;
             }
           } else if (error.response.data.error) {
             errorMessage = error.response.data.error;
           }
         } else if (error.message === "Network Error") {
-          errorMessage = "Sunucuya bağlanırken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin veya daha sonra tekrar deneyin.";
+          errorMessage =
+            "Sunucuya bağlanırken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin veya daha sonra tekrar deneyin.";
         } else if (error.code === "ECONNABORTED") {
-          errorMessage = "Sunucuya bağlanırken zaman aşımı oluştu. Lütfen daha sonra tekrar deneyin.";
+          errorMessage =
+            "Sunucuya bağlanırken zaman aşımı oluştu. Lütfen daha sonra tekrar deneyin.";
         } else if (error.message) {
           errorMessage = error.message;
-          
+
           // Check if the error is related to email verification
-          if (errorMessage.toLowerCase().includes("doğrula") || 
-              errorMessage.toLowerCase().includes("verify") ||
-              errorMessage.toLowerCase().includes("onay")) {
+          if (
+            errorMessage.toLowerCase().includes("doğrula") ||
+            errorMessage.toLowerCase().includes("verify") ||
+            errorMessage.toLowerCase().includes("onay")
+          ) {
             needsEmailVerification = true;
           }
+
+          // Oturum süresi doldu hatası için özel kontrol
+          if (errorMessage.toLowerCase().includes("oturum süresi doldu")) {
+            // Giriş sayfasında bu mesaj yanıltıcı olabilir, daha uygun bir mesaj gösterelim
+            if (form.email && form.password) {
+              errorMessage =
+                "E-posta veya şifre hatalı. Lütfen bilgilerinizi kontrol ediniz.";
+            }
+          }
         }
-        
+
         if (needsEmailVerification) {
           Alert.alert(
-            "E-posta Doğrulama Gerekli", 
+            "E-posta Doğrulama Gerekli",
             "Hesabınıza giriş yapabilmek için lütfen e-posta adresinize gönderilen doğrulama bağlantısına tıklayın.",
             [
-              { 
-                text: "Tamam", 
-                style: "default" 
+              {
+                text: "Tamam",
+                style: "default",
               },
               {
                 text: "Doğrulama E-postasını Tekrar Gönder",
-                onPress: () => handleResendVerificationEmail(form.email)
-              }
+                onPress: () => handleResendVerificationEmail(form.email),
+              },
             ]
           );
         } else {
-          Alert.alert(
-            "Giriş Hatası", 
-            errorMessage,
-            [{ text: "Tamam", style: "cancel" }]
-          );
+          Alert.alert("Giriş Hatası", errorMessage, [
+            { text: "Tamam", style: "cancel" },
+          ]);
         }
       } finally {
         setLoading(false);
@@ -209,20 +229,20 @@ export default function SignInPage() {
         style={{ flex: 1 }}
       >
         <VStack
-          space="lg"
+          space="xl"
           style={{
-            paddingHorizontal: 24,
-            paddingVertical: 32,
+            paddingHorizontal: 30,
+            paddingVertical: 20,
             flex: 1,
             justifyContent: "center",
           }}
         >
-          <Center>
+          <Center style={{ marginBottom: 50 }}>
             {/* Logo */}
-            <Box style={{ marginBottom: 24 }}>
+            <Box style={{ marginBottom: 30 }}>
               <Image
                 source={require("../../assets/images/logo.png")}
-                style={{ width: 120, height: 40 }}
+                style={{ width: 160, height: 60 }}
                 resizeMode="contain"
               />
             </Box>
@@ -232,153 +252,163 @@ export default function SignInPage() {
               style={{ fontWeight: "bold" }}
               className="text-emerald-800"
             >
-              Tekrar Hoşgeldiniz
-            </Text>
-            <Text size="md" className="text-emerald-600 mt-2 text-center">
-              Hesabınıza giriş yaparak devam edin
+              Hoşgeldiniz
             </Text>
           </Center>
 
-          <Box style={{ marginTop: 24 }}>
+          <Box style={{ marginBottom: 30 }}>
             <FormControl
               isInvalid={!!errors.email}
-              style={{ marginBottom: 16 }}
+              style={{ marginBottom: 22 }}
             >
-              <FormControlLabel>
-                <FormControlLabelText className="text-emerald-700">
-                  E-posta
-                </FormControlLabelText>
-              </FormControlLabel>
               <Input
-                size="lg"
-                className="border-emerald-100 focus:border-emerald-500 rounded-lg"
+                size="xl"
+                variant="outline"
+                style={{
+                  borderRadius: 30,
+                  borderWidth: 1,
+                  borderColor: "#e2e8f0",
+                  height: 60,
+                  paddingHorizontal: 20,
+                  backgroundColor: "#f8fafc",
+                  shadowColor: "#00000010",
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 5,
+                  elevation: 1,
+                }}
               >
-                <InputSlot style={{ paddingLeft: 12 }}>
-                  <InputIcon as={Mail} color="#047857" />
+                <InputSlot style={{ paddingLeft: 8 }}>
+                  <InputIcon as={Mail} color="#10b981" />
                 </InputSlot>
                 <InputField
-                  placeholder="E-posta adresinizi girin"
+                  placeholder="E-posta"
                   value={form.email}
                   onChangeText={(text) => handleInputChange("email", text)}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  style={{ fontSize: 16, paddingLeft: 8 }}
                 />
               </Input>
               {errors.email ? (
-                <FormControlError>
-                  <FormControlErrorText>{errors.email}</FormControlErrorText>
+                <FormControlError style={{ marginTop: 6, marginLeft: 16 }}>
+                  <FormControlErrorText style={{ fontSize: 13 }}>
+                    {errors.email}
+                  </FormControlErrorText>
                 </FormControlError>
               ) : null}
             </FormControl>
 
-            <FormControl
-              style={{ marginBottom: 8 }}
-              isInvalid={!!errors.password}
-            >
-              <FormControlLabel>
-                <FormControlLabelText className="text-emerald-700">
-                  Şifre
-                </FormControlLabelText>
-              </FormControlLabel>
+            <FormControl isInvalid={!!errors.password}>
               <Input
-                size="lg"
-                className="border-emerald-100 focus:border-emerald-500 rounded-lg"
+                size="xl"
+                variant="outline"
+                style={{
+                  borderRadius: 30,
+                  borderWidth: 1,
+                  borderColor: "#e2e8f0",
+                  height: 60,
+                  paddingHorizontal: 20,
+                  backgroundColor: "#f8fafc",
+                  shadowColor: "#00000010",
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 5,
+                  elevation: 1,
+                }}
               >
-                <InputSlot style={{ paddingLeft: 12 }}>
-                  <InputIcon as={Lock} color="#047857" />
+                <InputSlot style={{ paddingLeft: 8 }}>
+                  <InputIcon as={Lock} color="#10b981" />
                 </InputSlot>
                 <InputField
-                  placeholder="Şifrenizi girin"
+                  placeholder="Şifre"
                   secureTextEntry={!isPasswordVisible}
                   value={form.password}
                   onChangeText={(text) => handleInputChange("password", text)}
+                  style={{ fontSize: 16, paddingLeft: 8 }}
                 />
                 <InputSlot
-                  style={{ paddingRight: 12 }}
+                  style={{ paddingRight: 8 }}
                   onPress={togglePasswordVisibility}
                 >
                   <InputIcon
                     as={isPasswordVisible ? EyeOff : Eye}
-                    color="#047857"
+                    color="#10b981"
                   />
                 </InputSlot>
               </Input>
               {errors.password ? (
-                <FormControlError>
-                  <FormControlErrorText>{errors.password}</FormControlErrorText>
+                <FormControlError style={{ marginTop: 6, marginLeft: 16 }}>
+                  <FormControlErrorText style={{ fontSize: 13 }}>
+                    {errors.password}
+                  </FormControlErrorText>
                 </FormControlError>
               ) : null}
             </FormControl>
+          </Box>
 
-            <Box style={{ marginTop: 4, alignItems: "flex-end" }}>
-              <Link onPress={handleForgotPassword}>
+          <Box
+            style={{ alignItems: "flex-end", marginTop: -10, marginBottom: 20 }}
+          >
+            <Link onPress={handleForgotPassword}>
+              <LinkText
+                className="text-emerald-600"
+                style={{ fontWeight: "500", fontSize: 14 }}
+              >
+                Şifremi Unuttum
+              </LinkText>
+            </Link>
+          </Box>
+
+          <Button
+            size="lg"
+            style={{
+              borderRadius: 30,
+              height: 60,
+              backgroundColor: "#10b981",
+              shadowColor: "#10b981",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 8,
+              elevation: 4,
+            }}
+            onPress={handleSignIn}
+            disabled={loading || resendingEmail}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <ButtonText
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  letterSpacing: 1,
+                  color: "white",
+                }}
+              >
+                GİRİŞ YAP
+              </ButtonText>
+            )}
+          </Button>
+
+          <Center style={{ marginTop: 40 }}>
+            <Box style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text size="sm" style={{ color: "#666666", fontSize: 15 }}>
+                Hesabınız yok mu?
+              </Text>
+              <Link
+                onPress={() => router.navigate("/(auth)/signup")}
+                style={{ marginLeft: 4 }}
+              >
                 <LinkText
                   className="text-emerald-600"
-                  style={{ fontWeight: "500" }}
+                  style={{ fontWeight: "700", fontSize: 15 }}
                 >
-                  Şifremi Unuttum
+                  Kayıt Ol
                 </LinkText>
               </Link>
             </Box>
-
-            <Button
-              size="lg"
-              className="bg-emerald-600 mt-6 rounded-lg"
-              onPress={handleSignIn}
-              disabled={loading || resendingEmail}
-            >
-              <ButtonText className="text-white">
-                {loading ? "Giriş Yapılıyor..." : "Giriş Yap"}
-              </ButtonText>
-            </Button>
-
-            <Center style={{ marginTop: 24, marginBottom: 24 }}>
-              <Text size="sm" className="text-emerald-700">
-                veya şununla devam et
-              </Text>
-            </Center>
-
-            <Box
-              style={{
-                flexDirection: "row",
-                justifyContent: "center",
-                gap: 16,
-              }}
-            >
-              <TouchableOpacity
-                onPress={handleGoogleSignIn}
-                style={styles.socialButton}
-              >
-                <Chrome size={24} color="#047857" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={handleAppleSignIn}
-                style={styles.socialButton}
-              >
-                <Apple size={24} color="#047857" />
-              </TouchableOpacity>
-            </Box>
-
-            <Center style={{ marginTop: 32 }}>
-              <Box style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text size="sm" className="text-emerald-700">
-                  Hesabınız yok mu?
-                </Text>
-                <Link
-                  onPress={() => router.navigate("/(auth)/signup")}
-                  style={{ marginLeft: 4 }}
-                >
-                  <LinkText
-                    className="text-emerald-600"
-                    style={{ fontWeight: "600" }}
-                  >
-                    Kayıt Ol
-                  </LinkText>
-                </Link>
-              </Box>
-            </Center>
-          </Box>
+          </Center>
         </VStack>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -387,10 +417,10 @@ export default function SignInPage() {
 
 const styles = StyleSheet.create({
   socialButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    borderWidth: 1,
+    width: 54,
+    height: 54,
+    borderRadius: 12,
+    borderWidth: 1.5,
     borderColor: "#e2e8f0",
     justifyContent: "center",
     alignItems: "center",

@@ -38,6 +38,7 @@ export const SportFilter: React.FC<SportFilterProps> = ({
             selectedSport === sport.name && styles.selectedSportFilter,
           ]}
           onPress={() => onSelectSport(sport.name)}
+          activeOpacity={0.7}
         >
           <Text style={styles.sportIcon}>{sport.icon}</Text>
           <Text
@@ -56,31 +57,42 @@ export const SportFilter: React.FC<SportFilterProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   sportFilter: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 16,
-    paddingHorizontal: 12,
+    marginRight: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#F0F2F5",
+    borderRadius: 30,
+    backgroundColor: "#f1f5f9",
+    shadowColor: "#64748b",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   selectedSportFilter: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#dcfce7",
+    shadowColor: "#10b981",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sportIcon: {
     fontSize: 16,
-    marginRight: 6,
+    marginRight: 8,
   },
   sportName: {
     fontSize: 14,
-    color: "#616161",
+    color: "#64748b",
+    fontWeight: "500",
   },
   selectedSportName: {
-    color: "#4CAF50",
-    fontWeight: "500",
+    color: "#10b981",
+    fontWeight: "600",
   },
 });

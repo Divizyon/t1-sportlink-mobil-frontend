@@ -37,6 +37,25 @@ import { LinearGradient } from "expo-linear-gradient";
 // API isteği için timeout değeri (ms)
 const API_TIMEOUT = 15000;
 
+// Renk paletini diğer sayfalar ile uyumlu olarak tanımlıyorum
+const colors = {
+  primary: "#10b981", // Ana yeşil ton
+  primaryLight: "#a7f3d0", // Açık yeşil
+  primaryDark: "#059669", // Koyu yeşil
+  secondary: "#059669", // Turkuaz tonu
+  background: "#ffffff", // Arka plan
+  white: "#ffffff",
+  text: "#1e293b",
+  darkGray: "#4a5568",
+  gray: "#a0aec0",
+  lightGray: "#f1f5f9",
+  error: "#ef4444",
+  success: "#10b981",
+  cardBg: "#ffffff", // Kart arka planı
+  gradient1: "#10b981",
+  gradient2: "#059669",
+};
+
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<
     Array<MobileNotification | NotificationResponse>
@@ -435,12 +454,12 @@ export default function NotificationsScreen() {
     return (
       <View style={styles.emptyContainer}>
         <LinearGradient
-          colors={["#4e54c833", "#8f94fb20"]}
+          colors={["rgba(72,187,120,0.1)", "rgba(72,187,120,0.05)"]}
           style={styles.emptyGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         />
-        <Bell size={60} color="#4e54c8" style={styles.emptyIcon} />
+        <Bell size={60} color={colors.primary} style={styles.emptyIcon} />
         <Text style={styles.emptyTitle}>
           {activeTab === "all"
             ? "Henüz bildiriminiz yok"
@@ -462,7 +481,7 @@ export default function NotificationsScreen() {
     return (
       <View style={styles.requestsContainer}>
         <LinearGradient
-          colors={["#4e54c820", "#8f94fb10"]}
+          colors={[colors.gradient1, colors.gradient2]}
           style={styles.requestsGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -509,10 +528,10 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" backgroundColor="#fff" />
+      <StatusBar style="light" backgroundColor={colors.primary} />
 
       <LinearGradient
-        colors={["#4e54c8", "#8f94fb"]}
+        colors={[colors.gradient1, colors.gradient2]}
         style={styles.headerGradient}
       >
         <View style={styles.header}>
@@ -570,12 +589,12 @@ export default function NotificationsScreen() {
       ) : error ? (
         <View style={styles.errorContainer}>
           <LinearGradient
-            colors={["#ff6b6b20", "#ff6b6b10"]}
+            colors={[`${colors.error}20`, `${colors.error}10`]}
             style={styles.errorGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           />
-          <AlertTriangle size={60} color="#ff6b6b" />
+          <AlertTriangle size={60} color={colors.error} />
           <Text style={styles.errorTitle}>Bir Sorun Oluştu</Text>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity
@@ -585,7 +604,7 @@ export default function NotificationsScreen() {
               fetchFriendshipRequests();
             }}
           >
-            <RefreshCw size={16} color="#fff" />
+            <RefreshCw size={16} color={colors.white} />
             <Text style={styles.retryText}>Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
@@ -604,8 +623,8 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#4e54c8"]}
-              tintColor="#4e54c8"
+              colors={[colors.primary]}
+              tintColor={colors.primary}
             />
           }
           ListHeaderComponent={renderHeader}
@@ -620,14 +639,14 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
   },
   headerGradient: {
     paddingTop: 10,
     paddingBottom: 15,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    marginTop: 30,
+    marginTop: Platform.OS === "ios" ? 0 : 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -648,9 +667,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "bold",
-    color: "#fff",
+    color: colors.white,
     textShadowColor: "rgba(0, 0, 0, 0.2)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
@@ -658,10 +677,10 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: "row",
     paddingHorizontal: 20,
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
     marginTop: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: colors.lightGray,
   },
   tab: {
     paddingVertical: 12,
@@ -670,15 +689,15 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 3,
-    borderBottomColor: "#4e54c8",
+    borderBottomColor: colors.primary,
   },
   tabText: {
     fontSize: 16,
-    color: "#95a5a6",
+    color: colors.gray,
     fontWeight: "500",
   },
   activeTabText: {
-    color: "#4e54c8",
+    color: colors.primary,
     fontWeight: "700",
   },
   boldText: {
@@ -700,7 +719,7 @@ const styles = StyleSheet.create({
   markAllText: {
     fontSize: 12,
     fontWeight: "bold",
-    color: "#fff",
+    color: colors.white,
   },
   emptyContainer: {
     flex: 1,
@@ -726,13 +745,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#4e54c8",
+    color: colors.primary,
     textAlign: "center",
     marginBottom: 10,
   },
   emptyDescription: {
     fontSize: 16,
-    color: "#666",
+    color: colors.darkGray,
     textAlign: "center",
     paddingHorizontal: 32,
   },
@@ -741,12 +760,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#666",
+    color: colors.darkGray,
   },
   errorContainer: {
     flex: 1,
@@ -768,12 +787,12 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#ff6b6b",
+    color: colors.error,
     marginVertical: 15,
   },
   errorText: {
     fontSize: 16,
-    color: "#666",
+    color: colors.darkGray,
     textAlign: "center",
     marginBottom: 20,
   },
@@ -781,7 +800,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#4e54c8",
+    backgroundColor: colors.primary,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 25,
@@ -794,7 +813,7 @@ const styles = StyleSheet.create({
   retryText: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#fff",
+    color: colors.white,
     marginLeft: 8,
   },
   listContainer: {
@@ -830,10 +849,10 @@ const styles = StyleSheet.create({
   requestsTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#4e54c8",
+    color: colors.primary,
   },
   viewAllButton: {
-    backgroundColor: "#4e54c8",
+    backgroundColor: colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -846,11 +865,17 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: 12,
     fontWeight: "bold",
-    color: "#fff",
+    color: colors.white,
   },
   divider: {
     height: 1,
-    backgroundColor: "rgba(78, 84, 200, 0.15)",
+    backgroundColor: `rgba(${parseInt(
+      colors.primary.slice(1, 3),
+      16
+    )}, ${parseInt(colors.primary.slice(3, 5), 16)}, ${parseInt(
+      colors.primary.slice(5, 7),
+      16
+    )}, 0.15)`,
     marginVertical: 10,
   },
 });

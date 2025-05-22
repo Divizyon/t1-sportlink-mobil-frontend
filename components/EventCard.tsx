@@ -154,11 +154,11 @@ export const EventCard: React.FC<EventProps> = ({ event, onPress, style }) => {
 
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
-            <Ionicons name="location-outline" size={14} color="#757575" />
+            <Ionicons name="location-outline" size={16} color="#64748b" />
             <Text style={styles.infoText}>{event.location}</Text>
           </View>
           <View style={styles.infoItem}>
-            <Ionicons name="person-outline" size={14} color="#757575" />
+            <Ionicons name="person-outline" size={16} color="#64748b" />
             <Text style={styles.infoText}>{event.organizer}</Text>
           </View>
         </View>
@@ -179,7 +179,7 @@ export const EventCard: React.FC<EventProps> = ({ event, onPress, style }) => {
             </Text>
           </View>
           <View style={styles.actionContainer}>
-            <MaterialIcons name="chevron-right" size={20} color="#757575" />
+            <MaterialIcons name="arrow-forward-ios" size={16} color="#64748b" />
           </View>
         </View>
       </View>
@@ -191,86 +191,87 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowColor: "#64748b",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
     overflow: "hidden",
   },
   dateContainer: {
-    width: 65,
+    width: 68,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EBF3FF",
-    paddingVertical: 16,
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
+    backgroundColor: "#EBF5F0",
+    paddingVertical: 18,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
   },
   day: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "bold",
-    color: "#0A5196",
+    color: "#10b981",
   },
   month: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "500",
-    color: "#0A5196",
+    color: "#10b981",
     marginTop: 2,
   },
   contentContainer: {
     flex: 1,
-    padding: 12,
+    padding: 16,
   },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
   },
   categoryBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0F2F5",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: "#f1f5f9",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
   },
   categoryIcon: {
-    fontSize: 14,
-    marginRight: 4,
+    fontSize: 15,
+    marginRight: 6,
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "500",
-    color: "#616161",
+    color: "#0f172a",
   },
   timeText: {
-    fontSize: 13,
-    color: "#757575",
+    fontSize: 14,
+    color: "#64748b",
     fontWeight: "500",
   },
   title: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "600",
-    color: "#212121",
-    marginBottom: 8,
+    color: "#0f172a",
+    marginBottom: 12,
+    lineHeight: 22,
   },
   infoRow: {
     flexDirection: "row",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   infoItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 16,
+    marginRight: 20,
   },
   infoText: {
-    fontSize: 13,
-    color: "#757575",
-    marginLeft: 4,
+    fontSize: 14,
+    color: "#64748b",
+    marginLeft: 6,
   },
   footer: {
     flexDirection: "row",
@@ -281,110 +282,117 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   progressBarBackground: {
-    height: 4,
-    backgroundColor: "#E0E0E0",
-    borderRadius: 2,
-    marginBottom: 6,
+    height: 6,
+    backgroundColor: "#e2e8f0",
+    borderRadius: 3,
+    marginBottom: 8,
     overflow: "hidden",
   },
   progressBar: {
     height: "100%",
-    backgroundColor: "#4CAF50",
-    borderRadius: 2,
+    backgroundColor: "#10b981",
+    borderRadius: 3,
   },
   redProgress: {
-    backgroundColor: "#FF5722",
+    backgroundColor: "#ef4444",
   },
   participantsText: {
-    fontSize: 12,
-    color: "#757575",
+    fontSize: 13,
+    color: "#64748b",
+    fontWeight: "500",
   },
   actionContainer: {
-    marginLeft: 8,
+    marginLeft: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#f1f5f9",
+    justifyContent: "center",
+    alignItems: "center",
   },
   activeBorder: {
-    borderColor: "rgba(76, 175, 80, 0.3)",
+    borderColor: "rgba(16, 185, 129, 0.2)",
     borderWidth: 2,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   completedBorder: {
-    borderColor: "rgba(255, 193, 7, 0.3)",
+    borderColor: "rgba(234, 179, 8, 0.2)",
     borderWidth: 2,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   cancelledBorder: {
-    borderColor: "rgba(244, 67, 54, 0.3)",
+    borderColor: "rgba(239, 68, 68, 0.2)",
     borderWidth: 2,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   pendingBorder: {
-    borderColor: "rgba(33, 150, 243, 0.3)",
+    borderColor: "rgba(59, 130, 246, 0.2)",
     borderWidth: 2,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   rejectedBorder: {
-    borderColor: "rgba(156, 39, 176, 0.3)",
+    borderColor: "rgba(168, 85, 247, 0.2)",
     borderWidth: 2,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   statusBadge: {
-    backgroundColor: "rgba(76, 175, 80, 0.2)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
     marginRight: 8,
   },
   statusText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#4CAF50",
+    color: "#10b981",
   },
   completedBadge: {
-    backgroundColor: "rgba(255, 193, 7, 0.2)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: "rgba(234, 179, 8, 0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
     marginRight: 8,
   },
   completedStatusText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#FFC107",
+    color: "#eab308",
   },
   cancelledBadge: {
-    backgroundColor: "rgba(244, 67, 54, 0.2)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
     marginRight: 8,
   },
   cancelledStatusText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#F44336",
+    color: "#ef4444",
   },
   pendingBadge: {
-    backgroundColor: "rgba(33, 150, 243, 0.2)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
     marginRight: 8,
   },
   pendingStatusText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#2196F3",
+    color: "#3b82f6",
   },
   rejectedBadge: {
-    backgroundColor: "rgba(156, 39, 176, 0.2)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: "rgba(168, 85, 247, 0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
     marginRight: 8,
   },
   rejectedStatusText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#9C27B0",
+    color: "#a855f7",
   },
 });

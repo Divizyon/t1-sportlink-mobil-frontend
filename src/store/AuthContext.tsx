@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import { authService } from "../api/authService";
 import { User, LoginCredentials, RegisterData } from "../types";
 import { router } from "expo-router";
@@ -13,7 +20,7 @@ declare global {
 }
 
 // Define token validation interval (check every 10 minutes)
-const TOKEN_VALIDATION_INTERVAL = 10 * 60 * 1000; 
+const TOKEN_VALIDATION_INTERVAL = 10 * 60 * 1000;
 // Minimum time between checks to prevent excessive API calls
 const MIN_CHECK_INTERVAL = 60 * 1000; // 1 minute
 
@@ -44,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isTokenValid, setIsTokenValid] = useState(true);
   const [lastTokenCheck, setLastTokenCheck] = useState<number>(0);
-  
+
   // Add refs to track validation state
   const isValidatingRef = useRef(false);
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -53,55 +60,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Force logout and navigate to login screen
   const forceLogout = useCallback(async (customMessage?: string) => {
-    console.log("Force logout initiated in AuthContext");
+    if (process.env.NODE_ENV === "development") {
+      console.log("Force logout initiated in AuthContext");
+    }
     try {
       // Clear all authentication data
       await AsyncStorage.removeItem("authToken");
       await AsyncStorage.removeItem("refreshToken");
       await AsyncStorage.removeItem("userData");
       await AsyncStorage.removeItem("userInfo");
-      
+
       // Update state
       setUser(null);
       setIsAuthenticated(false);
       setIsTokenValid(false);
-      
+
       // Show toast notification with custom message if provided
       if (customMessage) {
         showToast(customMessage, "error");
       } else {
         showToast("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.", "error");
       }
-      
+
       // Force navigation to login screen with a more direct approach
-      console.log("Redirecting to login screen...");
-      
+      if (process.env.NODE_ENV === "development") {
+        console.log("Redirecting to login screen...");
+      }
+
       // Use a shorter timeout and more reliable navigation
       setTimeout(() => {
         try {
           // Direct navigation to signin screen
           router.navigate("/(auth)/signin");
-          console.log("Navigation to login completed");
+          if (process.env.NODE_ENV === "development") {
+            console.log("Navigation to login completed");
+          }
         } catch (err) {
-          console.error("Navigation failed, trying alternative method:", err);
-          
+          if (process.env.NODE_ENV === "development") {
+            console.error("Navigation failed, trying alternative method:", err);
+          }
+
           // If that fails, try replace
           try {
             router.replace("/(auth)/signin");
-            console.log("Alternative navigation completed");
+            if (process.env.NODE_ENV === "development") {
+              console.log("Alternative navigation completed");
+            }
           } catch (replaceErr) {
-            console.error("Alternative navigation also failed:", replaceErr);
+            if (process.env.NODE_ENV === "development") {
+              console.error("Alternative navigation also failed:", replaceErr);
+            }
           }
         }
       }, 300);
     } catch (error) {
-      console.error("Force logout error:", error);
-      
+      if (process.env.NODE_ENV === "development") {
+        console.error("Force logout error:", error);
+      }
+
       // Last resort direct navigation
       try {
         router.navigate("/(auth)/signin");
       } catch (navError) {
-        console.error("Last resort navigation failed:", navError);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Last resort navigation failed:", navError);
+        }
       }
     }
   }, []);
@@ -124,7 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("Not authenticated, skipping token validation");
       return false;
     }
-    
+
     try {
       // Check if token exists
       const token = await AsyncStorage.getItem("authToken");
@@ -132,15 +155,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log("No token found, session is invalid");
         return false;
       }
-      
+
       // Actually check with the server by making a simple request
       try {
         // Try a simple request to profile endpoint or similar
         console.log("Validating token with API...");
         const response = await apiClient.get("/profile", {
-          timeout: 5000 // Set a shorter timeout for this check
+          timeout: 5000, // Set a shorter timeout for this check
         });
-        
+
         // If we get a successful response, token is valid
         if (response.status === 200) {
           console.log("Token is valid");
@@ -175,7 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (validationIntervalRef.current) {
       clearInterval(validationIntervalRef.current);
     }
-    
+
     // Don't run validation on app startup
     return () => {
       if (validationTimeoutRef.current) {
@@ -202,7 +225,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           const userData = await authService.getCurrentUser();
           if (userData) {
             setUser(userData);
-            
+
             // Skip token validation on startup to prevent redirects from welcome screen
             // Set the token as valid by default
             setIsTokenValid(true);
@@ -267,7 +290,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         password,
         first_name,
         last_name,
-        password_confirm: password
+        password_confirm: password,
       });
       setUser(userData);
       setIsAuthenticated(true);

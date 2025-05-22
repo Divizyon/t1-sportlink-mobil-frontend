@@ -20,8 +20,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <View style={styles.searchContainer}>
         <Ionicons
           name="search"
-          size={20}
-          color="#9E9E9E"
+          size={22}
+          color="#94a3b8"
           style={styles.searchIcon}
         />
         <TextInput
@@ -29,11 +29,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#9E9E9E"
+          placeholderTextColor="#94a3b8"
         />
         {value.length > 0 && (
           <TouchableOpacity onPress={onClear} style={styles.clearButton}>
-            <Ionicons name="close-circle" size={20} color="#9E9E9E" />
+            <Ionicons name="close-circle" size={20} color="#94a3b8" />
           </TouchableOpacity>
         )}
       </View>
@@ -43,25 +43,29 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    width: "100%",
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0F2F5",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 48,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 30,
+    paddingHorizontal: 16,
+    height: 50,
+    shadowColor: "#64748b",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 10,
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: "#424242",
-    paddingVertical: 8,
+    color: "#0f172a",
+    paddingVertical: 10,
   },
   clearButton: {
     padding: 4,

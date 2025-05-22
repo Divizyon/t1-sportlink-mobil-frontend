@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StatusBar,
+  Platform,
 } from "react-native";
 import {
   ArrowLeft,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { eventsApi } from "@/services/api/events";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface UserReport {
   id: number;
@@ -94,13 +96,13 @@ const UserReportsScreen = () => {
   const getStatusColor = (status: string): string => {
     switch (status) {
       case "pending":
-        return "#F39C12"; // Turuncu
+        return "#F59E0B"; // Turuncu
       case "resolved":
-        return "#2ECC71"; // Yeşil
+        return "#10B981"; // Yeşil
       case "rejected":
-        return "#E74C3C"; // Kırmızı
+        return "#EF4444"; // Kırmızı
       default:
-        return "#95A5A6"; // Gri
+        return "#94A3B8"; // Gri
     }
   };
 
@@ -108,11 +110,11 @@ const UserReportsScreen = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pending":
-        return <AlertTriangle size={16} color="#FFF" />;
+        return <AlertTriangle size={14} color="#FFF" />;
       case "resolved":
-        return <CheckCircle2 size={16} color="#FFF" />;
+        return <CheckCircle2 size={14} color="#FFF" />;
       case "rejected":
-        return <XCircle size={16} color="#FFF" />;
+        return <XCircle size={14} color="#FFF" />;
       default:
         return null;
     }
@@ -135,20 +137,27 @@ const UserReportsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+      <StatusBar barStyle="light-content" backgroundColor="#4e54c8" />
 
-      {/* Başlık */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={handleBack}
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={22} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Raporlarım</Text>
-        <View style={{ width: 22 }} />
-      </View>
+      {/* Mor gradient başlık arka planı */}
+      <LinearGradient
+        colors={["#ff7e7e", "#ff0055"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={handleBack}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={22} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Raporlarım</Text>
+          <View style={{ width: 22 }} />
+        </View>
+      </LinearGradient>
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -177,52 +186,52 @@ const UserReportsScreen = () => {
           </Text>
         </View>
       ) : (
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollViewContent}
-        >
-          <View style={styles.sectionTitleContainer}>
-            <Flag size={20} color="#4e54c8" style={{ marginRight: 8 }} />
-            <Text style={styles.sectionTitle}>
-              Gönderilen Raporlar ({reports.length})
-            </Text>
-          </View>
-
-          {reports.map((report) => (
-            <View key={report.id} style={styles.reportCard}>
-              <View style={styles.reportHeader}>
-                <View style={styles.eventInfo}>
+        <View style={styles.contentContainer}>
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollViewContent}
+          >
+            <View style={styles.sectionTitleContainer}>
+              <Flag size={20} color="#e53e3e" style={{ marginRight: 8 }} />
+              <Text style={styles.sectionTitle}>
+                Gönderilen Raporlar ({reports.length})
+              </Text>
+            </View>
+            {reports.map((report) => (
+              <View key={report.id} style={styles.reportCard}>
+                <View style={styles.reportHeader}>
                   <Text style={styles.eventTitle}>{getEventTitle(report)}</Text>
-                  <View style={styles.dateContainer}>
-                    <Clock size={14} color="#64748B" />
-                    <Text style={styles.reportDate}>
-                      {formatDate(report.report_date)}
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: getStatusColor(report.status) },
+                    ]}
+                  >
+                    {getStatusIcon(report.status)}
+                    <Text style={styles.statusText}>
+                      {getStatusText(report.status)}
                     </Text>
                   </View>
                 </View>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: getStatusColor(report.status) },
-                  ]}
-                >
-                  {getStatusIcon(report.status)}
-                  <Text style={styles.statusText}>
-                    {getStatusText(report.status)}
+
+                <View style={styles.dateContainer}>
+                  <Clock size={14} color="#64748B" />
+                  <Text style={styles.reportDate}>
+                    {formatDate(report.report_date)}
                   </Text>
                 </View>
-              </View>
 
-              <View style={styles.separator} />
+                <View style={styles.separator} />
 
-              <View style={styles.reportContent}>
-                <Text style={styles.reasonLabel}>Rapor Sebebi:</Text>
-                <Text style={styles.reasonText}>{report.report_reason}</Text>
+                <View style={styles.reportContent}>
+                  <Text style={styles.reasonLabel}>Rapor Sebebi:</Text>
+                  <Text style={styles.reasonText}>{report.report_reason}</Text>
+                </View>
               </View>
-            </View>
-          ))}
-        </ScrollView>
+            ))}
+          </ScrollView>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -233,69 +242,74 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
+  headerGradient: {
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0,
+    paddingBottom: 16,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     marginTop: 10,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
   },
   backButton: {
     padding: 8,
-    marginTop: 10,
-    borderRadius: 100,
-    backgroundColor: "#F1F5F9",
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   headerTitle: {
-    fontSize: 18,
-    marginTop: 10,
-    fontWeight: "700",
-    color: "#0F172A",
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  contentContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
   scrollView: {
     flex: 1,
   },
   scrollViewContent: {
-    padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 30,
   },
   sectionTitleContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
-    paddingHorizontal: 4,
+    paddingVertical: 12,
+    marginTop: 8,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#4e54c8",
+    fontWeight: "600",
+    color: "#e53e3e",
   },
   reportCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    borderRadius: 12,
     marginBottom: 16,
     padding: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
     borderWidth: 1,
     borderColor: "#F1F5F9",
   },
   reportHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   eventInfo: {
     flex: 1,
@@ -305,11 +319,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#0F172A",
-    marginBottom: 6,
   },
   dateContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 8,
   },
   reportDate: {
     fontSize: 14,
@@ -323,12 +337,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 8,
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1,
   },
   statusText: {
     fontSize: 12,
@@ -339,7 +347,7 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     backgroundColor: "#F1F5F9",
-    marginVertical: 14,
+    marginVertical: 12,
   },
   reportContent: {
     marginTop: 4,

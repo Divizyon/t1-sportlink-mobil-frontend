@@ -10,6 +10,8 @@ import {
   Image,
   ScrollView,
   Platform,
+  TextInput,
+  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -24,21 +26,21 @@ import { LinearGradient } from "expo-linear-gradient";
 
 // Yumuşak yeşil tonlarla modern renk paleti
 const colors = {
-  primary: "#48bb78", // Ana yeşil ton
-  primaryLight: "#9ae6b4", // Açık yeşil
-  primaryDark: "#2f855a", // Koyu yeşil
-  secondary: "#38b2ac", // Turkuaz tonu
-  background: "#f0fff4", // Çok açık yeşil arka plan
+  primary: "#10b981", // Ana yeşil ton
+  primaryLight: "#a7f3d0", // Açık yeşil
+  primaryDark: "#059669", // Koyu yeşil
+  secondary: "#059669", // Turkuaz tonu
+  background: "#ffffff", // Arka plan
   white: "#ffffff",
-  text: "#2d3748",
+  text: "#1e293b",
   darkGray: "#4a5568",
   gray: "#a0aec0",
-  lightGray: "#edf2f7",
-  error: "#fc8181",
-  success: "#68d391",
+  lightGray: "#f1f5f9",
+  error: "#ef4444",
+  success: "#10b981",
   cardBg: "#ffffff", // Kart arka planı
-  gradient1: "#48bb78",
-  gradient2: "#38b2ac",
+  gradient1: "#10b981",
+  gradient2: "#059669",
 };
 
 export default function NewsTab() {
@@ -53,6 +55,8 @@ export default function NewsTab() {
     undefined
   );
   const [activeTab, setActiveTab] = useState<"news" | "announcements">("news");
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Spor kategorileri
   const sportCategories = [
@@ -198,10 +202,40 @@ export default function NewsTab() {
     }
   };
 
+  // Arama temizleme
+  const handleClearSearch = () => {
+    setSearchQuery("");
+  };
+
+  // Arama filtrelemesi
+  useEffect(() => {
+    if (searchQuery.trim() === "") return;
+
+    // Basit arama filtrelemesi
+    const filteredResults = news.filter(
+      (item) =>
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.content &&
+          item.content.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
+    if (filteredResults.length > 0) {
+      setNews(filteredResults);
+    }
+  }, [searchQuery]);
+
   const renderNewsItem = ({ item }: { item: News }) => (
     <TouchableOpacity
       style={styles.newsItem}
-      onPress={() => router.push(`/news/${item.id}`)}
+      onPress={() => {
+        // Eğer haberin source_url değeri varsa ve boş değilse dış bağlantıya git
+        if (item.source_url && item.source_url.trim() !== "") {
+          Linking.openURL(item.source_url);
+        } else {
+          // Aksi halde normal detay sayfasına git
+          router.push(`/news/${item.id}`);
+        }
+      }}
     >
       <View style={styles.cardContent}>
         <View style={styles.imageContainer}>
@@ -243,8 +277,20 @@ export default function NewsTab() {
           </Text>
 
           <View style={styles.readMoreContainer}>
-            <Text style={styles.readMore}>Devamını Oku</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            <Text style={styles.readMore}>
+              {item.source_url && item.source_url.trim() !== ""
+                ? "Kaynağa Git"
+                : "Devamını Oku"}
+            </Text>
+            <Ionicons
+              name={
+                item.source_url && item.source_url.trim() !== ""
+                  ? "open-outline"
+                  : "chevron-forward"
+              }
+              size={16}
+              color={colors.primary}
+            />
           </View>
         </View>
       </View>
@@ -255,12 +301,18 @@ export default function NewsTab() {
   const renderAnnouncementItem = ({ item }: { item: News }) => (
     <TouchableOpacity
       style={styles.newsItem}
-      onPress={() =>
-        router.push({
-          pathname: `/news/${item.id}`,
-          params: { type: "announcement" },
-        })
-      }
+      onPress={() => {
+        // Eğer duyurunun source_url değeri varsa ve boş değilse dış bağlantıya git
+        if (item.source_url && item.source_url.trim() !== "") {
+          Linking.openURL(item.source_url);
+        } else {
+          // Aksi halde normal detay sayfasına git
+          router.push({
+            pathname: `/news/${item.id}`,
+            params: { type: "announcement" },
+          });
+        }
+      }}
     >
       <View style={styles.cardContent}>
         <View style={styles.imageContainer}>
@@ -299,8 +351,20 @@ export default function NewsTab() {
           </Text>
 
           <View style={styles.readMoreContainer}>
-            <Text style={styles.readMore}>Devamını Oku</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            <Text style={styles.readMore}>
+              {item.source_url && item.source_url.trim() !== ""
+                ? "Kaynağa Git"
+                : "Devamını Oku"}
+            </Text>
+            <Ionicons
+              name={
+                item.source_url && item.source_url.trim() !== ""
+                  ? "open-outline"
+                  : "chevron-forward"
+              }
+              size={16}
+              color={colors.primary}
+            />
           </View>
         </View>
       </View>
@@ -318,11 +382,43 @@ export default function NewsTab() {
         style={styles.headerGradient}
       >
         <View style={styles.header}>
-          <View style={styles.titleContainer}>
+          <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>Haberler ve Duyurular</Text>
+            <TouchableOpacity
+              style={styles.searchIconContainer}
+              onPress={() => setShowSearch((prevState) => !prevState)}
+            >
+              <Ionicons name="search" size={22} color="#ffffff" />
+            </TouchableOpacity>
           </View>
         </View>
       </LinearGradient>
+
+      {/* Arama Bölümü */}
+      {showSearch && (
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons
+              name="search"
+              size={20}
+              color={colors.gray}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Ara..."
+              placeholderTextColor={colors.gray}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={handleClearSearch}>
+                <Ionicons name="close-circle" size={20} color={colors.gray} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
 
       <View style={styles.content}>
         {/* Üst Tab Seçici */}
@@ -510,40 +606,40 @@ export default function NewsTab() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f8f9fa",
   },
   content: {
     flex: 1,
-    marginTop: -20,
+    marginTop: -10,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
     overflow: "hidden",
   },
   headerGradient: {
-    paddingTop: 10,
-    paddingBottom: 35,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingTop: 15,
+    paddingBottom: 18,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 5,
     zIndex: 10,
-    marginTop: 30,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === "ios" ? 50 : 10,
+    paddingTop: Platform.OS === "ios" ? 10 : 5,
   },
-  titleContainer: {
+  headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
     color: colors.white,
     textShadowColor: "rgba(0, 0, 0, 0.2)",
@@ -551,48 +647,80 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
     letterSpacing: 0.5,
   },
-  tabContainer: {
-    flexDirection: "row",
-    backgroundColor: colors.white,
-    paddingHorizontal: 6,
+  searchIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchContainer: {
     marginHorizontal: 20,
-    marginTop: 25,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.lightGray,
+    borderRadius: 30,
+    paddingHorizontal: 16,
+    height: 50,
+    shadowColor: "#64748b",
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 3,
-    marginBottom: 10,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
+    paddingVertical: 5,
+  },
+  tabContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.lightGray,
+    flexDirection: "row",
+    marginTop: 16,
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: "hidden",
+    paddingHorizontal: 10,
   },
   tabButton: {
     flex: 1,
     paddingVertical: 14,
-    paddingHorizontal: 5,
-    alignItems: "center",
     justifyContent: "center",
-    borderRadius: 10,
-    margin: 4,
+    alignItems: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
   },
   activeTabButton: {
-    backgroundColor: colors.primary,
+    borderBottomColor: colors.primary,
+    backgroundColor: "transparent",
   },
   tabButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "500",
     color: colors.darkGray,
   },
   activeTabText: {
-    color: colors.white,
+    color: colors.primary,
     fontWeight: "600",
   },
   categoriesWrapper: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
     paddingVertical: 15,
     marginBottom: 10,
   },
   categoriesContainer: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
   },
   categoriesContent: {
     paddingHorizontal: 20,
@@ -603,7 +731,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 50,
-    backgroundColor: colors.white,
+    backgroundColor: colors.lightGray,
     marginHorizontal: 5,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -748,11 +876,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 50,
-    shadowColor: "#000",
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 4,
   },
   retryButtonText: {
     color: colors.white,
@@ -767,11 +895,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginVertical: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   loadMoreText: {
     color: colors.white,

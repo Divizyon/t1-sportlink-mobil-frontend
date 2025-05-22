@@ -10,18 +10,24 @@ import {
   RefreshControl,
   Alert,
   SafeAreaView,
+  StatusBar,
+  Dimensions,
+  Platform,
+  Animated,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { friendshipsApi, Friend } from "@/services/api/friendships";
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
-  MessageCircle,
   RefreshCw,
-  Clock,
   User as UserIcon,
+  Users,
 } from "lucide-react-native";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
+
+const { width } = Dimensions.get("window");
 
 export default function FriendsListScreen() {
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -30,6 +36,7 @@ export default function FriendsListScreen() {
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>("");
   const router = useRouter();
+  const scrollY = new Animated.Value(0);
 
   useEffect(() => {
     console.log("Arkadaş listesi ekranı açıldı");
@@ -108,18 +115,6 @@ export default function FriendsListScreen() {
     await loadFriends();
   };
 
-  const handleSendMessage = (friend: Friend) => {
-    console.log("Mesaj gönderme ekranına yönlendiriliyor:", friend.id);
-    router.push({
-      pathname: `/messages/${friend.id}`,
-      params: {
-        name: friend.first_name + " " + friend.last_name,
-        avatar: friend.profile_picture,
-        email: friend.email,
-      },
-    });
-  };
-
   const handleGoBack = () => {
     router.back();
   };
@@ -145,27 +140,58 @@ export default function FriendsListScreen() {
     }
   };
 
-  const renderFriend = ({ item }: { item: Friend }) => {
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [1, 1], // Başlık her zaman görünür olsun
+    extrapolate: "clamp",
+  });
+
+  const renderFriend = ({ item, index }: { item: Friend; index: number }) => {
     console.log("Arkadaş render ediliyor:", item);
     return (
-      <TouchableOpacity onPress={() => handleViewProfile(item)}>
-        <View style={styles.userCard}>
-          <View style={styles.userHeader}>
-            <View style={styles.userAvatarContainer}>
-              {item.profile_picture ? (
-                <Image
-                  source={{ uri: item.profile_picture }}
-                  style={styles.userAvatar}
-                />
-              ) : (
-                <View style={styles.defaultAvatarContainer}>
-                  <UserIcon size={30} color="#666" />
-                </View>
-              )}
-              {item.is_online && <View style={styles.onlineIndicator} />}
-            </View>
-            <View style={styles.userInfoContainer}>
-              <View style={styles.userInfo}>
+      <Animated.View
+        style={[
+          styles.friendItemContainer,
+          {
+            transform: [
+              {
+                translateY: scrollY.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: [0, index % 2 === 0 ? -5 : 5],
+                  extrapolate: "clamp",
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => handleViewProfile(item)}
+          style={styles.userCardTouchable}
+        >
+          <LinearGradient
+            colors={["#ffffff", "#f5f0fe"]}
+            style={styles.userCard}
+          >
+            <View style={styles.userHeader}>
+              <View style={styles.userAvatarContainer}>
+                {item.profile_picture ? (
+                  <Image
+                    source={{ uri: item.profile_picture }}
+                    style={styles.userAvatar}
+                  />
+                ) : (
+                  <LinearGradient
+                    colors={["#4e54c8", "#8f94fb"]}
+                    style={styles.defaultAvatarContainer}
+                  >
+                    <UserIcon size={20} color="#fff" />
+                  </LinearGradient>
+                )}
+                {item.is_online && <View style={styles.onlineIndicator} />}
+              </View>
+              <View style={styles.userInfoContainer}>
                 <Text
                   style={styles.userName}
                   numberOfLines={1}
@@ -173,35 +199,11 @@ export default function FriendsListScreen() {
                 >
                   {item.first_name} {item.last_name}
                 </Text>
-                <View style={styles.lastSeenContainer}>
-                  <Clock size={12} color="#95a5a6" />
-                  <Text style={styles.lastSeenText}>
-                    {item.last_seen_at
-                      ? formatLastSeenTime(item.last_seen_at)
-                      : "Çevrimdışı"}
-                  </Text>
-                </View>
-                <Text
-                  style={styles.userLocation}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {item.email}
-                </Text>
-              </View>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={styles.messageButton}
-                  onPress={() => handleSendMessage(item)}
-                >
-                  <MessageCircle size={14} color="#fff" />
-                  <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
-                </TouchableOpacity>
               </View>
             </View>
-          </View>
-        </View>
-      </TouchableOpacity>
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
@@ -223,62 +225,110 @@ export default function FriendsListScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-          <ArrowLeft size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Arkadaşlarım</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#6a11cb" />
+
+      {/* Mor gradient başlık arka planı */}
+      <LinearGradient
+        colors={["#4e54c8", "#8f94fb"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+            <ArrowLeft size={22} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Arkadaşlarım</Text>
+          </View>
+          <View style={{ width: 22 }} />
+        </View>
+      </LinearGradient>
 
       {loading && !refreshing ? (
-        <ActivityIndicator
-          size="large"
-          color="#4dabf7"
-          style={{ marginTop: 40 }}
-        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4e54c8" />
+          <Text style={styles.loadingText}>Arkadaşların yükleniyor...</Text>
+        </View>
       ) : error ? (
         renderErrorState()
       ) : (
         <>
-          <FlatList
+          <Animated.FlatList
             data={friends}
             renderItem={renderFriend}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+            contentContainerStyle={styles.listContainer}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { useNativeDriver: false }
+            )}
+            scrollEventThrottle={16}
+            ListHeaderComponent={
+              <View style={styles.listHeader}>
+                <View style={styles.iconContainer}>
+                  <Users size={28} color="#4e54c8" />
+                </View>
+                <Text style={styles.listHeaderText}>
+                  {friends.length > 0
+                    ? "Arkadaşlarınız"
+                    : "Henüz arkadaşınız yok"}
+                </Text>
+              </View>
+            }
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Text style={styles.empty}>Henüz arkadaşın yok.</Text>
-                <TouchableOpacity
-                  style={styles.findFriendsButton}
-                  onPress={() =>
-                    router.push("/(tabs)/profile/find-friends" as any)
-                  }
+                <LinearGradient
+                  colors={["#4e54c8", "#8f94fb"]}
+                  style={styles.emptyCard}
                 >
-                  <Text style={styles.findFriendsButtonText}>Arkadaş Bul</Text>
-                </TouchableOpacity>
+                  <Text style={styles.empty}>Henüz arkadaşın yok.</Text>
+                  <TouchableOpacity
+                    style={styles.findFriendsButton}
+                    onPress={() =>
+                      router.push("/(tabs)/profile/find-friends" as any)
+                    }
+                  >
+                    <LinearGradient
+                      colors={["#4e54c8", "#8f94fb"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.findFriendsButtonGradient}
+                    >
+                      <Text style={styles.findFriendsButtonText}>
+                        Arkadaş Bul
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
 
-                {debugInfo ? (
-                  <View style={styles.debugContainer}>
-                    <Text style={styles.debugTitle}>Debug Bilgileri:</Text>
-                    <Text style={styles.debugText}>{debugInfo}</Text>
-                  </View>
-                ) : null}
+                  {debugInfo ? (
+                    <View style={styles.debugContainer}>
+                      <Text style={styles.debugTitle}>Debug Bilgileri:</Text>
+                      <Text style={styles.debugText}>{debugInfo}</Text>
+                    </View>
+                  ) : null}
+                </LinearGradient>
               </View>
             }
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={["#4dabf7"]}
+                colors={["#4e54c8"]}
+                tintColor="#4e54c8"
               />
             }
           />
 
           {friends.length > 0 && (
-            <View style={styles.countBadge}>
+            <LinearGradient
+              colors={["#4e54c8", "#8f94fb"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.countBadge}
+            >
               <Text style={styles.countText}>{friends.length} arkadaş</Text>
-            </View>
+            </LinearGradient>
           )}
         </>
       )}
@@ -291,67 +341,140 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9fa",
   },
+  headerGradient: {
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0,
+    paddingBottom: 16,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  headerBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+    backgroundColor: "#fff",
+    zIndex: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 20,
+    paddingTop: 16,
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    marginBottom: 8,
+    paddingBottom: 8,
+    zIndex: 2,
   },
   backButton: {
     padding: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   title: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#333",
+    color: "#fff",
     textAlign: "center",
   },
-  userCard: {
-    backgroundColor: "#fff",
+  badgeSmall: {
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+  badgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  listContainer: {
+    padding: 12,
+    paddingBottom: 80,
+    paddingTop: 20,
+  },
+  listHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(156, 39, 176, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  listHeaderText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#4e54c8",
+  },
+  friendItemContainer: {
+    marginBottom: 12,
+  },
+  userCardTouchable: {
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 3,
+  },
+  userCard: {
+    padding: 14,
+    borderRadius: 16,
   },
   userHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
   },
   userAvatarContainer: {
     position: "relative",
+    marginRight: 14,
   },
   userAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 2,
+    borderColor: "#fff",
   },
   defaultAvatarContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#e9ecef",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#dee2e6",
+    borderWidth: 2,
+    borderColor: "#fff",
   },
   onlineIndicator: {
     position: "absolute",
-    width: 14,
-    height: 14,
-    backgroundColor: "#4cd137",
-    borderRadius: 7,
+    width: 10,
+    height: 10,
+    backgroundColor: "#9c27b0",
+    borderRadius: 5,
     borderWidth: 2,
     borderColor: "#fff",
     right: 0,
@@ -359,56 +482,24 @@ const styles = StyleSheet.create({
   },
   userInfoContainer: {
     flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginLeft: 12,
-  },
-  userInfo: {
-    flex: 1,
-    marginRight: 8,
+    justifyContent: "center",
   },
   userName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1e293b",
+    letterSpacing: 0.3,
   },
-  lastSeenContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  lastSeenText: {
-    fontSize: 13,
-    color: "#95a5a6",
-    marginLeft: 6,
-  },
-  userLocation: {
-    fontSize: 14,
-    color: "#666",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
-  messageButton: {
-    flexDirection: "row",
-    backgroundColor: "#4dabf7",
-    padding: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    alignItems: "center",
+  loadingContainer: {
+    flex: 1,
     justifyContent: "center",
-    height: 26,
-    minWidth: 70,
+    alignItems: "center",
+    padding: 20,
   },
-  messageButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 11,
-    marginLeft: 4,
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#4e54c8",
   },
   errorContainer: {
     flex: 1,
@@ -417,7 +508,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   error: {
-    color: "#ff6b6b",
+    color: "#ef4444",
     textAlign: "center",
     marginTop: 20,
     marginBottom: 20,
@@ -425,7 +516,7 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     flexDirection: "row",
-    backgroundColor: "#4dabf7",
+    backgroundColor: "#9c27b0",
     padding: 12,
     borderRadius: 12,
     alignItems: "center",
@@ -439,23 +530,37 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 40,
+    paddingVertical: 30,
+    paddingHorizontal: 20,
+  },
+  emptyCard: {
+    width: "100%",
+    borderRadius: 16,
+    padding: 24,
+    alignItems: "center",
   },
   empty: {
-    color: "#888",
+    color: "#6a11cb",
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 20,
     fontSize: 16,
   },
   findFriendsButton: {
-    backgroundColor: "#4dabf7",
-    paddingVertical: 12,
+    width: "100%",
+    maxWidth: 200,
+    overflow: "hidden",
+    borderRadius: 12,
+  },
+  findFriendsButtonGradient: {
+    paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
+    alignItems: "center",
   },
   findFriendsButtonText: {
     color: "#fff",
     fontWeight: "600",
+    fontSize: 15,
   },
   debugContainer: {
     marginTop: 20,
@@ -479,13 +584,18 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20,
     right: 20,
-    backgroundColor: "#4dabf7",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
   },
   countText: {
     color: "white",
     fontWeight: "bold",
+    fontSize: 14,
   },
 });

@@ -237,7 +237,7 @@ export default function SignUpPage() {
         .register(userData)
         .then((user) => {
           console.log("Kayıt başarılı:", user);
-          
+
           // Show email verification required alert
           Alert.alert(
             "Kayıt Başarılı",
@@ -256,10 +256,10 @@ export default function SignUpPage() {
         })
         .catch((error) => {
           console.error("Kayıt hatası:", error);
-          
+
           // Özel hata mesajları
           let errorMessage = "Kayıt işlemi sırasında bir hata oluştu.";
-          
+
           if (error.response && error.response.data) {
             if (error.response.data.message) {
               errorMessage = error.response.data.message;
@@ -273,12 +273,10 @@ export default function SignUpPage() {
           } else if (error.message) {
             errorMessage = error.message;
           }
-          
-          Alert.alert(
-            "Kayıt Hatası",
-            errorMessage,
-            [{ text: "Tamam", style: "cancel" }]
-          );
+
+          Alert.alert("Kayıt Hatası", errorMessage, [
+            { text: "Tamam", style: "cancel" },
+          ]);
         })
         .finally(() => {
           setIsLoading(false);
@@ -304,62 +302,68 @@ export default function SignUpPage() {
           <VStack
             space="md"
             style={{
-              paddingHorizontal: 24,
-              paddingVertical: 24,
+              paddingHorizontal: 30,
+              paddingVertical: 20,
               justifyContent: "center",
             }}
           >
             <Center>
               {/* Logo */}
-              <Box style={{ marginBottom: 24 }}>
+              <Box style={{ marginBottom: 30 }}>
                 <Image
                   source={require("../../assets/images/logo.png")}
-                  style={{ width: 120, height: 40 }}
+                  style={{ width: 160, height: 60 }}
                   resizeMode="contain"
                 />
               </Box>
 
               <Text
                 size="2xl"
-                style={{ fontWeight: "bold" }}
+                style={{ fontWeight: "bold", marginBottom: 6 }}
                 className="text-emerald-800"
               >
                 Hesap Oluştur
               </Text>
-              <Text size="md" className="text-emerald-600 mt-2 text-center">
-                SportLink'e hoş geldiniz! Kaydolun ve spor dünyasına katılın
-              </Text>
             </Center>
 
-            <Box style={{ marginTop: 24 }}>
+            <Box style={{ marginTop: 10 }}>
               {/* Ad alanı */}
               <FormControl
                 isInvalid={!!errors.firstName}
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 20 }}
               >
-                <FormControlLabel>
-                  <FormControlLabelText className="text-emerald-700">
-                    Ad
-                  </FormControlLabelText>
-                </FormControlLabel>
                 <Input
-                  size="lg"
-                  className="border-emerald-100 focus:border-emerald-500 rounded-lg"
+                  size="xl"
+                  variant="outline"
+                  style={{
+                    borderRadius: 30,
+                    borderWidth: 1,
+                    borderColor: "#e2e8f0",
+                    height: 60,
+                    paddingHorizontal: 20,
+                    backgroundColor: "#f8fafc",
+                    shadowColor: "#00000010",
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 5,
+                    elevation: 1,
+                  }}
                 >
-                  <InputSlot style={{ paddingLeft: 12 }}>
-                    <InputIcon as={User} color="#047857" />
+                  <InputSlot style={{ paddingLeft: 8 }}>
+                    <InputIcon as={User} color="#10b981" />
                   </InputSlot>
                   <InputField
-                    placeholder="Adınızı girin"
+                    placeholder="Adınız"
                     value={form.firstName}
                     onChangeText={(text) =>
                       handleInputChange("firstName", text)
                     }
+                    style={{ fontSize: 16, paddingLeft: 8 }}
                   />
                 </Input>
                 {errors.firstName ? (
-                  <FormControlError>
-                    <FormControlErrorText>
+                  <FormControlError style={{ marginTop: 6, marginLeft: 16 }}>
+                    <FormControlErrorText style={{ fontSize: 13 }}>
                       {errors.firstName}
                     </FormControlErrorText>
                   </FormControlError>
@@ -369,29 +373,38 @@ export default function SignUpPage() {
               {/* Soyad alanı */}
               <FormControl
                 isInvalid={!!errors.lastName}
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 20 }}
               >
-                <FormControlLabel>
-                  <FormControlLabelText className="text-emerald-700">
-                    Soyad
-                  </FormControlLabelText>
-                </FormControlLabel>
                 <Input
-                  size="lg"
-                  className="border-emerald-100 focus:border-emerald-500 rounded-lg"
+                  size="xl"
+                  variant="outline"
+                  style={{
+                    borderRadius: 30,
+                    borderWidth: 1,
+                    borderColor: "#e2e8f0",
+                    height: 60,
+                    paddingHorizontal: 20,
+                    backgroundColor: "#f8fafc",
+                    shadowColor: "#00000010",
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 5,
+                    elevation: 1,
+                  }}
                 >
-                  <InputSlot style={{ paddingLeft: 12 }}>
-                    <InputIcon as={User} color="#047857" />
+                  <InputSlot style={{ paddingLeft: 8 }}>
+                    <InputIcon as={User} color="#10b981" />
                   </InputSlot>
                   <InputField
-                    placeholder="Soyadınızı girin"
+                    placeholder="Soyadınız"
                     value={form.lastName}
                     onChangeText={(text) => handleInputChange("lastName", text)}
+                    style={{ fontSize: 16, paddingLeft: 8 }}
                   />
                 </Input>
                 {errors.lastName ? (
-                  <FormControlError>
-                    <FormControlErrorText>
+                  <FormControlError style={{ marginTop: 6, marginLeft: 16 }}>
+                    <FormControlErrorText style={{ fontSize: 13 }}>
                       {errors.lastName}
                     </FormControlErrorText>
                   </FormControlError>
@@ -401,31 +414,42 @@ export default function SignUpPage() {
               {/* E-posta alanı */}
               <FormControl
                 isInvalid={!!errors.email}
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 20 }}
               >
-                <FormControlLabel>
-                  <FormControlLabelText className="text-emerald-700">
-                    E-posta
-                  </FormControlLabelText>
-                </FormControlLabel>
                 <Input
-                  size="lg"
-                  className="border-emerald-100 focus:border-emerald-500 rounded-lg"
+                  size="xl"
+                  variant="outline"
+                  style={{
+                    borderRadius: 30,
+                    borderWidth: 1,
+                    borderColor: "#e2e8f0",
+                    height: 60,
+                    paddingHorizontal: 20,
+                    backgroundColor: "#f8fafc",
+                    shadowColor: "#00000010",
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 5,
+                    elevation: 1,
+                  }}
                 >
-                  <InputSlot style={{ paddingLeft: 12 }}>
-                    <InputIcon as={Mail} color="#047857" />
+                  <InputSlot style={{ paddingLeft: 8 }}>
+                    <InputIcon as={Mail} color="#10b981" />
                   </InputSlot>
                   <InputField
-                    placeholder="E-posta adresinizi girin"
+                    placeholder="E-posta adresiniz"
                     value={form.email}
                     onChangeText={(text) => handleInputChange("email", text)}
                     keyboardType="email-address"
                     autoCapitalize="none"
+                    style={{ fontSize: 16, paddingLeft: 8 }}
                   />
                 </Input>
                 {errors.email ? (
-                  <FormControlError>
-                    <FormControlErrorText>{errors.email}</FormControlErrorText>
+                  <FormControlError style={{ marginTop: 6, marginLeft: 16 }}>
+                    <FormControlErrorText style={{ fontSize: 13 }}>
+                      {errors.email}
+                    </FormControlErrorText>
                   </FormControlError>
                 ) : null}
               </FormControl>
@@ -433,34 +457,40 @@ export default function SignUpPage() {
               {/* Doğum tarihi alanı */}
               <FormControl
                 isInvalid={!!errors.birthDate}
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 20 }}
               >
-                <FormControlLabel>
-                  <FormControlLabelText className="text-emerald-700">
-                    Doğum Tarihi
-                  </FormControlLabelText>
-                </FormControlLabel>
                 <Input
-                  size="lg"
-                  className="border-emerald-100 focus:border-emerald-500 rounded-lg"
+                  size="xl"
+                  variant="outline"
+                  style={{
+                    borderRadius: 30,
+                    borderWidth: 1,
+                    borderColor: "#e2e8f0",
+                    height: 60,
+                    paddingHorizontal: 20,
+                    backgroundColor: "#f8fafc",
+                    shadowColor: "#00000010",
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 5,
+                    elevation: 1,
+                  }}
                 >
-                  <InputSlot style={{ paddingLeft: 12 }}>
-                    <InputIcon as={Calendar} color="#047857" />
+                  <InputSlot style={{ paddingLeft: 8 }}>
+                    <InputIcon as={Calendar} color="#10b981" />
                   </InputSlot>
                   <InputField
-                    placeholder="YYYY-MM-DD"
+                    placeholder="Doğum tarihi (YYYY-MM-DD)"
                     value={form.birthDate}
                     onChangeText={handleBirthDateChange}
                     keyboardType="numeric"
                     maxLength={10}
+                    style={{ fontSize: 16, paddingLeft: 8 }}
                   />
                 </Input>
-                <Text size="xs" className="text-emerald-600 mt-1">
-                  Format: 2000-01-31
-                </Text>
                 {errors.birthDate ? (
-                  <FormControlError>
-                    <FormControlErrorText>
+                  <FormControlError style={{ marginTop: 6, marginLeft: 16 }}>
+                    <FormControlErrorText style={{ fontSize: 13 }}>
                       {errors.birthDate}
                     </FormControlErrorText>
                   </FormControlError>
@@ -470,39 +500,48 @@ export default function SignUpPage() {
               {/* Şifre alanı */}
               <FormControl
                 isInvalid={!!errors.password}
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 20 }}
               >
-                <FormControlLabel>
-                  <FormControlLabelText className="text-emerald-700">
-                    Şifre
-                  </FormControlLabelText>
-                </FormControlLabel>
                 <Input
-                  size="lg"
-                  className="border-emerald-100 focus:border-emerald-500 rounded-lg"
+                  size="xl"
+                  variant="outline"
+                  style={{
+                    borderRadius: 30,
+                    borderWidth: 1,
+                    borderColor: "#e2e8f0",
+                    height: 60,
+                    paddingHorizontal: 20,
+                    backgroundColor: "#f8fafc",
+                    shadowColor: "#00000010",
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 5,
+                    elevation: 1,
+                  }}
                 >
-                  <InputSlot style={{ paddingLeft: 12 }}>
-                    <InputIcon as={Lock} color="#047857" />
+                  <InputSlot style={{ paddingLeft: 8 }}>
+                    <InputIcon as={Lock} color="#10b981" />
                   </InputSlot>
                   <InputField
-                    placeholder="Şifrenizi girin"
+                    placeholder="Şifre"
                     secureTextEntry={!isPasswordVisible}
                     value={form.password}
                     onChangeText={(text) => handleInputChange("password", text)}
+                    style={{ fontSize: 16, paddingLeft: 8 }}
                   />
                   <InputSlot
-                    style={{ paddingRight: 12 }}
+                    style={{ paddingRight: 8 }}
                     onPress={togglePasswordVisibility}
                   >
                     <InputIcon
                       as={isPasswordVisible ? EyeOff : Eye}
-                      color="#047857"
+                      color="#10b981"
                     />
                   </InputSlot>
                 </Input>
                 {errors.password ? (
-                  <FormControlError>
-                    <FormControlErrorText>
+                  <FormControlError style={{ marginTop: 6, marginLeft: 16 }}>
+                    <FormControlErrorText style={{ fontSize: 13 }}>
                       {errors.password}
                     </FormControlErrorText>
                   </FormControlError>
@@ -511,105 +550,114 @@ export default function SignUpPage() {
 
               <FormControl
                 isInvalid={!!errors.confirmPassword}
-                style={{ marginBottom: 24 }}
+                style={{ marginBottom: 20 }}
               >
-                <FormControlLabel>
-                  <FormControlLabelText className="text-emerald-700">
-                    Şifre Tekrar
-                  </FormControlLabelText>
-                </FormControlLabel>
                 <Input
-                  size="lg"
-                  className="border-emerald-100 focus:border-emerald-500 rounded-lg"
+                  size="xl"
+                  variant="outline"
+                  style={{
+                    borderRadius: 30,
+                    borderWidth: 1,
+                    borderColor: "#e2e8f0",
+                    height: 60,
+                    paddingHorizontal: 20,
+                    backgroundColor: "#f8fafc",
+                    shadowColor: "#00000010",
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 5,
+                    elevation: 1,
+                  }}
                 >
-                  <InputSlot style={{ paddingLeft: 12 }}>
-                    <InputIcon as={Lock} color="#047857" />
+                  <InputSlot style={{ paddingLeft: 8 }}>
+                    <InputIcon as={Lock} color="#10b981" />
                   </InputSlot>
                   <InputField
-                    placeholder="Şifrenizi tekrar girin"
+                    placeholder="Şifre tekrarı"
                     secureTextEntry={!isConfirmPasswordVisible}
                     value={form.confirmPassword}
                     onChangeText={(text) =>
                       handleInputChange("confirmPassword", text)
                     }
+                    style={{ fontSize: 16, paddingLeft: 8 }}
                   />
                   <InputSlot
-                    style={{ paddingRight: 12 }}
+                    style={{ paddingRight: 8 }}
                     onPress={toggleConfirmPasswordVisibility}
                   >
                     <InputIcon
                       as={isConfirmPasswordVisible ? EyeOff : Eye}
-                      color="#047857"
+                      color="#10b981"
                     />
                   </InputSlot>
                 </Input>
                 {errors.confirmPassword ? (
-                  <FormControlError>
-                    <FormControlErrorText>
+                  <FormControlError style={{ marginTop: 6, marginLeft: 16 }}>
+                    <FormControlErrorText style={{ fontSize: 13 }}>
                       {errors.confirmPassword}
                     </FormControlErrorText>
                   </FormControlError>
                 ) : null}
               </FormControl>
 
-              <Box style={{ marginBottom: 8 }}>
+              <Box style={{ marginBottom: 24, paddingHorizontal: 10 }}>
                 <Text
-                  className="text-emerald-700 text-sm"
+                  className="text-gray-500 text-xs"
                   style={{ marginBottom: 4 }}
                 >
                   Kaydolarak şunları kabul etmiş olursunuz:
-                </Text>
-                <Text className="text-emerald-600 text-xs">
-                  Hizmet Koşulları ve Gizlilik Politikası
+                  <Text
+                    className="text-emerald-600 text-xs"
+                    style={{ fontWeight: "600" }}
+                  >
+                    {" "}
+                    Hizmet Koşulları{" "}
+                  </Text>
+                  ve
+                  <Text
+                    className="text-emerald-600 text-xs"
+                    style={{ fontWeight: "600" }}
+                  >
+                    {" "}
+                    Gizlilik Politikası
+                  </Text>
                 </Text>
               </Box>
 
               <Button
-                className="bg-emerald-600 rounded-lg"
                 size="lg"
+                style={{
+                  borderRadius: 30,
+                  height: 60,
+                  backgroundColor: "#10b981",
+                  shadowColor: "#10b981",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 8,
+                  elevation: 4,
+                }}
                 onPress={handleSignUp}
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator size="small" color="white" />
                 ) : (
-                  <ButtonText style={{ fontWeight: "bold" }}>
-                    Kayıt Ol
+                  <ButtonText
+                    style={{
+                      fontSize: 16,
+                      fontWeight: "600",
+                      letterSpacing: 1,
+                      color: "white",
+                    }}
+                  >
+                    KAYIT OL
                   </ButtonText>
                 )}
               </Button>
 
-              <Center style={{ marginTop: 24, marginBottom: 24 }}>
-                <Text size="sm" className="text-emerald-700">
-                  veya şununla devam et
-                </Text>
-              </Center>
-
-              <Box
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  gap: 16,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={handleGoogleSignUp}
-                  style={styles.socialButton}
-                >
-                  <Chrome size={24} color="#047857" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={handleAppleSignUp}
-                  style={styles.socialButton}
-                >
-                  <Apple size={24} color="#047857" />
-                </TouchableOpacity>
-              </Box>
-
-              <Center style={{ marginTop: 32 }}>
+              <Center style={{ marginTop: 40 }}>
                 <Box style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text size="sm" className="text-emerald-700">
+                  <Text size="sm" style={{ color: "#666666", fontSize: 15 }}>
                     Zaten hesabınız var mı?
                   </Text>
                   <Link
@@ -618,7 +666,7 @@ export default function SignUpPage() {
                   >
                     <LinkText
                       className="text-emerald-600"
-                      style={{ fontWeight: "600" }}
+                      style={{ fontWeight: "700", fontSize: 15 }}
                     >
                       Giriş Yap
                     </LinkText>
@@ -635,10 +683,10 @@ export default function SignUpPage() {
 
 const styles = StyleSheet.create({
   socialButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    borderWidth: 1,
+    width: 54,
+    height: 54,
+    borderRadius: 12,
+    borderWidth: 1.5,
     borderColor: "#e2e8f0",
     justifyContent: "center",
     alignItems: "center",

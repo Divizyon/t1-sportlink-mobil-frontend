@@ -25,12 +25,16 @@ export const authService = {
         throw new Error("İnternet bağlantısı yok");
       }
 
-      console.log("Login isteği gönderiliyor:", credentials.email);
+      if (process.env.NODE_ENV === "development") {
+        console.log("Login isteği gönderiliyor:", credentials.email);
+      }
       const response = await apiClient.post<AuthResponse>(
         "/auth/login",
         credentials
       );
-      console.log("Login yanıtı alındı:", response.status);
+      if (process.env.NODE_ENV === "development") {
+        console.log("Login yanıtı alındı:", response.status);
+      }
 
       // Store tokens and user data
       if (response.data.data.session) {
@@ -50,15 +54,33 @@ export const authService = {
 
       return response.data.data.user;
     } catch (error: any) {
-      console.error("Login error details:", error.message, error.code);
+      // Sadece geliştirme modunda tam hata detaylarını göster
+      if (process.env.NODE_ENV === "development") {
+        console.error("Login error details:", error.message, error.code);
 
-      // Özel hata mesajları ekleyin
-      if (error.message === "Network Error") {
-        console.error("Network error: API sunucusuna erişilemiyor");
-      } else if (error.code === "ECONNABORTED") {
-        console.error("Connection timeout: API isteği zaman aşımına uğradı");
-      } else if (error.response) {
-        console.error("API error:", error.response.status, error.response.data);
+        // Özel hata mesajları ekleyin
+        if (error.message === "Network Error") {
+          console.error("Network error: API sunucusuna erişilemiyor");
+        } else if (error.code === "ECONNABORTED") {
+          console.error("Connection timeout: API isteği zaman aşımına uğradı");
+        } else if (error.response) {
+          console.error(
+            "API error:",
+            error.response.status,
+            error.response.data
+          );
+        }
+      }
+
+      // 401 hatası için özel hata mesajı
+      if (error.response?.status === 401) {
+        if (error.response.data && error.response.data.message) {
+          throw new Error(error.response.data.message);
+        } else {
+          throw new Error(
+            "E-posta veya şifre hatalı. Lütfen bilgilerinizi kontrol ediniz."
+          );
+        }
       }
 
       throw error;

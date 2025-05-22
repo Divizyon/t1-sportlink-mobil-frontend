@@ -11,6 +11,7 @@ import {
   TextInput,
 } from "react-native";
 import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 
 // Icons
 import { Ionicons } from "@expo/vector-icons";
@@ -304,27 +305,33 @@ const EventsScreen: React.FC<Props> = ({
     <View style={styles.container}>
       {/* Başlık ve Arama Bölümü */}
       <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>Etkinlikler</Text>
-          <View style={styles.headerSeparator} />
-          <View style={styles.headerActions}>
+        <LinearGradient
+          colors={["#10b981", "#059669"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.gradientHeader}
+        >
+          <View style={styles.headerContent}>
+            <Text style={styles.title}>Etkinlikler</Text>
             <TouchableOpacity
-              style={styles.iconButton}
+              style={styles.searchIconContainer}
               onPress={() => setShowSearch((prevState) => !prevState)}
             >
-              <Ionicons name="search" size={22} color="#333" />
+              <Ionicons name="search" size={22} color="#ffffff" />
             </TouchableOpacity>
           </View>
-        </View>
+        </LinearGradient>
 
         {/* Arama Bölümü */}
         {showSearch && (
-          <SearchBar
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onClear={handleClearSearch}
-            placeholder="Etkinlik ara..."
-          />
+          <View style={styles.searchContainer}>
+            <SearchBar
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onClear={handleClearSearch}
+              placeholder="Etkinlik ara..."
+            />
+          </View>
         )}
 
         {/* Tab Seçimi */}
@@ -391,7 +398,7 @@ const EventsScreen: React.FC<Props> = ({
       {/* Etkinlik Listesi */}
       {loading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
+          <ActivityIndicator size="large" color="#10b981" />
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
@@ -410,7 +417,7 @@ const EventsScreen: React.FC<Props> = ({
           <MaterialCommunityIcons
             name="calendar-blank"
             size={80}
-            color="#BDBDBD"
+            color="#e2e8f0"
           />
           <Text style={styles.emptyTitle}>Etkinlik Bulunamadı</Text>
           <Text style={styles.emptyText}>
@@ -426,6 +433,12 @@ const EventsScreen: React.FC<Props> = ({
               onPress={() => router.push("/create-event")}
             >
               <Text style={styles.createButtonText}>Etkinlik Oluştur</Text>
+              <AntDesign
+                name="plus"
+                size={16}
+                color="#ffffff"
+                style={{ marginLeft: 8 }}
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -437,7 +450,7 @@ const EventsScreen: React.FC<Props> = ({
             <EventCard
               event={item}
               onPress={() => handleEventPress(item.id)}
-              style={index === 0 ? { marginTop: 10 } : {}}
+              style={index === 0 ? { marginTop: 16 } : {}}
             />
           )}
           contentContainerStyle={styles.listContainer}
@@ -446,8 +459,8 @@ const EventsScreen: React.FC<Props> = ({
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              colors={["#4CAF50"]}
-              tintColor="#4CAF50"
+              colors={["#10b981"]}
+              tintColor="#10b981"
             />
           }
         />
@@ -460,76 +473,106 @@ const EventsScreen: React.FC<Props> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#f8f9fa",
   },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 16,
-    marginTop: 10,
-    backgroundColor: colors.white,
+    marginTop: 20,
+    backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: colors.lightGray,
+    borderBottomColor: "#f1f5f9",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
-  titleContainer: {
+  gradientHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    paddingTop: 20,
+    paddingBottom: 18,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    zIndex: 10,
+  },
+  headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
-    paddingTop: 8,
-
-    marginTop: 10,
   },
   title: {
     fontSize: 20,
     fontWeight: "bold",
-    color: colors.text,
+    color: "#ffffff",
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    letterSpacing: 0.5,
   },
-  headerActions: {
-    flexDirection: "row",
+  spacer: {
+    flex: 1,
   },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F0F2F5",
+  searchIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
-    marginLeft: 8,
+  },
+  searchContainer: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    marginTop: 8,
   },
   tabContainer: {
     flexDirection: "row",
-    marginBottom: 12,
+    marginTop: 5,
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: "hidden",
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 14,
     justifyContent: "center",
     alignItems: "center",
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
   activeTab: {
-    borderBottomColor: "#4CAF50",
+    borderBottomColor: "#10b981",
   },
   tabText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#757575",
+    color: "#64748b",
   },
   activeTabText: {
-    color: "#4CAF50",
+    color: "#10b981",
     fontWeight: "600",
   },
   filtersContainer: {
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 8,
+    backgroundColor: "#ffffff",
+    paddingTop: 8,
+    paddingBottom: 4,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+    borderBottomColor: "#f1f5f9",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
   },
   listContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingBottom: 80,
+    paddingTop: 8,
   },
   loaderContainer: {
     flex: 1,
@@ -544,21 +587,28 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: "#616161",
+    color: "#64748b",
     textAlign: "center",
     marginTop: 12,
     marginBottom: 24,
   },
   retryButton: {
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 24,
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
+    backgroundColor: "#10b981",
+    borderRadius: 30,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#10b981",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   retryButtonText: {
     color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 15,
+    fontWeight: "600",
   },
   emptyContainer: {
     flex: 1,
@@ -567,48 +617,57 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "bold",
-    color: "#333333",
+    color: "#0f172a",
+    marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
-    fontSize: 14,
-    color: "#757575",
+    fontSize: 15,
+    color: "#64748b",
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: 28,
+    maxWidth: "80%",
   },
   createButton: {
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
+    backgroundColor: "#10b981",
+    borderRadius: 30,
+    shadowColor: "#10b981",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    flexDirection: "row",
+    alignItems: "center",
   },
   createButtonText: {
     color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 15,
+    fontWeight: "600",
   },
   floatingButton: {
     position: "absolute",
-    right: 16,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#4CAF50",
+    right: 20,
+    bottom: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#10b981",
     justifyContent: "center",
     alignItems: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    elevation: 8,
+    shadowColor: "#10b981",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   headerSeparator: {
     width: 1,
     height: 24,
-    backgroundColor: colors.lightGray,
+    backgroundColor: "#e2e8f0",
     marginHorizontal: 12,
   },
 });

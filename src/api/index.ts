@@ -52,7 +52,10 @@ const forceLogout = async () => {
     try {
       // Try to access auth context's forceLogout via an exposed global method
       // This is needed because we can't directly import/use the hook in this file
-      if (global.sportlinkForceLogout && typeof global.sportlinkForceLogout === 'function') {
+      if (
+        global.sportlinkForceLogout &&
+        typeof global.sportlinkForceLogout === "function"
+      ) {
         console.log("Using AuthContext's forceLogout method");
         await global.sportlinkForceLogout();
         return; // If successful, don't continue with our navigation
@@ -133,39 +136,60 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => {
     // Debug log the successful response
-    console.log(
-      `API Response Success: ${response.config.url} - Status: ${response.status}`
-    );
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `API Response Success: ${response.config.url} - Status: ${response.status}`
+      );
+    }
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
 
-    // Debug log the error
-    console.error(
-      `API Response Error: ${originalRequest?.url} - Status: ${error.response?.status}`
-    );
-    console.error(`Error message: ${error.message}`);
+    // Debug log the error - sadece kritik hataları konsola bas
+    if (originalRequest?.url && error.response?.status) {
+      // Development modunda daha detaylı log
+      if (process.env.NODE_ENV === "development") {
+        console.error(
+          `API Response Error: ${originalRequest.url} - Status: ${error.response.status}`
+        );
+        console.error(`Error message: ${error.message}`);
+      }
+    }
 
     // Network veya server hatalarını işle
     if (error.message === "Network Error") {
-      console.log("Ağ hatası - sunucuya erişilemiyor");
+      if (process.env.NODE_ENV === "development") {
+        console.log("Ağ hatası - sunucuya erişilemiyor");
+      }
       return Promise.reject(error);
     }
 
     if (error.code === "ECONNABORTED") {
-      console.log("Bağlantı zaman aşımı");
+      if (process.env.NODE_ENV === "development") {
+        console.log("Bağlantı zaman aşımı");
+      }
       return Promise.reject(error);
     }
 
     // Eğer cevap yoksa (server down olabilir)
     if (!error.response) {
-      console.log("Sunucudan yanıt alınamadı");
+      if (process.env.NODE_ENV === "development") {
+        console.log("Sunucudan yanıt alınamadı");
+      }
       return Promise.reject(error);
     }
 
     // Yetkisiz erişim hatası (401) ve henüz tekrar denenmemişse
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Login endpointi için özel kontrol - yanlış giriş bilgileri
+      if (originalRequest.url && originalRequest.url.includes("/auth/login")) {
+        if (process.env.NODE_ENV === "development") {
+          console.log("Giriş hatası - yanlış kimlik bilgileri");
+        }
+        return Promise.reject(error);
+      }
+
       // Şifre değiştirme URL'si için token yenileme işlemini atla
       if (
         originalRequest.url &&
