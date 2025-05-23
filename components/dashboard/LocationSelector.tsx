@@ -1,9 +1,13 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity, View, Dimensions } from 'react-native';
-import { Text } from '@/components/ui/text';
-import { FormControl, FormControlLabel, FormControlError } from '@/components/ui/form-control';
-import { MapPin } from 'lucide-react-native';
-import MapView, { Marker } from 'react-native-maps';
+import React from "react";
+import { StyleSheet, TouchableOpacity, View, Dimensions } from "react-native";
+import { Text } from "@/components/ui/text";
+import {
+  FormControl,
+  FormControlLabel,
+  FormControlError,
+} from "@/components/ui/form-control";
+import { MapPin } from "lucide-react-native";
+import MapView, { Marker } from "react-native-maps";
 
 interface LocationSelectorProps {
   label: string;
@@ -21,7 +25,7 @@ export default function LocationSelector({
   value,
   onPress,
   error,
-  coordinates
+  coordinates,
 }: LocationSelectorProps) {
   return (
     <FormControl isInvalid={!!error}>
@@ -32,9 +36,7 @@ export default function LocationSelector({
       >
         <View style={styles.locationInfo}>
           <MapPin size={20} color="#6B7280" />
-          <Text style={styles.selectorText}>
-            {value || 'Konum seçin'}
-          </Text>
+          <Text style={styles.selectorText}>{value || "Konum seçin"}</Text>
         </View>
       </TouchableOpacity>
 
@@ -75,34 +77,34 @@ export default function LocationSelector({
 const styles = StyleSheet.create({
   selector: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    backgroundColor: 'white',
-    padding: 12,
-    minHeight: 48,
+    borderColor: "#E2E8F0",
+    borderRadius: 25,
+    backgroundColor: "#F8FAFC",
+    padding: 16,
+    minHeight: 56,
   },
   selectorError: {
-    borderColor: '#EF4444',
+    borderColor: "#EF4444",
   },
   selectorText: {
-    fontSize: 14,
-    color: '#0F172A',
+    fontSize: 16,
+    color: "#0F172A",
     marginLeft: 8,
   },
   locationInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   mapPreview: {
     marginTop: 8,
     height: 200,
-    borderRadius: 8,
-    overflow: 'hidden',
+    borderRadius: 25,
+    overflow: "hidden",
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
   },
   map: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
 });

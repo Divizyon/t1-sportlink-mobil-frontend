@@ -106,8 +106,10 @@ const apiClient = axios.create({
 // Add a request interceptor to add auth token to requests
 apiClient.interceptors.request.use(
   async (config) => {
+    const originalUrl = config.url || "";
+
     // Debug log the request
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    console.log(`API Request: ${config.method?.toUpperCase()} ${originalUrl}`);
 
     // Get token from AsyncStorage
     const token = await AsyncStorage.getItem("authToken");
@@ -117,11 +119,29 @@ apiClient.interceptors.request.use(
       console.log("Token bulunamadı, istek yetkisiz olarak gönderiliyor");
     }
 
-    // URL yolunda çift '/api' olup olmadığını kontrol et
-    if (config.url && config.url.startsWith("/api/")) {
-      // URL'den başındaki '/api/' kısmını çıkar
-      config.url = config.url.replace(/^\/api\//, "/");
-      console.log("URL düzeltildi:", config.url);
+    // URL endpoint kontrolü ve düzeltmesi
+    if (config.url) {
+      // Backend sadece '/api' öneki OLMADAN istekleri kabul ediyor gibi görünüyor
+
+      // /api ile başlayan URL'lerdeki prefix'i temizle
+      if (config.url.startsWith("/api/")) {
+        const newUrl = config.url.replace(/^\/api\//, "/");
+        console.log(`API URL düzeltildi: ${originalUrl} -> ${newUrl}`);
+        config.url = newUrl;
+      }
+
+      // /mobile ile başlayan URL'lerdeki prefix'i temizle
+      if (config.url.startsWith("/mobile/")) {
+        const newUrl = config.url.replace(/^\/mobile\//, "/");
+        console.log(`Mobile URL düzeltildi: ${originalUrl} -> ${newUrl}`);
+        config.url = newUrl;
+      }
+
+      // URL'in başında / olduğundan emin ol
+      if (!config.url.startsWith("/") && !config.url.startsWith("http")) {
+        config.url = "/" + config.url;
+        console.log(`URL'e / eklendi: ${originalUrl} -> ${config.url}`);
+      }
     }
 
     return config;

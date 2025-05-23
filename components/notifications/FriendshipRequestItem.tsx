@@ -15,6 +15,8 @@ import {
   rejectFriendshipRequest,
 } from "../../services/api/friendships";
 import { router } from "expo-router";
+import { Check, X } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface FriendshipRequestItemProps {
   request: FriendshipRequest;
@@ -66,6 +68,11 @@ const FriendshipRequestItem = ({
 
   const requesterName = getRequesterName();
 
+  // Profil resmi kontrolü
+  const hasProfilePicture =
+    request.requester?.profile_picture &&
+    request.requester.profile_picture.length > 0;
+
   // Varsayılan olarak arkadaşlık istekleri sayfasına yönlendir
   const handlePress = () => {
     if (onPress) {
@@ -76,94 +83,127 @@ const FriendshipRequestItem = ({
   return (
     <TouchableOpacity
       onPress={handlePress}
-      activeOpacity={0.7}
+      activeOpacity={0.9}
       disabled={isProcessing}
+      style={styles.touchable}
     >
-      <View style={styles.container}>
-        <View style={styles.userInfo}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>
-              {requesterName.charAt(0).toUpperCase()}
-            </Text>
+      <LinearGradient
+        colors={["#1a543f", "#1e634c"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.container}
+      >
+        <View style={styles.content}>
+          <View style={styles.userInfo}>
+            {hasProfilePicture ? (
+              <Image
+                source={{ uri: request.requester.profile_picture }}
+                style={styles.avatar}
+              />
+            ) : (
+              <View style={styles.avatarContainer}>
+                <Text style={styles.avatarText}>
+                  {requesterName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.textContainer}>
+              <Text style={styles.nameText}>{requesterName}</Text>
+              <Text style={styles.messageText}>
+                sizinle arkadaş olmak istiyor
+              </Text>
+              <Text style={styles.timeText}>{formattedTime}</Text>
+            </View>
           </View>
-          <View style={styles.textContainer}>
-            <Text style={styles.nameText}>{requesterName}</Text>
-            <Text style={styles.messageText}>
-              sizinle arkadaş olmak istiyor.
-            </Text>
-            <Text style={styles.timeText}>{formattedTime}</Text>
+
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.acceptButton,
+                isProcessing && styles.disabledButton,
+              ]}
+              onPress={(e) => {
+                e.stopPropagation();
+                onAccept(request.id.toString());
+              }}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Check size={16} color="#fff" style={styles.buttonIcon} />
+                  <Text style={styles.acceptText}>Kabul Et</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.rejectButton,
+                isProcessing && styles.disabledButton,
+              ]}
+              onPress={(e) => {
+                e.stopPropagation();
+                onReject(request.id.toString());
+              }}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <ActivityIndicator size="small" color="#444" />
+              ) : (
+                <>
+                  <X size={16} color="#444" style={styles.buttonIcon} />
+                  <Text style={styles.rejectText}>Reddet</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
-
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              styles.acceptButton,
-              isProcessing && styles.disabledButton,
-            ]}
-            onPress={(e) => {
-              e.stopPropagation();
-              onAccept(request.id.toString());
-            }}
-            disabled={isProcessing}
-          >
-            {isProcessing ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.acceptText}>Kabul Et</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              styles.rejectButton,
-              isProcessing && styles.disabledButton,
-            ]}
-            onPress={(e) => {
-              e.stopPropagation();
-              onReject(request.id.toString());
-            }}
-            disabled={isProcessing}
-          >
-            {isProcessing ? (
-              <ActivityIndicator size="small" color="#666" />
-            ) : (
-              <Text style={styles.rejectText}>Reddet</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
+      </LinearGradient>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 15,
+  touchable: {
     marginVertical: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  container: {
+    borderRadius: 16,
+  },
+  content: {
+    padding: 16,
   },
   userInfo: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 12,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.3)",
   },
   avatarContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#4CAF50",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.2)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 10,
+    marginRight: 12,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.3)",
   },
   avatarText: {
     fontSize: 22,
@@ -175,47 +215,55 @@ const styles = StyleSheet.create({
   },
   nameText: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: "700",
+    color: "#ffffff",
+    marginBottom: 3,
   },
   messageText: {
     fontSize: 14,
-    color: "#666",
-    marginTop: 2,
+    color: "rgba(255,255,255,0.8)",
+    marginBottom: 3,
   },
   timeText: {
     fontSize: 12,
-    color: "#999",
-    marginTop: 4,
+    color: "rgba(255,255,255,0.6)",
   },
   actionsContainer: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    marginTop: 8,
+    marginTop: 12,
+    gap: 8,
   },
   actionButton: {
-    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
-    marginLeft: 10,
+    minWidth: 100,
+    justifyContent: "center",
+  },
+  buttonIcon: {
+    marginRight: 4,
   },
   acceptButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#10B981",
   },
   acceptText: {
     color: "white",
-    fontWeight: "bold",
+    fontWeight: "600",
+    fontSize: 14,
   },
   rejectButton: {
-    backgroundColor: "#f5f5f5",
-    borderWidth: 1,
-    borderColor: "#ddd",
+    backgroundColor: "#f0f0f0",
   },
   rejectText: {
-    color: "#666",
+    color: "#444",
+    fontWeight: "600",
+    fontSize: 14,
   },
   disabledButton: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
 });
 

@@ -588,7 +588,7 @@ export default function ProfileScreen() {
     loadFriendCount();
 
     // Etkinlik katılım durumu değiştiğinde etkinlikleri yenile
-    const unsubscribe = eventBus.subscribe(
+    const unsubscribeEvents = eventBus.subscribe(
       "EVENT_PARTICIPATION_CHANGED",
       () => {
         console.log(
@@ -598,9 +598,22 @@ export default function ProfileScreen() {
       }
     );
 
-    // Component unmount olduğunda event dinleyicisini temizle
+    // Arkadaş sayısı değiştiğinde profil bilgilerini yenile
+    const unsubscribeFriends = eventBus.subscribe(
+      "FRIEND_COUNT_UPDATED",
+      () => {
+        console.log(
+          "Arkadaş sayısı değişikliği algılandı, profil yenileniyor..."
+        );
+        loadFriendCount();
+        fetchProfileData();
+      }
+    );
+
+    // Component unmount olduğunda event dinleyicilerini temizle
     return () => {
-      unsubscribe();
+      unsubscribeEvents();
+      unsubscribeFriends();
     };
   }, []);
 
@@ -656,8 +669,9 @@ export default function ProfileScreen() {
 
     try {
       setLoading(true);
+      console.log("[Profile] Profil güncelleme işlemi başlatılıyor...");
 
-      // Profil bilgilerini güncelle
+      // Güncelleme için gönderilecek verileri hazırla
       const updateData = {
         first_name: editedProfile.firstName,
         last_name: editedProfile.lastName,
@@ -666,51 +680,41 @@ export default function ProfileScreen() {
         bio: editedProfile.biography,
       };
 
-      console.log("Gönderilen güncelleme verileri:", updateData);
+      console.log(
+        "[Profile] Güncelleme için gönderilecek veriler:",
+        updateData
+      );
 
-      // API endpointi: PUT /api/profile
-      await profileService.updateProfile(updateData);
+      // API isteği
+      const updatedProfile = await profileService.updateProfile(updateData);
+      console.log("[Profile] API güncelleme yanıtı:", updatedProfile);
 
-      // Güncel profil bilgilerini getir
-      await fetchProfileData();
-
+      // Modal'ı kapat
       setIsEditProfileModalVisible(false);
 
-      console.log("Profil başarıyla güncellendi");
+      // Profil bilgilerini tekrar yükle
+      setTimeout(async () => {
+        await fetchProfileData();
 
-      Alert.alert("Başarılı", "Profil bilgileriniz başarıyla güncellendi.", [
-        { text: "Tamam" },
-      ]);
-    } catch (error: any) {
-      console.error("Profil güncelleme hatası:", error);
+        // Başarı mesajını göster
+        Alert.alert("Başarılı", "Profil bilgileriniz başarıyla güncellendi.", [
+          { text: "Tamam" },
+        ]);
+      }, 300);
+    } catch (error) {
+      console.error("[Profile] Profil güncelleme hatası:", error);
 
-      // Daha detaylı hata mesajları
-      let errorMessage =
-        "Profil bilgileriniz güncellenirken bir hata oluştu. Lütfen tekrar deneyin.";
+      // Modal'ı kapat
+      setIsEditProfileModalVisible(false);
 
-      if (error.response) {
-        // Sunucu yanıtı varsa
-        const status = error.response.status;
-
-        if (status === 401) {
-          errorMessage = "Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.";
-        } else if (status === 400) {
-          if (error.response.data && error.response.data.message) {
-            errorMessage = error.response.data.message;
-          } else {
-            errorMessage =
-              "Gönderilen bilgilerde hata var. Lütfen tüm alanları kontrol edin.";
-          }
-        } else if (status >= 500) {
-          errorMessage = "Sunucu hatası. Lütfen daha sonra tekrar deneyin.";
-        }
-      } else if (error.request) {
-        // İstek gönderildi ama yanıt alınamadı
-        errorMessage =
-          "Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edin.";
-      }
-
-      Alert.alert("Hata", errorMessage, [{ text: "Tamam" }]);
+      // Gecikme ekleyerek önce modal kapanmasını bekle
+      setTimeout(() => {
+        Alert.alert(
+          "Sunucu Hatası",
+          "Profil bilgileriniz güncellenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.",
+          [{ text: "Tamam" }]
+        );
+      }, 300);
     } finally {
       setLoading(false);
     }

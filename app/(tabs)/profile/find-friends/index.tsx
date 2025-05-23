@@ -90,7 +90,9 @@ export default function FindFriendsScreen() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [users, setUsers] = useState<EnhancedUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<EnhancedUser[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<string[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<
+    { id: string; receiver_id: string }[]
+  >([]);
   const [friends, setFriends] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,27 +110,51 @@ export default function FindFriendsScreen() {
   const loadPendingRequests = async () => {
     try {
       console.log("[Friends] Bekleyen istekler yükleniyor...");
-      const outgoingRequests = await friendshipsApi.getOutgoingRequests();
+      setLoading(true); // Yükleme durumunu başlat
 
-      if (Array.isArray(outgoingRequests)) {
-        console.log(
-          `[Friends] ${outgoingRequests.length} bekleyen istek bulundu`
-        );
-        const pendingIds = outgoingRequests.map(
-          (req: FriendRequest) => req.receiver_id
-        );
-        console.log(`[Friends] Bekleyen istek ID'leri:`, pendingIds);
-        setPendingRequests(pendingIds);
+      // API isteği gönder
+      const response = await friendshipsApi.getOutgoingRequests();
+
+      // Yanıt formatını kontrol et
+      let requestsData: { id: string; receiver_id: string }[] = [];
+
+      if (Array.isArray(response)) {
+        // Doğrudan dizi döndüğünde
+        console.log(`[Friends] ${response.length} bekleyen istek bulundu`);
+        requestsData = response.map((req: FriendRequest) => ({
+          id: req.id,
+          receiver_id: req.receiver_id,
+        }));
+      } else if (
+        response &&
+        response.status === "success" &&
+        Array.isArray(response.data)
+      ) {
+        // Obje içinde data alanı olduğunda
+        console.log(`[Friends] ${response.data.length} bekleyen istek bulundu`);
+        requestsData = response.data.map((req: FriendRequest) => ({
+          id: req.id,
+          receiver_id: req.receiver_id,
+        }));
       } else {
         console.warn(
-          "[Friends] getOutgoingRequests beklenen bir dizi döndürmedi:",
-          outgoingRequests
+          `[Friends] Bekleyen istekler alınırken hata: ${
+            response?.message || "API yanıt formatı hatalı"
+          }`
         );
-        setPendingRequests([]);
+        return;
       }
+
+      // Güncellenmiş istek listesini ayarla
+      console.log(`[Friends] Bekleyen istek verileri:`, requestsData);
+      setPendingRequests(requestsData);
     } catch (error) {
-      console.error("[Friends] Bekleyen istekler yüklenemedi:", error);
-      setPendingRequests([]); // Hata durumunda boş dizi set et
+      console.error(
+        "[Friends] Bekleyen istekler alınırken beklenmeyen hata:",
+        error
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -360,10 +386,19 @@ export default function FindFriendsScreen() {
       (fid) => String(fid).trim() === String(item.id).trim()
     );
 
-    const hasPendingRequest = pendingRequests.includes(item.id);
+    const hasPendingRequest = pendingRequests.some(
+      (req) => req.receiver_id === item.id
+    );
+    const pendingRequestId = hasPendingRequest
+      ? pendingRequests.find((req) => req.receiver_id === item.id)?.id
+      : null;
 
     console.log(
-      `[Friends] Kullanıcı render: ${item.id} | Arkadaş: ${isFriend} | Bekleyen istek: ${hasPendingRequest}`
+      `[Friends] Kullanıcı render: ${
+        item.id
+      } | Arkadaş: ${isFriend} | Bekleyen istek: ${hasPendingRequest} | İstek ID: ${
+        pendingRequestId || "yok"
+      }`
     );
 
     return (
@@ -441,8 +476,8 @@ export default function FindFriendsScreen() {
                       hasPendingRequest && styles.requestSentButton,
                     ]}
                     onPress={() =>
-                      hasPendingRequest
-                        ? handleCancelRequest(item.id)
+                      hasPendingRequest && pendingRequestId
+                        ? handleCancelRequest(pendingRequestId)
                         : handleFriendRequest(item.id)
                     }
                   >
@@ -457,7 +492,7 @@ export default function FindFriendsScreen() {
                       <>
                         <UserPlus size={14} color="#fff" />
                         <Text style={styles.friendRequestButtonText}>
-                          Takip
+                          İstek
                         </Text>
                       </>
                     )}
@@ -502,119 +537,163 @@ export default function FindFriendsScreen() {
   // Add these functions to handle button presses
   const handleFriendRequest = async (userId: string) => {
     try {
-      // Kendine istek göndermeyi engelle - önce client tarafında kontrol
+      // Kullanıcı ID kontrolü
+      if (!userId) {
+        console.log("[Friends] Geçersiz kullanıcı ID");
+        Alert.alert("Hata", "Geçersiz kullanıcı ID");
+        return;
+      }
+
+      // Kendine istek göndermeyi UI tarafında kontrol et
       const currentUser = await AsyncStorage.getItem("user");
       if (currentUser) {
-        const { id } = JSON.parse(currentUser);
-        if (id === userId) {
-          console.log(
-            "[Friends] Kendime istek göndermeye çalışıldı. İşlem engellendi."
-          );
-          Alert.alert("Uyarı", "Kendinize arkadaşlık isteği gönderemezsiniz.");
+        const userData = JSON.parse(currentUser);
+        if (userData.id === userId) {
+          console.log("[Friends] Kendine istek gönderemezsin");
+          Alert.alert("Uyarı", "Kendinize arkadaşlık isteği gönderemezsiniz");
           return;
         }
       }
 
-      // Kullanıcı zaten bekleyen istekler listesindeyse uyarı vermeden işlemi atla
-      if (pendingRequests.includes(userId)) {
-        console.log("[Friends] Zaten bekleyen istek var. İşlem engellendi.");
+      // Zaten bekleyen istek varsa kontrolü
+      if (pendingRequests.some((req) => req.receiver_id === userId)) {
+        console.log(
+          `[Friends] ${userId} kullanıcısına zaten istek gönderilmiş`
+        );
         Alert.alert(
           "Bilgi",
-          "Bu kullanıcıya zaten bir arkadaşlık isteği gönderdiniz."
+          "Bu kullanıcıya zaten bir arkadaşlık isteği gönderilmiş"
         );
         return;
       }
 
-      console.log("[Friends] Arkadaşlık isteği gönderiliyor...");
+      // Geçici ID ile optimistik UI güncellemesi (API yanıtı geldiğinde gerçek ID ile değiştirilecek)
+      const tempId = `temp_${Date.now()}`;
+      console.log(
+        `[Friends] Optimistik UI güncellemesi: ${userId} ekleniyor (geçici ID: ${tempId})`
+      );
+      setPendingRequests((prev) => [
+        ...prev,
+        { id: tempId, receiver_id: userId },
+      ]);
+
+      // API isteği gönder
+      console.log(`[Friends] Arkadaşlık isteği gönderiliyor: ${userId}`);
       const response = await friendshipsApi.sendRequest(userId);
+      console.log(`[Friends] API yanıtı:`, response);
 
-      // API yanıtı kontrol et, başarısız ise işlemi durdur
-      if (response.status !== "success") {
-        console.log(
-          `[Friends] İstek gönderimi başarısız: ${
-            response.message || "Bilinmeyen hata"
-          }`
-        );
+      if (response.status === "success") {
+        // Başarılı durum - geçici kaydı gerçek ID ile güncelle
+        console.log("[Friends] İstek başarıyla gönderildi");
 
-        // Kendisine istek gönderme durumunda özel işlem
-        if (
-          response.message?.toLowerCase().includes("kendinize") ||
-          response.message?.toLowerCase().includes("yourself")
-        ) {
-          Alert.alert("Uyarı", "Kendinize arkadaşlık isteği gönderemezsiniz.");
-          return; // Erken dön, pendingRequests güncelleme
+        if (response.data && response.data.id) {
+          const realRequestId = response.data.id;
+          console.log(
+            `[Friends] Gerçek istek ID'si: ${realRequestId} ile güncelleniyor`
+          );
+
+          // Geçici ID'li kaydı gerçek ID ile güncelle
+          setPendingRequests((prev) =>
+            prev.map((req) =>
+              req.id === tempId ? { ...req, id: realRequestId } : req
+            )
+          );
         }
 
-        Alert.alert(
-          "Hata",
-          response.message || "Arkadaşlık isteği gönderilemedi."
-        );
-        return; // Başarısız yanıt durumunda işlemi durdur
-      }
+        Alert.alert("Başarılı", "Arkadaşlık isteği başarıyla gönderildi");
+      } else {
+        // Başarısız durum - UI güncellemesini geri al
+        console.log(`[Friends] İstek gönderme başarısız: ${response.message}`);
+        setPendingRequests((prev) => prev.filter((req) => req.id !== tempId));
 
-      // Sadece başarılı yanıt durumunda pendingRequests'e ekle ve bildirim göster
-      console.log("[Friends] Arkadaşlık isteği başarıyla gönderildi!");
-      setPendingRequests((prev) => [...prev, userId]);
-      Alert.alert("Başarılı", "Arkadaşlık isteği gönderildi.");
-    } catch (error: any) {
-      // Log mesajını daha açıklayıcı hale getir
-      console.log(
-        "[Friends] İstek gönderme sırasında beklenmeyen hata:",
-        error.message || "Bilinmeyen hata"
+        // Özel hata durumlarını işle
+        if (response.code === 409) {
+          // Çakışma durumu (zaten istek var veya arkadaşlar)
+          Alert.alert(
+            "Bilgi",
+            response.message ||
+              "Bu kullanıcıya zaten istek gönderilmiş veya zaten arkadaşsınız"
+          );
+        } else if (response.code === 400) {
+          // Geçersiz istek (kendine istek gönderme gibi)
+          Alert.alert("Uyarı", response.message || "Geçersiz istek");
+        } else if (response.code === 404) {
+          // Kullanıcı bulunamadı
+          Alert.alert("Hata", "Kullanıcı bulunamadı");
+        } else {
+          // Genel hata
+          Alert.alert(
+            "Hata",
+            response.message ||
+              "Arkadaşlık isteği gönderilirken bir hata oluştu"
+          );
+        }
+
+        // Güncel durumu yükle
+        await loadPendingRequests();
+      }
+    } catch (error) {
+      // Beklenmeyen hata
+      console.error("[Friends] Beklenmeyen hata:", error);
+
+      // UI güncellemesini geri al - geçici ID kontrolü ile
+      setPendingRequests((prev) =>
+        prev.filter((req) => !req.id.startsWith("temp_"))
       );
-      console.log("[Friends] Hata detayları:", JSON.stringify(error, null, 2));
 
-      // Önce kendisine istek gönderme durumunu kontrol et
-      if (
-        (error.status_code === 400 || error.response?.status === 400) &&
-        (error.message?.toLowerCase().includes("kendinize") ||
-          error.response?.data?.message?.toLowerCase().includes("kendinize"))
-      ) {
-        Alert.alert("Uyarı", "Kendinize arkadaşlık isteği gönderemezsiniz.");
-        return; // Butonun iptal durumuna geçmemesi için erken return
-      }
+      // Kullanıcıya bildir
+      Alert.alert(
+        "Hata",
+        "İstek gönderilirken beklenmeyen bir hata oluştu. Lütfen tekrar deneyin."
+      );
 
-      // Diğer hata durumlarında uygun işlem yap
-      const errorMessage =
-        error.message ||
-        error.response?.data?.message ||
-        "Beklenmeyen bir hata oluştu";
-
-      Alert.alert("Hata", errorMessage);
-
-      // Butonun iptal durumuna geçmemesi için pendingRequests'e ekleme yapma
+      // Güncel durumu yükle
+      await loadPendingRequests();
     }
   };
 
-  const handleCancelRequest = async (userId: string) => {
-    // UI'ı hemen güncelle - optimistik güncellemeler için
-    setPendingRequests((prev) => prev.filter((id) => id !== userId));
+  const handleCancelRequest = async (requestId: string) => {
+    // İstek ID kontrolü
+    if (!requestId) {
+      console.log("[Friends] İptal için geçersiz istek ID");
+      Alert.alert("Hata", "Geçersiz istek");
+      return;
+    }
+
+    // İlgili istek kaydını bul (UI güncelleme için)
+    const requestToCancel = pendingRequests.find((req) => req.id === requestId);
+    if (!requestToCancel) {
+      console.log(`[Friends] ID=${requestId} olan istek bulunamadı`);
+      return;
+    }
+
+    // Optimistik UI güncellemesi
+    console.log(
+      `[Friends] Optimistik UI güncellemesi: İstek ID=${requestId} kaldırılıyor`
+    );
+    setPendingRequests((prev) => prev.filter((req) => req.id !== requestId));
 
     try {
-      // Giden istekleri getir ve ilgili isteği bul
-      const outgoingRequests = await friendshipsApi.getOutgoingRequests();
-      const request = outgoingRequests.find(
-        (req: { receiver_id: string; id: string }) => req.receiver_id === userId
-      );
+      // İstek gönder - rejected durumuna ayarla
+      console.log(`[Friends] İstek iptal isteği gönderiliyor: ${requestId}`);
+      const result = await friendshipsApi.cancelRequest(requestId);
 
-      if (request) {
-        try {
-          const result = await friendshipsApi.cancelRequest(request.id);
-          // Sadece normal log mesajı - hataya dönüşmüyor
-          console.log("[Friends] İstek işlemi tamamlandı:", request.id);
-        } catch (cancelError) {
-          // Hata yakalansa bile sessizce devam et - console.error değil
-          console.log("[Friends] İstek işlemi devam ediyor");
-        }
+      if (result.status === "success") {
+        console.log("[Friends] İstek başarıyla iptal edildi");
+        Alert.alert("Başarılı", "Arkadaşlık isteği iptal edildi");
       } else {
-        // İstek yoksa bilgilendirme yap - hata değil
-        console.log(
-          "[Friends] İlgili istek bulunamadı, UI güncellemesi yeterli"
-        );
+        console.error(`[Friends] İstek iptal başarısız: ${result.message}`);
+        Alert.alert("Hata", result.message || "İstek iptal edilemedi");
+
+        // Başarısız olduğunda istekleri tekrar yükle
+        await loadPendingRequests();
       }
     } catch (error) {
-      // Ana try-catch bloğunda bile sessiz olalım
-      console.log("[Friends] İstek iptal süreci tamamlandı");
+      console.error("[Friends] İstek iptal hatası:", error);
+      Alert.alert("Hata", "İstek iptal işlemi başarısız oldu");
+
+      // Hata durumunda tekrar yükle
+      await loadPendingRequests();
     }
   };
 

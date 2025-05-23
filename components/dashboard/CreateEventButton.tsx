@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity } from "react-native";
+import { StyleSheet, TouchableOpacity, Text, View } from "react-native";
 import { Plus } from "lucide-react-native";
 
 interface CreateEventButtonProps {
@@ -9,7 +9,10 @@ interface CreateEventButtonProps {
 const CreateEventButton: React.FC<CreateEventButtonProps> = ({ onPress }) => {
   return (
     <TouchableOpacity style={styles.createButton} onPress={onPress}>
-      <Plus size={24} color="white" />
+      <View style={styles.buttonContent}>
+        <Text style={styles.buttonText}>Etkinlik oluştur</Text>
+        <Plus size={24} color="white" />
+      </View>
     </TouchableOpacity>
   );
 };
@@ -20,16 +23,25 @@ const styles = StyleSheet.create({
     bottom: 24,
     right: 24,
     backgroundColor: "#10B981",
-    width: 56,
-    height: 56,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "600",
+    marginRight: 8,
+    fontSize: 16,
   },
 });
 

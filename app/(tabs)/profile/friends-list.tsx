@@ -23,9 +23,12 @@ import {
   RefreshCw,
   User as UserIcon,
   Users,
+  Trash2,
 } from "lucide-react-native";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
+import profileService from "@/src/api/profileService";
+import eventBus from "@/src/utils/EventBus";
 
 const { width } = Dimensions.get("window");
 
@@ -127,6 +130,52 @@ export default function FriendsListScreen() {
     });
   };
 
+  const handleDeleteFriend = (friend: Friend) => {
+    // Arkadaş silme işlemini onay modeli ile gerçekleştir
+    Alert.alert(
+      "Arkadaş Sil",
+      `${friend.first_name} ${friend.last_name} arkadaşlıktan çıkarılsın mı?`,
+      [
+        { text: "İptal", style: "cancel" },
+        {
+          text: "Sil",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              console.log("Arkadaş siliniyor:", friend.id);
+              const response = await friendshipsApi.deleteFriend(friend.id);
+
+              if (response.status === "success") {
+                // Başarıyla silindiğinde arkadaş listesini güncelle
+                setFriends((prev) => prev.filter((f) => f.id !== friend.id));
+                console.log("Arkadaş başarıyla silindi");
+
+                // Profil bilgilerini yenile
+                try {
+                  await profileService.getProfile();
+                  // Arkadaş sayısının güncellendiğini bildir
+                  eventBus.publish("FRIEND_COUNT_UPDATED", {});
+                } catch (err) {
+                  console.error("Profil bilgileri güncellenirken hata:", err);
+                }
+              } else {
+                console.error("Arkadaş silme hatası:", response.message);
+                Alert.alert(
+                  "Hata",
+                  response.message ||
+                    "Arkadaş silinemedi, lütfen tekrar deneyin."
+                );
+              }
+            } catch (error) {
+              console.error("Arkadaş silme işlemi sırasında hata:", error);
+              Alert.alert("Hata", "Arkadaş silinemedi, lütfen tekrar deneyin.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const formatLastSeenTime = (lastSeenDate: string | Date) => {
     try {
       const date =
@@ -165,44 +214,54 @@ export default function FriendsListScreen() {
           },
         ]}
       >
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => handleViewProfile(item)}
-          style={styles.userCardTouchable}
-        >
-          <LinearGradient
-            colors={["#ffffff", "#f5f0fe"]}
-            style={styles.userCard}
+        <View style={styles.userCardContainer}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => handleViewProfile(item)}
+            style={styles.userCardTouchable}
           >
-            <View style={styles.userHeader}>
-              <View style={styles.userAvatarContainer}>
-                {item.profile_picture ? (
-                  <Image
-                    source={{ uri: item.profile_picture }}
-                    style={styles.userAvatar}
-                  />
-                ) : (
-                  <LinearGradient
-                    colors={["#4e54c8", "#8f94fb"]}
-                    style={styles.defaultAvatarContainer}
+            <LinearGradient
+              colors={["#ffffff", "#f5f0fe"]}
+              style={styles.userCard}
+            >
+              <View style={styles.userHeader}>
+                <View style={styles.userAvatarContainer}>
+                  {item.profile_picture ? (
+                    <Image
+                      source={{ uri: item.profile_picture }}
+                      style={styles.userAvatar}
+                    />
+                  ) : (
+                    <LinearGradient
+                      colors={["#4e54c8", "#8f94fb"]}
+                      style={styles.defaultAvatarContainer}
+                    >
+                      <UserIcon size={20} color="#fff" />
+                    </LinearGradient>
+                  )}
+                  {item.is_online && <View style={styles.onlineIndicator} />}
+                </View>
+                <View style={styles.userInfoContainer}>
+                  <Text
+                    style={styles.userName}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
-                    <UserIcon size={20} color="#fff" />
-                  </LinearGradient>
-                )}
-                {item.is_online && <View style={styles.onlineIndicator} />}
+                    {item.first_name} {item.last_name}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.userInfoContainer}>
-                <Text
-                  style={styles.userName}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {item.first_name} {item.last_name}
-                </Text>
-              </View>
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteFriend(item)}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          >
+            <Trash2 size={24} color="#e53e3e" />
+          </TouchableOpacity>
+        </View>
       </Animated.View>
     );
   };
@@ -300,13 +359,6 @@ export default function FriendsListScreen() {
                       </Text>
                     </LinearGradient>
                   </TouchableOpacity>
-
-                  {debugInfo ? (
-                    <View style={styles.debugContainer}>
-                      <Text style={styles.debugTitle}>Debug Bilgileri:</Text>
-                      <Text style={styles.debugText}>{debugInfo}</Text>
-                    </View>
-                  ) : null}
                 </LinearGradient>
               </View>
             }
@@ -432,7 +484,12 @@ const styles = StyleSheet.create({
   friendItemContainer: {
     marginBottom: 12,
   },
+  userCardContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   userCardTouchable: {
+    flex: 1,
     borderRadius: 16,
     overflow: "hidden",
     shadowColor: "#000",
@@ -489,6 +546,17 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#1e293b",
     letterSpacing: 0.3,
+  },
+  deleteButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 23,
+    backgroundColor: "rgba(229, 62, 62, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 10,
+    borderWidth: 1,
+    borderColor: "rgba(229, 62, 62, 0.3)",
   },
   loadingContainer: {
     flex: 1,

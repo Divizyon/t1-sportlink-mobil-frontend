@@ -18,12 +18,15 @@ export const profileService = {
   // Profil bilgilerini getir
   async getProfile(): Promise<UserProfile> {
     try {
-      console.log("Profil bilgileri getiriliyor...");
+      console.log("[Profile API] Profil bilgileri getiriliyor...");
 
-      // /api/profile endpoint'i kullanılıyor
-      const response = await apiClient.get<ProfileResponse>("/api/profile");
+      // Profile endpoint'i kullanılıyor - /api/ prefix'i olmadan
+      const response = await apiClient.get<ProfileResponse>("/profile");
 
-      console.log("Profil bilgileri başarıyla alındı.");
+      console.log(
+        "[Profile API] Profil bilgileri başarıyla alındı:",
+        JSON.stringify(response.data, null, 2)
+      );
 
       // response.data içinde data varsa onu, yoksa doğrudan response.data'yı kullan
       if (response.data && response.data.data) {
@@ -33,7 +36,24 @@ export const profileService = {
       // Eğer direkt UserProfile döndürüyorsa
       return response.data as unknown as UserProfile;
     } catch (error: any) {
-      console.error("Profil bilgilerini getirme hatası:", error);
+      console.error("[Profile API] Profil bilgilerini getirme hatası:", error);
+
+      // Daha detaylı hata bilgisi
+      if (error.response) {
+        console.error(
+          "[Profile API] Hata detayları:",
+          JSON.stringify(
+            {
+              status: error.response.status,
+              statusText: error.response.statusText,
+              data: error.response.data,
+            },
+            null,
+            2
+          )
+        );
+      }
+
       throw error;
     }
   },
@@ -41,23 +61,54 @@ export const profileService = {
   // Profil bilgilerini güncelle
   async updateProfile(data: Partial<UserProfile>): Promise<UserProfile> {
     try {
-      // /api/profile endpoint'i kullanılıyor
+      console.log("[Profile API] Profil güncelleme isteği gönderiliyor...");
+      console.log(
+        "[Profile API] Gönderilen veriler:",
+        JSON.stringify(data, null, 2)
+      );
+
+      // Doğru endpoint: Direkt olarak /profile endpoint'ini kullan
       const response = await apiClient.put<ProfileUpdateResponse>(
-        "/api/profile",
+        "/profile",
         data
       );
 
-      console.log("Profil bilgileri başarıyla güncellendi.");
+      console.log(
+        "[Profile API] Profil bilgileri güncelleme yanıtı:",
+        JSON.stringify(response.data, null, 2)
+      );
 
       // response.data içinde data varsa onu, yoksa doğrudan response.data'yı kullan
       if (response.data && response.data.data) {
+        console.log(
+          "[Profile API] Güncelleme başarılı! Alınan veri:",
+          JSON.stringify(response.data.data, null, 2)
+        );
         return response.data.data;
       }
 
       // Eğer direkt UserProfile döndürüyorsa
+      console.log("[Profile API] Alternatif yanıt formatı kullanıldı.");
       return response.data as unknown as UserProfile;
     } catch (error: any) {
-      console.error("Profil güncelleme hatası:", error);
+      console.error("[Profile API] Profil güncelleme hatası:", error);
+
+      // Daha detaylı hata bilgisi
+      if (error.response) {
+        console.error(
+          "[Profile API] Hata detayları:",
+          JSON.stringify(
+            {
+              status: error.response.status,
+              statusText: error.response.statusText,
+              data: error.response.data,
+            },
+            null,
+            2
+          )
+        );
+      }
+
       throw error;
     }
   },
@@ -65,7 +116,7 @@ export const profileService = {
   // Avatar yükleme
   async uploadAvatar(imageUri: string): Promise<string> {
     try {
-      console.log("Avatar yükleniyor...");
+      console.log("[Profile API] Avatar yükleniyor...");
 
       // FormData oluştur
       const formData = new FormData();
@@ -91,14 +142,17 @@ export const profileService = {
         name: fileName,
       } as any);
 
-      // POST /api/profile/avatar endpoint'i kullanılıyor (resimdeki endpointe göre)
-      const response = await apiClient.post("/api/profile/avatar", formData, {
+      // POST /profile/avatar endpoint'i kullanılıyor (doğru endpoint)
+      const response = await apiClient.post("/profile/avatar", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      console.log("Avatar başarıyla yüklendi.", response.data);
+      console.log(
+        "[Profile API] Avatar başarıyla yüklendi:",
+        JSON.stringify(response.data, null, 2)
+      );
 
       // Avatar URL'sini döndür (response yapısına göre)
       if (response.data && response.data.data && response.data.data.avatarUrl) {
@@ -107,7 +161,24 @@ export const profileService = {
 
       return response.data.avatarUrl || response.data.data?.avatarUrl || "";
     } catch (error: any) {
-      console.error("Avatar yükleme hatası:", error);
+      console.error("[Profile API] Avatar yükleme hatası:", error);
+
+      // Daha detaylı hata bilgisi
+      if (error.response) {
+        console.error(
+          "[Profile API] Hata detayları:",
+          JSON.stringify(
+            {
+              status: error.response.status,
+              statusText: error.response.statusText,
+              data: error.response.data,
+            },
+            null,
+            2
+          )
+        );
+      }
+
       throw error;
     }
   },
@@ -119,12 +190,15 @@ export const profileService = {
     defaultAvatarUrl?: string;
   }> {
     try {
-      console.log("Avatar siliniyor...");
+      console.log("[Profile API] Avatar siliniyor...");
 
-      // DELETE /api/profile/avatar endpoint'i kullanılıyor (resimdeki endpointe göre)
-      const response = await apiClient.delete("/api/profile/avatar");
+      // DELETE /profile/avatar endpoint'i kullanılıyor
+      const response = await apiClient.delete("/profile/avatar");
 
-      console.log("Avatar başarıyla silindi.", response.data);
+      console.log(
+        "[Profile API] Avatar başarıyla silindi:",
+        JSON.stringify(response.data, null, 2)
+      );
 
       // Varsayılan URL'i de döndür
       const defaultAvatarUrl =
@@ -136,7 +210,24 @@ export const profileService = {
         defaultAvatarUrl: defaultAvatarUrl,
       };
     } catch (error: any) {
-      console.error("Avatar silme hatası:", error);
+      console.error("[Profile API] Avatar silme hatası:", error);
+
+      // Daha detaylı hata bilgisi
+      if (error.response) {
+        console.error(
+          "[Profile API] Hata detayları:",
+          JSON.stringify(
+            {
+              status: error.response.status,
+              statusText: error.response.statusText,
+              data: error.response.data,
+            },
+            null,
+            2
+          )
+        );
+      }
+
       throw error;
     }
   },
@@ -148,11 +239,34 @@ export const profileService = {
     confirmNewPassword: string;
   }): Promise<void> {
     try {
-      // /api/profile/password endpoint'i kullanılıyor
-      await apiClient.put("/api/profile/password", data);
-      console.log("Şifre başarıyla değiştirildi.");
+      console.log("[Profile API] Şifre değiştirme isteği gönderiliyor...");
+
+      // /profile/password endpoint'i kullanılıyor
+      const response = await apiClient.put("/profile/password", data);
+
+      console.log(
+        "[Profile API] Şifre başarıyla değiştirildi:",
+        JSON.stringify(response.data, null, 2)
+      );
     } catch (error: any) {
-      console.error("Şifre değiştirme hatası:", error);
+      console.error("[Profile API] Şifre değiştirme hatası:", error);
+
+      // Daha detaylı hata bilgisi
+      if (error.response) {
+        console.error(
+          "[Profile API] Hata detayları:",
+          JSON.stringify(
+            {
+              status: error.response.status,
+              statusText: error.response.statusText,
+              data: error.response.data,
+            },
+            null,
+            2
+          )
+        );
+      }
+
       throw error;
     }
   },
@@ -165,9 +279,14 @@ export const profileService = {
     }>
   > {
     try {
-      console.log("İlgi alanları (sporlar) getiriliyor...");
-      // /api/profile/sports endpoint'i kullanılıyor
-      const response = await apiClient.get("/api/profile/sports");
+      console.log("[Profile API] İlgi alanları (sporlar) getiriliyor...");
+      // /profile/sports endpoint'i kullanılıyor - /api prefix'i olmadan
+      const response = await apiClient.get("/profile/sports");
+
+      console.log(
+        "[Profile API] İlgi alanları başarıyla alındı:",
+        JSON.stringify(response.data, null, 2)
+      );
 
       if (response.data && response.data.data) {
         return response.data.data;
@@ -175,7 +294,24 @@ export const profileService = {
 
       return response.data || [];
     } catch (error: any) {
-      console.error("İlgi alanlarını getirme hatası:", error);
+      console.error("[Profile API] İlgi alanlarını getirme hatası:", error);
+
+      // Daha detaylı hata bilgisi
+      if (error.response) {
+        console.error(
+          "[Profile API] Hata detayları:",
+          JSON.stringify(
+            {
+              status: error.response.status,
+              statusText: error.response.statusText,
+              data: error.response.data,
+            },
+            null,
+            2
+          )
+        );
+      }
+
       return [];
     }
   },
@@ -183,16 +319,38 @@ export const profileService = {
   // Kullanıcının favori sporlarına yeni spor ekle
   async addSport(sportId: number): Promise<boolean> {
     try {
-      console.log(`Favori sporlara ${sportId} ID'li spor ekleniyor...`);
-      // /api/profile/sports endpoint'i kullanılıyor
-      const response = await apiClient.post("/api/profile/sports", {
+      console.log(
+        `[Profile API] Favori sporlara ${sportId} ID'li spor ekleniyor...`
+      );
+      // /profile/sports endpoint'i kullanılıyor - /api prefix'i olmadan
+      const response = await apiClient.post("/profile/sports", {
         sport_id: sportId,
       });
 
-      console.log("Spor başarıyla eklendi.");
+      console.log(
+        "[Profile API] Spor başarıyla eklendi:",
+        JSON.stringify(response.data, null, 2)
+      );
       return true;
     } catch (error: any) {
-      console.error("Spor ekleme hatası:", error);
+      console.error("[Profile API] Spor ekleme hatası:", error);
+
+      // Daha detaylı hata bilgisi
+      if (error.response) {
+        console.error(
+          "[Profile API] Hata detayları:",
+          JSON.stringify(
+            {
+              status: error.response.status,
+              statusText: error.response.statusText,
+              data: error.response.data,
+            },
+            null,
+            2
+          )
+        );
+      }
+
       return false;
     }
   },
@@ -200,14 +358,36 @@ export const profileService = {
   // Kullanıcının favori sporlarından bir sporu kaldır
   async removeSport(sportId: number): Promise<boolean> {
     try {
-      console.log(`Favori sporlardan ${sportId} ID'li spor kaldırılıyor...`);
-      // /api/profile/sports/{sportId} endpoint'i kullanılıyor
-      const response = await apiClient.delete(`/api/profile/sports/${sportId}`);
+      console.log(
+        `[Profile API] Favori sporlardan ${sportId} ID'li spor kaldırılıyor...`
+      );
+      // /profile/sports/{sportId} endpoint'i kullanılıyor - /api prefix'i olmadan
+      const response = await apiClient.delete(`/profile/sports/${sportId}`);
 
-      console.log("Spor başarıyla kaldırıldı.");
+      console.log(
+        "[Profile API] Spor başarıyla kaldırıldı:",
+        JSON.stringify(response.data, null, 2)
+      );
       return true;
     } catch (error: any) {
-      console.error("Spor kaldırma hatası:", error);
+      console.error("[Profile API] Spor kaldırma hatası:", error);
+
+      // Daha detaylı hata bilgisi
+      if (error.response) {
+        console.error(
+          "[Profile API] Hata detayları:",
+          JSON.stringify(
+            {
+              status: error.response.status,
+              statusText: error.response.statusText,
+              data: error.response.data,
+            },
+            null,
+            2
+          )
+        );
+      }
+
       return false;
     }
   },
@@ -215,16 +395,36 @@ export const profileService = {
   // Kullanıcının favori sporlarını toplu güncelle
   async updateSportsBatch(sportIds: number[]): Promise<boolean> {
     try {
-      console.log("Favori sporlar toplu olarak güncelleniyor...");
-      // /api/profile/sports/batch endpoint'i kullanılıyor
-      const response = await apiClient.post("/api/profile/sports/batch", {
+      console.log("[Profile API] Favori sporlar toplu olarak güncelleniyor...");
+      // /profile/sports/batch endpoint'i kullanılıyor - /api prefix'i olmadan
+      const response = await apiClient.post("/profile/sports/batch", {
         sport_ids: sportIds,
       });
 
-      console.log("Sporlar başarıyla güncellendi.");
+      console.log(
+        "[Profile API] Sporlar başarıyla güncellendi:",
+        JSON.stringify(response.data, null, 2)
+      );
       return true;
     } catch (error: any) {
-      console.error("Sporları toplu güncelleme hatası:", error);
+      console.error("[Profile API] Sporları toplu güncelleme hatası:", error);
+
+      // Daha detaylı hata bilgisi
+      if (error.response) {
+        console.error(
+          "[Profile API] Hata detayları:",
+          JSON.stringify(
+            {
+              status: error.response.status,
+              statusText: error.response.statusText,
+              data: error.response.data,
+            },
+            null,
+            2
+          )
+        );
+      }
+
       return false;
     }
   },

@@ -36,8 +36,6 @@ const checkNetwork = async () => {
 // Ağ bağlantısı kontrol edilerek API isteği atma yardımcı fonksiyonu
 const safeApiCall = async (apiFunc: Function, fallback: any = null) => {
   try {
-   
-
     return await apiFunc();
   } catch (error: any) {
     console.log("API çağrısı sırasında hata:", error.message);
@@ -74,18 +72,79 @@ const safeApiCall = async (apiFunc: Function, fallback: any = null) => {
 export const friendshipsApi = {
   // Arkadaşlık isteği gönder
   sendRequest: async (receiverId: string) => {
-    return safeApiCall(async () => {
-      try {
-        const response = await apiClient.post("/mobile/friendships/requests", {
-          receiver_id: receiverId,
-        });
-        return response.data;
-      } catch (error: any) {
-        // Hata başarıyla yakalandı ve API client tarafından işlenmedi
-        // Direkt olarak hata nesnesini döndürerek safeApiCall hata yakalama bloğuna gönder
-        throw error;
+    try {
+      console.log(
+        `[API] Arkadaşlık isteği gönderiliyor: receiverId=${receiverId}`
+      );
+
+      // Güvenlik kontrolü: receiverId geçerli mi?
+      if (!receiverId || typeof receiverId !== "string") {
+        console.error(`[API] Geçersiz receiver_id: ${receiverId}`);
+        return {
+          status: "error",
+          message: "Geçersiz kullanıcı ID'si",
+          data: null,
+        };
       }
-    });
+
+      // API isteği gönder
+      const response = await apiClient.post("/mobile/friendships/requests", {
+        receiver_id: receiverId,
+      });
+
+      console.log(`[API] Başarılı yanıt:`, response.data);
+
+      // Başarılı yanıt
+      return {
+        status: "success",
+        message: "Arkadaşlık isteği başarıyla gönderildi",
+        data: response.data,
+      };
+    } catch (error: any) {
+      console.error(`[API] İstek gönderme hatası:`, error);
+
+      // Spesifik hata durumlarını kontrol et
+      if (error.response?.status === 409) {
+        // Zaten mevcut istek varsa (çakışma)
+        return {
+          status: "error",
+          message:
+            error.response.data?.message ||
+            "Bu kullanıcıya zaten istek gönderilmiş veya zaten arkadaşsınız",
+          code: 409,
+          data: null,
+        };
+      } else if (error.response?.status === 400) {
+        // Kendine istek veya geçersiz formatta istek
+        return {
+          status: "error",
+          message:
+            error.response.data?.message ||
+            "Geçersiz istek. Kendinize arkadaşlık isteği gönderemezsiniz.",
+          code: 400,
+          data: null,
+        };
+      } else if (error.response?.status === 404) {
+        // Kullanıcı bulunamadı
+        return {
+          status: "error",
+          message: "Kullanıcı bulunamadı",
+          code: 404,
+          data: null,
+        };
+      }
+
+      // Diğer hatalar
+      return {
+        status: "error",
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Arkadaşlık isteği gönderilemedi",
+        code: error.response?.status || 500,
+        data: null,
+      };
+    }
   },
 
   // Gelen arkadaşlık isteklerini getir
@@ -101,8 +160,13 @@ export const friendshipsApi = {
   // Gönderilen arkadaşlık isteklerini getir
   getOutgoingRequests: async () => {
     return safeApiCall(async () => {
+      console.log("[API] Giden arkadaşlık istekleri alınıyor...");
       const response = await apiClient.get(
         "/mobile/friendships/requests/outgoing"
+      );
+      console.log(
+        "[API] Giden istekler yanıtı:",
+        JSON.stringify(response.data, null, 2)
       );
       return response.data.data as FriendRequest[];
     }, []);
@@ -132,38 +196,68 @@ export const friendshipsApi = {
   cancelRequest: async (requestId: string) => {
     try {
       console.log(`[API] Arkadaşlık isteği iptal ediliyor: ID=${requestId}`);
-      const response = await apiClient.delete(
-        `/mobile/friendships/requests/${requestId}`
-      );
-      console.log(`[API] İstek iptal yanıtı:`, response.data);
-      return response.data;
-    } catch (error: any) {
-      // Hata mesajını ERROR olarak değil, normal log olarak göster
-      console.log(
-        `[API] İstek iptal durumu (ID: ${requestId}): ${
-          error.response?.status || "Bilinmeyen"
-        }`
+
+      // PUT metodu ile istek iptali - status "rejected" olarak gönderiliyor
+      // (backend "cancelled" değerini kabul etmiyor)
+      const response = await apiClient.put(
+        `/mobile/friendships/requests/${requestId}`,
+        { status: "rejected" }
       );
 
-      // 404 hatası genellikle isteğin zaten silinmiş olduğunu gösterir
+      console.log(`[API] İptal yanıtı:`, response.data);
+
+      // Başarılı yanıt
+      return {
+        status: "success",
+        message: "İstek başarıyla iptal edildi",
+        data: response.data,
+      };
+    } catch (error: any) {
+      // Detaylı hata bilgisi için log kaydı
+      console.error(`[API] İstek iptal hatası:`, error);
+
+      // 404 hatası - istek bulunamadı veya zaten silinmiş
       if (error.response?.status === 404) {
         console.log(
-          `[API] İstek bulunamadı (ID: ${requestId}). Muhtemelen zaten silinmiş, başarılı kabul ediliyor.`
+          `[API] İstek bulunamadı (ID: ${requestId}). Muhtemelen zaten silinmiş.`
         );
-        // 404 hatası alındığında, başarılı gibi davranabiliriz çünkü sonuç aynı
         return {
-          status: "success",
-          message: "İstek zaten silinmiş",
+          status: "success", // 404 durumunu da başarılı olarak kabul ediyoruz
+          message: "İstek zaten silinmiş veya bulunamadı",
           data: null,
+          code: 404,
         };
       }
 
-      // Diğer hataları normal şekilde ilet, ama error olarak değil
-      console.log(`[API] İstek işlemi sonuçlandı: ${error.message}`);
+      // 403 hatası - yetkisiz işlem
+      if (error.response?.status === 403) {
+        return {
+          status: "error",
+          message: "Bu arkadaşlık isteğini iptal etme yetkiniz yok",
+          data: null,
+          code: 403,
+        };
+      }
+
+      // 400 hatası - geçersiz durum değeri
+      if (error.response?.status === 400) {
+        return {
+          status: "error",
+          message: error.response.data?.message || "Geçersiz iptal isteği",
+          data: null,
+          code: 400,
+        };
+      }
+
+      // Diğer tüm hatalar
       return {
-        status: "success", // Daima başarılı kabul et
-        message: "İşlem tamamlandı",
+        status: "error",
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "İstek iptal edilirken bir hata oluştu",
         data: null,
+        code: error.response?.status || 500,
       };
     }
   },
@@ -218,6 +312,56 @@ export const friendshipsApi = {
       }
     });
   },
+
+  // Arkadaşı sil
+  deleteFriend: async (friendId: string) => {
+    try {
+      console.log(`[API] Arkadaş siliniyor: ID=${friendId}`);
+
+      if (!friendId) {
+        return {
+          status: "error",
+          message: "Arkadaş ID'si geçersiz",
+          data: null,
+        };
+      }
+
+      const response = await apiClient.delete(
+        `/mobile/friendships/${friendId}`
+      );
+
+      console.log(`[API] Arkadaş silme yanıtı:`, response.data);
+
+      showToast("Arkadaş başarıyla silindi", "success");
+
+      return {
+        status: "success",
+        message: "Arkadaş başarıyla silindi",
+        data: response.data,
+      };
+    } catch (error: any) {
+      console.error(`[API] Arkadaş silme hatası:`, error);
+
+      showToast("Arkadaş silinemedi", "error");
+
+      if (error.response?.status === 404) {
+        return {
+          status: "error",
+          message: "Arkadaş bulunamadı",
+          data: null,
+        };
+      }
+
+      return {
+        status: "error",
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Arkadaş silinemedi",
+        data: null,
+      };
+    }
+  },
 };
 
 /**
@@ -225,8 +369,6 @@ export const friendshipsApi = {
  */
 export const getIncomingFriendshipRequests = async () => {
   try {
-    
-
     const response = await apiClient.get(
       "/mobile/friendships/requests/incoming"
     );
@@ -254,7 +396,6 @@ export const getIncomingFriendshipRequests = async () => {
  */
 export const acceptFriendshipRequest = async (requestId: string) => {
   try {
-    
     // PUT metodunu kullan ve status olarak accepted gönder
     const response = await apiClient.put(
       `/mobile/friendships/requests/${requestId}`,
@@ -294,7 +435,6 @@ export const acceptFriendshipRequest = async (requestId: string) => {
  */
 export const rejectFriendshipRequest = async (requestId: string) => {
   try {
-    
     // PUT metodunu kullan ve status olarak rejected gönder
     const response = await apiClient.put(
       `/mobile/friendships/requests/${requestId}`,

@@ -1,11 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, Modal, FlatList, View } from 'react-native';
-import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
-import { FormControl, FormControlLabel, FormControlError } from '@/components/ui/form-control';
-import { Button, ButtonText } from '@/components/ui/button';
-import { X, ChevronDown } from 'lucide-react-native';
-import { sportsApi } from '@/services/api/sports';
+import React, { useState, useEffect } from "react";
+import {
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  FlatList,
+  View,
+} from "react-native";
+import { Box } from "@/components/ui/box";
+import { Text } from "@/components/ui/text";
+import {
+  FormControl,
+  FormControlLabel,
+  FormControlError,
+} from "@/components/ui/form-control";
+import { Button, ButtonText } from "@/components/ui/button";
+import { X, ChevronDown } from "lucide-react-native";
+import { sportsApi } from "@/services/api/sports";
 
 interface Sport {
   id: number;
@@ -36,7 +46,7 @@ export default function SportSelector({
 
   useEffect(() => {
     if (value && sports.length > 0) {
-      const sport = sports.find(s => s.id === value);
+      const sport = sports.find((s) => s.id === value);
       if (sport) {
         setSelectedSport(sport);
       }
@@ -50,7 +60,7 @@ export default function SportSelector({
         setSports(response);
       }
     } catch (error) {
-      console.error('Spor kategorileri yüklenirken hata:', error);
+      console.error("Spor kategorileri yüklenirken hata:", error);
     }
   };
 
@@ -69,7 +79,7 @@ export default function SportSelector({
           onPress={() => setIsVisible(true)}
         >
           <Text style={styles.selectorText}>
-            {selectedSport ? selectedSport.name : 'Spor türü seçin'}
+            {selectedSport ? selectedSport.name : "Spor türü seçin"}
           </Text>
           <ChevronDown size={20} color="#6B7280" />
         </TouchableOpacity>
@@ -121,45 +131,45 @@ export default function SportSelector({
 
 const styles = StyleSheet.create({
   selector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    backgroundColor: 'white',
-    padding: 12,
-    height: 48,
+    borderColor: "#E2E8F0",
+    borderRadius: 25,
+    backgroundColor: "#F8FAFC",
+    padding: 16,
+    height: 56,
   },
   selectorError: {
-    borderColor: '#EF4444',
+    borderColor: "#EF4444",
   },
   selectorText: {
-    fontSize: 14,
-    color: '#0F172A',
+    fontSize: 16,
+    color: "#0F172A",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    maxHeight: '80%',
+    maxHeight: "80%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0F172A',
+    fontWeight: "600",
+    color: "#0F172A",
   },
   closeButton: {
     padding: 4,
@@ -170,13 +180,13 @@ const styles = StyleSheet.create({
   sportItem: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: "#E2E8F0",
   },
   selectedSportItem: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: "#EFF6FF",
   },
   sportItemText: {
     fontSize: 16,
-    color: '#0F172A',
+    color: "#0F172A",
   },
-}); 
+});

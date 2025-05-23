@@ -5,25 +5,33 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Event interface
 export interface Event {
-  id: string;
+  id: number | string;
   title: string;
-  description: string;
-  status: "PENDING" | "ACTIVE" | "REJECTED" | "CANCELLED" | "COMPLETED";
-  sport_id: number;
-  sport_name: string;
+  description?: string;
+  price: number;
+  creator_id: string;
+  creator_name?: string;
+  location_name?: string;
+  location_lat?: number;
+  location_lng?: number;
+  status: string;
   event_date: string;
   start_time: string;
   end_time: string;
-  location_name: string;
-  location_lat: number;
-  location_long: number;
-  max_participants: number;
-  creator_id: string;
-  creator_name: string;
   created_at: string;
   updated_at: string;
-  participant_count: number;
-  user_joined: boolean;
+  max_participants: number;
+  current_participants: number;
+  is_private: boolean;
+  sport?: {
+    id: number;
+    name: string;
+    icon: string;
+    description?: string;
+  };
+  sport_id?: number;
+  image_url?: string;
+  is_joined?: boolean;
 }
 
 // Event Rating interface
@@ -591,6 +599,65 @@ export const eventsApi = {
       const response = await apiClient.get("user-reports");
 
       return response.data.data || [];
+    }, []);
+  },
+
+  // Etkinlikleri arama
+  searchEvents: async (query: string, page: number = 1, limit: number = 10) => {
+    return safeApiCall(
+      async () => {
+        console.log(
+          `[API] searchEvents çağrılıyor: query=${query}, page=${page}, limit=${limit}`
+        );
+
+        const params = {
+          q: query,
+          page,
+          limit,
+        };
+
+        const response = await apiClient.get("events/search", { params });
+
+        console.log(
+          `[API] Arama sonuçları: ${
+            response.data.data.events?.length || 0
+          } etkinlik bulundu`
+        );
+
+        return {
+          events: response.data.data.events || [],
+          total: response.data.data.total || 0,
+          page: response.data.data.page || 1,
+          limit: response.data.data.limit || 10,
+          pages: response.data.data.pages || 1,
+        };
+      },
+      { events: [], total: 0, page: 1, limit: 10, pages: 1 }
+    );
+  },
+
+  // Belirli kategoriye ait etkinlikleri getir
+  getEventsBySportId: async (
+    sportId: number,
+    page: number = 1,
+    limit: number = 10
+  ) => {
+    return safeApiCall(async () => {
+      console.log(
+        `API Call: getEventsBySportId with sportId=${sportId}, page=${page}, limit=${limit}`
+      );
+
+      const response = await apiClient.get(`events/sport/${sportId}`, {
+        params: { page, limit },
+      });
+
+      console.log(
+        `API Response: getEventsBySportId returned ${
+          response.data?.data?.events?.length || 0
+        } events`
+      );
+
+      return response.data.data.events as Event[];
     }, []);
   },
 };

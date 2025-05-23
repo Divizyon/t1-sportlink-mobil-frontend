@@ -481,7 +481,7 @@ export default function NotificationsScreen() {
     return (
       <View style={styles.requestsContainer}>
         <LinearGradient
-          colors={[colors.gradient1, colors.gradient2]}
+          colors={[colors.darkGray, colors.gradient2]}
           style={styles.requestsGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -849,7 +849,7 @@ const styles = StyleSheet.create({
   requestsTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: colors.primary,
+    color: colors.lightGray,
   },
   viewAllButton: {
     backgroundColor: colors.primary,

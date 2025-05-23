@@ -389,10 +389,10 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: "white",
-    height: 48,
+    borderRadius: 25,
+    padding: 16,
+    backgroundColor: "#F8FAFC",
+    height: 56,
     justifyContent: "center",
   },
   inputContent: {
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     borderColor: "#EF4444",
   },
   inputText: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#0F172A",
   },
   // Modal styles
@@ -418,10 +418,10 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: "white",
-    borderRadius: 16,
+    borderRadius: 25,
     width: "85%",
     maxHeight: "80%",
-    padding: 16,
+    padding: 20,
     elevation: 5,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -456,6 +456,7 @@ const styles = StyleSheet.create({
   confirmButton: {
     backgroundColor: "#4e54c8",
     paddingHorizontal: 16,
+    borderRadius: 20,
   },
   cancelButton: {
     padding: 12,
@@ -510,7 +511,7 @@ const styles = StyleSheet.create({
   },
   selectedDay: {
     backgroundColor: "#4e54c8",
-    borderRadius: 16,
+    borderRadius: 20,
   },
   disabledDay: {
     opacity: 0.3,
@@ -544,10 +545,10 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   timeInput: {
-    width: 60,
-    height: 60,
-    backgroundColor: "#F1F5F9",
-    borderRadius: 8,
+    width: 70,
+    height: 70,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 35,
     fontSize: 26,
     textAlign: "center",
     color: "#0F172A",
@@ -555,9 +556,10 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
   timeSeparator: {
-    fontSize: 26,
+    fontSize: 28,
     color: "#0F172A",
-    marginHorizontal: 10,
+    marginHorizontal: 15,
+    fontWeight: "600",
   },
   timeHint: {
     marginTop: 10,
