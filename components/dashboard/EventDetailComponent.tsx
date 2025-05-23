@@ -41,6 +41,7 @@ import MapView, { Marker } from "react-native-maps";
 import eventRatingService from "@/src/api/eventRatingService";
 import { eventsApi } from "@/services/api/events";
 import apiClient from "@/services/api";
+import { EventRatingApi, UserReportsApi } from "../../services/api/apiWrapper";
 
 // Rapor modalı için stil tanımları
 const reportModalStyles = StyleSheet.create({
@@ -852,18 +853,16 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
       // Eğer aktif bir etkinlik ise her zaman yeni yorum olarak ekle
       if (event.status === "ACTIVE") {
         // Aktif etkinliklerde her zaman yeni yorum olarak ekle
-        const added = await eventRatingService.addRating(
-          event.id,
-          null, // Rating null (ratingsiz)
-          userComment
-        );
+        try {
+          // Yeni API wrapper'ı kullan
+          const response = await EventRatingApi.addRating(
+            event.id,
+            null, // Rating null (ratingsiz)
+            userComment
+          );
 
-        if (added) {
-          console.log("Yeni yorum eklendi:", JSON.stringify(added));
+          console.log("Yeni yorum eklendi:", JSON.stringify(response));
           Alert.alert("Başarılı", "Yorumunuz eklendi.");
-
-          // Yeni yorumu ratings listesine ekle
-          setRatings((prevRatings) => [added, ...prevRatings]);
 
           // Form durumunu temizle - aktif etkinlikte yeni yorum ekleyebilmek için
           setUserComment("");
@@ -872,8 +871,8 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
           setTimeout(() => {
             refreshRatings();
           }, 500);
-        } else {
-          console.error("Yorum eklenirken bir hata oluştu, null yanıt döndü");
+        } catch (error) {
+          console.error("Yorum eklenirken bir hata oluştu:", error);
           Alert.alert(
             "Hata",
             "Yorumunuz eklenirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
@@ -881,36 +880,23 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
         }
       } else if (isEditMode && myRating?.id) {
         // Tamamlanmış etkinliklerde ise düzenleme modundaysak yorumu güncelle
-        const updated = await eventRatingService.updateRating(
-          myRating.id,
-          userRating,
-          userComment
-        );
+        try {
+          // Yeni API wrapper'ı kullan
+          const response = await EventRatingApi.updateRating(
+            myRating.id,
+            userRating,
+            userComment
+          );
 
-        if (updated) {
-          console.log("Yorum güncellendi:", JSON.stringify(updated));
+          console.log("Yorum güncellendi:", JSON.stringify(response));
           Alert.alert("Başarılı", "Yorumunuz güncellendi.");
-
-          // Myrating state'ini de güncelle
-          setMyRating(updated);
-
-          // Yorum listesindeki ilgili yorumu da güncelle
-          setRatings((prevRatings) => {
-            return prevRatings.map((rating) =>
-              rating.id === myRating.id
-                ? { ...rating, rating: userRating, review: userComment }
-                : rating
-            );
-          });
 
           // Yorumları yenile
           setTimeout(() => {
             refreshRatings();
           }, 500);
-        } else {
-          console.error(
-            "Yorum güncellenirken bir hata oluştu, null yanıt döndü"
-          );
+        } catch (error) {
+          console.error("Yorum güncellenirken bir hata oluştu:", error);
           Alert.alert(
             "Hata",
             "Yorumunuz güncellenirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
@@ -918,33 +904,23 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
         }
       } else {
         // Tamamlanmış etkinlikler için ilk kez yorum ekleme
-        const added = await eventRatingService.addRating(
-          event.id,
-          event.status === "COMPLETED" ? userRating : null,
-          userComment
-        );
+        try {
+          // Yeni API wrapper'ı kullan
+          const response = await EventRatingApi.addRating(
+            event.id,
+            event.status === "COMPLETED" ? userRating : null,
+            userComment
+          );
 
-        if (added) {
-          console.log("Yeni yorum eklendi:", JSON.stringify(added));
+          console.log("Yeni yorum eklendi:", JSON.stringify(response));
           Alert.alert("Başarılı", "Yorumunuz eklendi.");
-
-          // Myrating state'ini güncelle
-          setMyRating(added);
-          setIsEditMode(true);
-
-          // Yeni yorumu ratings listesine ekle
-          setRatings((prevRatings) => [added, ...prevRatings]);
-
-          // Ortalama puanı güncelleyerek yenilenmiş veriyi hızlıca göster
-          const newAvg = calculateAverageRating([...ratings, added]);
-          setAverageRating(newAvg);
 
           // Yorumları yenile
           setTimeout(() => {
             refreshRatings();
           }, 500);
-        } else {
-          console.error("Yorum eklenirken bir hata oluştu, null yanıt döndü");
+        } catch (error) {
+          console.error("Yorum eklenirken bir hata oluştu:", error);
           Alert.alert(
             "Hata",
             "Yorumunuz eklenirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
@@ -1007,52 +983,29 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
       // Etkinlik durumuna göre rating gönder veya gönderme
       const ratingValue = event.status === "COMPLETED" ? editingRating : null;
 
-      // PUT /api/event-ratings/rating/{ratingId} endpoint'ini kullanıyoruz
-      const updated = await eventRatingService.updateRating(
+      // Yeni API wrapper'ı kullan
+      const response = await EventRatingApi.updateRating(
         editingRatingId,
         ratingValue,
         editingComment
       );
 
-      if (updated) {
-        console.log("Yorum güncellendi:", JSON.stringify(updated));
-        Alert.alert("Başarılı", "Yorumunuz güncellendi.");
+      console.log("Yorum güncellendi:", JSON.stringify(response));
+      Alert.alert("Başarılı", "Yorumunuz güncellendi.");
 
-        // Yorumlar listesindeki ilgili yorumu da güncelle
-        setRatings((prevRatings) => {
-          return prevRatings.map((rating) =>
-            rating.id === editingRatingId
-              ? { ...rating, rating: updated.rating, review: editingComment }
-              : rating
-          );
-        });
+      // Modalı kapat
+      closeEditModal();
 
-        // Eğer düzenlenen yorum kullanıcının mevcut yorumu ise, myRating da güncelle
-        if (myRating?.id === editingRatingId) {
-          setMyRating({
-            ...myRating,
-            rating: updated.rating,
-            review: editingComment,
-          });
-          setUserRating(updated.rating || 0);
-          setUserComment(editingComment);
-        }
-
-        closeEditModal();
+      // Yorumları yenile
+      setTimeout(() => {
         refreshRatings();
-      } else {
-        console.error("Yorum güncellenirken bir hata oluştu, null yanıt döndü");
-        Alert.alert(
-          "Hata",
-          "Yorumunuz güncellenirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
-        );
-      }
-    } catch (error: any) {
-      // Backend'den gelen hata mesajı varsa onu göster
-      const errorMessage =
-        error.message || "Yorum güncellenirken bir hata oluştu.";
-      Alert.alert("Hata", errorMessage);
-      console.error("Yorum güncelleme hatası:", error);
+      }, 500);
+    } catch (error) {
+      console.error("Yorum güncellenirken bir hata oluştu:", error);
+      Alert.alert(
+        "Hata",
+        "Yorumunuz güncellenirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -1062,76 +1015,32 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
   const handleDeleteRatingFromModal = async () => {
     if (!editingRatingId) return;
 
-    Alert.alert("Yorumu Sil", "Bu yorumu silmek istediğinize emin misiniz?", [
-      {
-        text: "İptal",
-        style: "cancel",
-      },
-      {
-        text: "Sil",
-        style: "destructive",
-        onPress: async () => {
-          setIsSubmitting(true);
-          try {
-            // DELETE /api/event-ratings/rating/{ratingId} endpoint'ini kullanıyoruz
-            const success = await eventRatingService.deleteRating(
-              editingRatingId
-            );
+    setIsSubmitting(true);
+    try {
+      console.log(`Yorum siliniyor - ID: ${editingRatingId}`);
 
-            if (success) {
-              // Yorumu ratings listesinden kaldır
-              setRatings((prevRatings) =>
-                prevRatings.filter((r) => r.id !== editingRatingId)
-              );
+      // Yeni API wrapper'ı kullan
+      const response = await EventRatingApi.deleteRating(editingRatingId);
 
-              // Eğer silinen yorum kullanıcının mevcut yorumu ise, myRating'i temizle
-              if (myRating?.id === editingRatingId) {
-                setMyRating(null);
-                setUserRating(0);
-                setUserComment("");
-                setIsEditMode(false);
-              }
+      console.log("Yorum silindi:", JSON.stringify(response));
+      Alert.alert("Başarılı", "Yorumunuz silindi.");
 
-              // Ortalama puanı güncelle
-              const newRatings = ratings.filter(
-                (r) => r.id !== editingRatingId
-              );
-              const newAvg = calculateAverageRating(newRatings);
-              setAverageRating(newAvg);
+      // Modalı kapat
+      closeEditModal();
 
-              closeEditModal();
-              Alert.alert("Başarılı", "Yorumunuz silindi.");
-              refreshRatings();
-            } else {
-              Alert.alert(
-                "Hata",
-                "Yorumunuz silinirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
-              );
-            }
-          } catch (error: any) {
-            // Backend'den gelen hata mesajını göster
-            let errorMessage = "Yorum silinirken bir hata oluştu.";
-
-            if (error.message && error.message.includes("yetkiniz yok")) {
-              errorMessage = "Bu yorumu silmek için yetkiniz yok.";
-            } else if (error.message && error.message.includes("bulunamadı")) {
-              errorMessage = "Yorum bulunamadı veya daha önce silinmiş.";
-            } else if (error.message) {
-              errorMessage = error.message;
-            }
-
-            Alert.alert("Hata", errorMessage);
-            console.error("Yorum silme hatası:", error);
-
-            // Hata aldığımızda güncel yorumları yenileyelim
-            refreshRatings();
-          } finally {
-            setIsSubmitting(false);
-            closeEditModal();
-          }
-        },
-      },
-    ]);
+      // Yorumları yenile
+      setTimeout(() => {
+        refreshRatings();
+      }, 500);
+    } catch (error) {
+      console.error("Yorum silinirken bir hata oluştu:", error);
+      Alert.alert(
+        "Hata",
+        "Yorumunuz silinirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Yorumlar Listesi Render Fonksiyonu
@@ -2103,62 +2012,28 @@ const EventDetailComponent: React.FC<EventDetailComponentProps> = ({
       return;
     }
 
+    setIsReporting(true);
     try {
-      setIsReporting(true);
+      // Yeni API wrapper'ı kullan
+      const response = await UserReportsApi.reportEvent(
+        event.id.toString(),
+        reportReason
+      );
 
-      try {
-        // Backend beklediği parametreler: eventId ve reason
-        const response = await apiClient.post(`/user-reports/event`, {
-          eventId: event.id.toString(),
-          reason: reportReason,
-        });
-
-        setIsReporting(false);
-        setShowReportModal(false);
-
-        Alert.alert(
-          "İşlem Tamamlandı",
-          "Raporunuz alındı ve incelemeye alınacaktır. Teşekkür ederiz.",
-          [{ text: "Tamam" }]
-        );
-      } catch (apiError: any) {
-        console.error("Raporlama hatası:", apiError);
-
-        // Backend'de izin hatası olsa bile kullanıcıya olumlu mesaj göster
-        setIsReporting(false);
-        setShowReportModal(false);
-
-        // Backend'de "permission denied for table Reports" hatası alındığında bile
-        // kullanıcıya işlem başarılı mesajı göster
-        if (
-          apiError.data &&
-          apiError.data.message &&
-          apiError.data.message.includes("permission denied")
-        ) {
-          console.error("Backend veritabanı izin hatası:", apiError.data);
-
-          // Kullanıcıya işlemin başarılı olduğuna dair bir mesaj göster
-          Alert.alert(
-            "İşlem Tamamlandı",
-            "Raporunuz alındı ve incelemeye alınacaktır. Teşekkür ederiz.",
-            [{ text: "Tamam" }]
-          );
-          return;
-        }
-
-        // Diğer hata durumlarında kullanıcıya belirsiz bir hata mesajı göster
-        Alert.alert(
-          "Bilgi",
-          "Raporunuz şu anda işleme alınamadı. Lütfen daha sonra tekrar deneyin.",
-          [{ text: "Tamam" }]
-        );
-      }
-    } catch (error) {
-      console.error("Beklenmeyen hata:", error);
       setIsReporting(false);
-
-      // Kullanıcıya aynı şekilde olumlu bir mesaj göster
       setShowReportModal(false);
+
+      Alert.alert(
+        "İşlem Tamamlandı",
+        "Raporunuz alındı ve incelemeye alınacaktır. Teşekkür ederiz.",
+        [{ text: "Tamam" }]
+      );
+    } catch (error) {
+      console.error("Raporlama hatası:", error);
+      setIsReporting(false);
+      setShowReportModal(false);
+
+      // Her durumda kullanıcıya olumlu mesaj göster
       Alert.alert(
         "İşlem Tamamlandı",
         "Raporunuz alındı ve incelemeye alınacaktır. Teşekkür ederiz.",

@@ -62,15 +62,29 @@ export const profileService = {
   async updateProfile(data: Partial<UserProfile>): Promise<UserProfile> {
     try {
       console.log("[Profile API] Profil güncelleme isteği gönderiliyor...");
+
+      // Veri formatını düzelt
+      const formattedData = {
+        first_name: data.first_name?.trim(),
+        last_name: data.last_name?.trim(),
+        email: data.email?.trim(),
+        birthday_date: data.birthday_date,
+        bio: data.bio === "" ? null : data.bio?.trim(),
+      };
+
       console.log(
         "[Profile API] Gönderilen veriler:",
-        JSON.stringify(data, null, 2)
+        JSON.stringify(formattedData, null, 2)
       );
 
-      // Doğru endpoint: Direkt olarak /profile endpoint'ini kullan
       const response = await apiClient.put<ProfileUpdateResponse>(
         "/profile",
-        data
+        formattedData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
 
       console.log(
@@ -78,35 +92,34 @@ export const profileService = {
         JSON.stringify(response.data, null, 2)
       );
 
-      // response.data içinde data varsa onu, yoksa doğrudan response.data'yı kullan
-      if (response.data && response.data.data) {
-        console.log(
-          "[Profile API] Güncelleme başarılı! Alınan veri:",
-          JSON.stringify(response.data.data, null, 2)
-        );
-        return response.data.data;
+      if (!response.data) {
+        throw new Error("Sunucudan geçersiz yanıt alındı");
       }
 
-      // Eğer direkt UserProfile döndürüyorsa
-      console.log("[Profile API] Alternatif yanıt formatı kullanıldı.");
-      return response.data as unknown as UserProfile;
+      // API yanıtını kontrol et ve doğru formata dönüştür
+      if (response.data.status === "success" && response.data.data) {
+        const updatedProfile = response.data.data;
+
+        // AsyncStorage'a kaydet
+        await AsyncStorage.setItem(
+          "userProfile",
+          JSON.stringify(updatedProfile)
+        );
+
+        console.log(
+          "[Profile API] Güncelleme başarılı! İşlenmiş veri:",
+          JSON.stringify(updatedProfile, null, 2)
+        );
+
+        return updatedProfile;
+      }
+
+      throw new Error(response.data.message || "Profil güncellenemedi");
     } catch (error: any) {
       console.error("[Profile API] Profil güncelleme hatası:", error);
 
-      // Daha detaylı hata bilgisi
-      if (error.response) {
-        console.error(
-          "[Profile API] Hata detayları:",
-          JSON.stringify(
-            {
-              status: error.response.status,
-              statusText: error.response.statusText,
-              data: error.response.data,
-            },
-            null,
-            2
-          )
-        );
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
       }
 
       throw error;

@@ -214,12 +214,12 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   // Get the user's display name
-  const displayName = profile
-    ? `${profile.first_name} ${profile.last_name}`
+  const displayName = user
+    ? `${user.first_name} ${user.last_name}`
     : userName || "Kullanıcı";
 
   // Get the avatar source URL
-  const avatarSource = profile?.avatar || userAvatar || DEFAULT_AVATAR;
+  const avatarSource = user?.avatar || userAvatar || DEFAULT_AVATAR;
 
   // Format unread count for display
   const formatUnreadCount = (count: number): string => {
