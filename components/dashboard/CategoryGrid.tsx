@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,12 @@ import {
   FlatList,
 } from "react-native";
 import { ChevronRight } from "lucide-react-native";
+import FootballAnimation from "../animations/FootballAnimation";
+import BicycleAnimation from "../animations/BicycleAnimation";
+import BasketballAnimation from "../animations/BasketballAnimation";
+import WalkingAnimation from "../animations/WalkingAnimation";
+import YogaAnimation from "../animations/YogaAnimation";
+import RunningAnimation from "../animations/RunningAnimation";
 
 export type Category = {
   id: number;
@@ -14,13 +20,13 @@ export type Category = {
   icon: string;
 };
 
-type CategoryGridProps = {
+interface CategoryGridProps {
   title: string;
   categories: Category[];
   onCategoryPress: (category: Category) => void;
   onSeeAllPress?: () => void;
   columns?: number;
-};
+}
 
 const CategoryGrid: React.FC<CategoryGridProps> = ({
   title,
@@ -29,55 +35,103 @@ const CategoryGrid: React.FC<CategoryGridProps> = ({
   onSeeAllPress,
   columns = 4,
 }) => {
+  const [activeAnimation, setActiveAnimation] = useState<number | null>(null);
+
   // Kategori renkleri
   const categoryColors = [
     "#F97316", // Turuncu
     "#22C55E", // Yeşil
     "#3B82F6", // Mavi
-    "#EAB308", // Sarı
+    "#A855F7", // Mor
     "#EC4899", // Pembe
-    "#8B5CF6", // Mor
     "#14B8A6", // Turkuaz
-    "#EF4444", // Kırmızı
+    "#F59E0B", // Sarı
+    "#6366F1", // İndigo
   ];
 
-  // Kategori için renk seçimi
-  const getCategoryColor = (index: number) => {
-    return categoryColors[index % categoryColors.length];
+  const handleCategoryPress = (category: Category) => {
+    const needsAnimation = 
+      category.name.toLowerCase() === "futbol" || 
+      category.name.toLowerCase() === "bisiklet" ||
+      category.name.toLowerCase() === "basketbol" ||
+      category.name.toLowerCase() === "yürüyüş" ||
+      category.name.toLowerCase() === "yoga" ||
+      category.name.toLowerCase() === "koşu";
+
+    if (needsAnimation) {
+      setActiveAnimation(category.id);
+      // 1 saniye sonra animasyonu durdur ve yönlendirmeyi yap
+      setTimeout(() => {
+        setActiveAnimation(null);
+        onCategoryPress(category);
+      }, 1000);
+    } else {
+      // Animasyon gerektirmeyen kategoriler için direkt yönlendirme yap
+      onCategoryPress(category);
+    }
+  };
+
+  const renderItem = ({ item, index }: { item: Category; index: number }) => {
+    const isFootball = item.name.toLowerCase() === "futbol";
+    const isBicycle = item.name.toLowerCase() === "bisiklet";
+    const isBasketball = item.name.toLowerCase() === "basketbol";
+    const isWalking = item.name.toLowerCase() === "yürüyüş";
+    const isYoga = item.name.toLowerCase() === "yoga";
+    const isRunning = item.name.toLowerCase() === "koşu";
+    const showAnimation = activeAnimation === item.id;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.categoryItem,
+          { backgroundColor: categoryColors[index % categoryColors.length] },
+        ]}
+        onPress={() => handleCategoryPress(item)}
+      >
+        <View style={styles.iconContainer}>
+          {isFootball && showAnimation ? (
+            <FootballAnimation play={showAnimation} style={styles.animation} />
+          ) : isBicycle && showAnimation ? (
+            <BicycleAnimation play={showAnimation} style={styles.animation} />
+          ) : isBasketball && showAnimation ? (
+            <BasketballAnimation play={showAnimation} style={styles.animation} />
+          ) : isWalking ? (
+            <WalkingAnimation play={showAnimation} style={styles.animation} />
+          ) : isYoga && showAnimation ? (
+            <YogaAnimation play={showAnimation} style={styles.animation} />
+          ) : isRunning ? (
+            <RunningAnimation play={showAnimation} style={styles.animation} />
+          ) : (
+            <Text style={styles.icon}>{item.icon}</Text>
+          )}
+        </View>
+        <Text style={styles.categoryName} numberOfLines={1}>
+          {item.name}
+        </Text>
+      </TouchableOpacity>
+    );
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
-      </View>
-
-      <FlatList
-        data={categories}
-        numColumns={columns}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item, index }) => (
+        {onSeeAllPress && (
           <TouchableOpacity
-            style={[
-              styles.categoryItem,
-              { backgroundColor: `${getCategoryColor(index)}15` }, // %15 opaklıkta arka plan
-              { width: `${100 / columns - 2}%` }, // Sütun sayısına göre genişlik
-            ]}
-            onPress={() => onCategoryPress(item)}
+            style={styles.seeAllButton}
+            onPress={onSeeAllPress}
           >
-            <View
-              style={[
-                styles.iconContainer,
-                { backgroundColor: getCategoryColor(index) },
-              ]}
-            >
-              <Text style={styles.categoryIcon}>{item.icon}</Text>
-            </View>
-            <Text style={styles.categoryName} numberOfLines={1}>
-              {item.name}
-            </Text>
+            <Text style={styles.seeAllText}>Tümünü Gör</Text>
+            <ChevronRight size={20} color="#666" />
           </TouchableOpacity>
         )}
+      </View>
+      <FlatList
+        data={categories}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={columns}
+        scrollEnabled={false}
         contentContainerStyle={styles.gridContainer}
       />
     </View>
@@ -92,53 +146,53 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
-    paddingHorizontal: 16,
+    marginBottom: 10,
+    paddingHorizontal: 15,
   },
   title: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#0F172A",
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
   },
   seeAllButton: {
     flexDirection: "row",
     alignItems: "center",
   },
   seeAllText: {
-    fontSize: 14,
-    color: "#10B981",
-    fontWeight: "600",
-    marginRight: 2,
+    color: "#666",
+    marginRight: 4,
   },
   gridContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 4,
+    paddingHorizontal: 10,
   },
   categoryItem: {
     flex: 1,
-    margin: "1%",
-    aspectRatio: 1,
-    borderRadius: 10,
-    padding: 8,
+    margin: 5,
+    padding: 10,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 90,
   },
   iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
+    width: 40,
+    height: 40,
     justifyContent: "center",
-    marginBottom: 4,
+    alignItems: "center",
+    marginBottom: 5,
   },
-  categoryIcon: {
-    fontSize: 18,
+  icon: {
+    fontSize: 24,
+  },
+  animation: {
+    width: 40,
+    height: 40,
   },
   categoryName: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#0F172A",
+    color: "white",
+    fontSize: 12,
     textAlign: "center",
+    fontWeight: "500",
   },
 });
 
