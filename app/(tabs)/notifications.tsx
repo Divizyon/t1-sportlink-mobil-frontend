@@ -33,6 +33,7 @@ import {
   CheckCircle,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useNotificationStore } from "@/store/slices/notificationSlice";
 
 // API isteği için timeout değeri (ms)
 const API_TIMEOUT = 15000;
@@ -71,6 +72,14 @@ export default function NotificationsScreen() {
   // Eklenmiş durumlar
   const [isNetworkError, setIsNetworkError] = useState(false);
   const [apiRequestInProgress, setApiRequestInProgress] = useState(false);
+
+  // Zustand store'dan okunmamış bildirim sayısını yönetmek için
+  const {
+    unreadCount,
+    setUnreadCount,
+    decrementUnreadCount,
+    resetUnreadCount,
+  } = useNotificationStore();
 
   // Bildirim tipini kontrol etmek için yardımcı fonksiyon
   const isMobileNotification = (
@@ -148,6 +157,18 @@ export default function NotificationsScreen() {
           return dateB - dateA;
         });
 
+        // Okunmamış bildirim sayısını güncelle
+        const unreadNotifications = notificationsData.filter((notification) => {
+          if (isMobileNotification(notification)) {
+            return notification.read_status === false;
+          } else {
+            return notification.read_status === false;
+          }
+        });
+
+        // Store'daki unreadCount'ı güncelle
+        setUnreadCount(unreadNotifications.length);
+
         setNotifications(notificationsData);
       } else {
         console.error("Bildirimler alınırken boş yanıt:", response);
@@ -179,7 +200,7 @@ export default function NotificationsScreen() {
       setRefreshing(false);
       setApiRequestInProgress(false);
     }
-  }, [apiRequestInProgress]);
+  }, [apiRequestInProgress, setUnreadCount]);
 
   // Arkadaşlık isteklerini getir - useCallback ile optimize edildi
   const fetchFriendshipRequests = useCallback(async () => {
@@ -221,6 +242,10 @@ export default function NotificationsScreen() {
           item.id === notificationId ? { ...item, read_status: true } : item
         )
       );
+
+      // Bildirim başarıyla okundu olarak işaretlendiyse
+      // Zustand store'daki sayıyı azalt
+      decrementUnreadCount();
     } catch (error: any) {
       console.error("Bildirim okundu işaretlenirken hata:", error);
     }
@@ -239,6 +264,10 @@ export default function NotificationsScreen() {
           read_status: true,
         }))
       );
+
+      // Bildirimler başarıyla okundu olarak işaretlendiyse
+      // Zustand store'daki sayıyı sıfırla
+      resetUnreadCount();
     } catch (error: any) {
       console.error("Bildirimler okundu işaretlenirken hata:", error);
     }

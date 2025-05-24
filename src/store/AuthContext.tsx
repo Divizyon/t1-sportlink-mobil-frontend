@@ -39,6 +39,7 @@ type AuthContextType = {
   ) => Promise<User>;
   validateToken: () => Promise<boolean>;
   forceLogout: (customMessage?: string) => Promise<void>;
+  updateUser: (userData: Partial<User>) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -302,6 +303,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Kullanıcı bilgilerini güncelleme fonksiyonu
+  const updateUser = async (userData: Partial<User>): Promise<void> => {
+    try {
+      if (!user) return;
+
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+
+      // AsyncStorage'a kaydet
+      await AsyncStorage.setItem("userData", JSON.stringify(updatedUser));
+      await AsyncStorage.setItem(
+        "userInfo",
+        JSON.stringify({
+          first_name: updatedUser.first_name,
+          last_name: updatedUser.last_name,
+          email: updatedUser.email,
+          avatar: updatedUser.avatar,
+          role: updatedUser.role,
+        })
+      );
+
+      // API client'ı güncelle
+      apiClient.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${await AsyncStorage.getItem("authToken")}`;
+    } catch (error) {
+      console.error("Error updating user data:", error);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     isAuthenticated,
@@ -312,6 +344,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     register,
     validateToken,
     forceLogout,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -58,6 +58,8 @@ import eventService from "@/src/api/eventService";
 import EventCard from "@/components/profile/EventCard";
 import eventBus from "@/src/utils/EventBus";
 import AccountSettings from "@/components/profile/AccountSettings";
+import { NetworkErrorManager } from "@/components/common/NetworkErrorOverlay";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Menü öğesi tipi tanımlama
 interface MenuItem {
@@ -124,130 +126,6 @@ const sportsCategories = [
 const DEFAULT_PROFILE_IMAGE = "https://randomuser.me/api/portraits/lego/1.jpg";
 
 // Geçici etkinlik verileri - Sadece katıldığım etkinlikler
-const eventData = [
-  {
-    id: 2,
-    title: "Futbol Turnuvası",
-    category: "Futbol",
-    date: "23 Ekim",
-    startTime: "14:00",
-    endTime: "17:00",
-    location: "Meram Futbol Sahası",
-    coordinates: {
-      latitude: 37.8599,
-      longitude: 32.4522,
-    },
-    distance: "2.5 km",
-    participants: [
-      {
-        id: 1,
-        name: "Ayşe K.",
-        profileImage: "https://randomuser.me/api/portraits/women/65.jpg",
-      },
-      {
-        id: 2,
-        name: "Mehmet Y.",
-        profileImage: "https://randomuser.me/api/portraits/men/22.jpg",
-      },
-      {
-        id: 3,
-        name: "Ali B.",
-        profileImage: "https://randomuser.me/api/portraits/men/32.jpg",
-      },
-      {
-        id: 4,
-        name: "Zeynep T.",
-        profileImage: "https://randomuser.me/api/portraits/women/28.jpg",
-      },
-    ],
-    participantCount: 18,
-    maxParticipants: 22,
-    rating: 4.8,
-    reviews: [
-      {
-        id: 1,
-        userName: "Mehmet A.",
-        rating: 5,
-        comment: "Çok profesyonelce organize edilmiş.",
-      },
-      {
-        id: 2,
-        userName: "Ali B.",
-        rating: 4,
-        comment: "Keyifliydi, tekrar katılacağım.",
-      },
-    ],
-    isJoined: true,
-    organizer: {
-      id: 2,
-      name: "Meram Spor Akademisi",
-      isVerified: true,
-      logoUrl: "https://randomuser.me/api/portraits/men/45.jpg",
-    },
-    description:
-      "5v5 halı saha futbol turnuvası. Kazanan takıma kupa verilecektir.",
-    requirements: "Takım olarak katılım veya bireysel kayıt mümkündür.",
-  },
-  {
-    id: 3,
-    title: "Yüzme Etkinliği",
-    category: "Yüzme",
-    date: "24 Ekim",
-    startTime: "10:00",
-    endTime: "11:30",
-    location: "Olimpik Yüzme Havuzu",
-    coordinates: {
-      latitude: 37.851,
-      longitude: 32.4726,
-    },
-    distance: "3.7 km",
-    participants: [
-      {
-        id: 5,
-        name: "Deniz A.",
-        profileImage: "https://randomuser.me/api/portraits/women/33.jpg",
-      },
-      {
-        id: 6,
-        name: "Burak C.",
-        profileImage: "https://randomuser.me/api/portraits/men/45.jpg",
-      },
-      {
-        id: 7,
-        name: "Canan Y.",
-        profileImage: "https://randomuser.me/api/portraits/women/44.jpg",
-      },
-    ],
-    participantCount: 8,
-    maxParticipants: 15,
-    rating: 4.2,
-    reviews: [
-      {
-        id: 1,
-        userName: "Deniz Y.",
-        rating: 4,
-        comment: "Su sıcaklığı idealdi, eğitmenler yardımcıydı.",
-      },
-      {
-        id: 2,
-        userName: "Canan M.",
-        rating: 5,
-        comment: "Yeni teknikler öğrendim, teşekkürler!",
-      },
-    ],
-    isJoined: true,
-    organizer: {
-      id: 3,
-      name: "Konya Yüzme Kulübü",
-      isVerified: false,
-      logoUrl: "https://randomuser.me/api/portraits/women/28.jpg",
-    },
-    description:
-      "Tüm seviyelere uygun yüzme etkinliği. Profesyonel eğitmenler eşliğinde stil geliştirme.",
-    requirements:
-      "Mayo, bone ve gözlük getirmeniz gerekiyor. Duş malzemelerinizi de unutmayın.",
-  },
-];
 
 // Menü öğeleri
 const menuItems: MenuItem[] = [
@@ -364,7 +242,7 @@ interface ParticipatedEvent {
 }
 
 export default function ProfileScreen() {
-  const { logout } = useAuth();
+  const { logout, updateUser } = useAuth();
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
     useState(false);
@@ -464,6 +342,18 @@ export default function ProfileScreen() {
     }>
   >([]);
 
+  // Orijinal profil verilerini saklamak için yeni state ekleyelim
+  const [originalProfile, setOriginalProfile] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    birthDate: "",
+    biography: "",
+    profileImage: DEFAULT_PROFILE_IMAGE,
+    interests: [] as string[],
+  });
+
+  // Düzenlenen profil verilerini saklamak için state
   const [editedProfile, setEditedProfile] = useState({
     firstName: "",
     lastName: "",
@@ -488,17 +378,6 @@ export default function ProfileScreen() {
       setFriendCount(0);
     }
   };
-
-  // Orijinal profil verilerini saklamak için yeni state ekleyelim
-  const [originalProfile, setOriginalProfile] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    birthDate: "",
-    biography: "",
-    profileImage: DEFAULT_PROFILE_IMAGE,
-    interests: [] as string[],
-  });
 
   // Profil değişikliği yapılıp yapılmadığını kontrol eden değişken
   const [isProfileChanged, setIsProfileChanged] = useState(false);
@@ -677,7 +556,7 @@ export default function ProfileScreen() {
         last_name: editedProfile.lastName,
         email: editedProfile.email,
         birthday_date: editedProfile.birthDate,
-        bio: editedProfile.biography,
+        bio: editedProfile.biography || "",
       };
 
       console.log(
@@ -689,32 +568,63 @@ export default function ProfileScreen() {
       const updatedProfile = await profileService.updateProfile(updateData);
       console.log("[Profile] API güncelleme yanıtı:", updatedProfile);
 
-      // Modal'ı kapat
-      setIsEditProfileModalVisible(false);
+      if (updatedProfile) {
+        // AuthContext'i güncelle
+        await updateUser({
+          first_name: updatedProfile.first_name,
+          last_name: updatedProfile.last_name,
+          email: updatedProfile.email,
+          avatar: updatedProfile.avatar,
+          birthday_date: updatedProfile.birthday_date,
+          bio: updatedProfile.bio,
+        });
 
-      // Profil bilgilerini tekrar yükle
-      setTimeout(async () => {
-        await fetchProfileData();
+        // Profil state'ini güncelle
+        setUserProfile(updatedProfile);
+
+        // Orijinal profil verilerini güncelle
+        setOriginalProfile({
+          firstName: updatedProfile.first_name,
+          lastName: updatedProfile.last_name,
+          email: updatedProfile.email,
+          birthDate: updatedProfile.birthday_date || "",
+          biography: updatedProfile.bio || "",
+          profileImage: updatedProfile.avatar || DEFAULT_PROFILE_IMAGE,
+          interests: sports.map((s) => s.sport.name),
+        });
+
+        // Değişiklik yapılmadığını belirt
+        setIsProfileChanged(false);
+
+        // Modal'ı kapat
+        setIsEditProfileModalVisible(false);
 
         // Başarı mesajını göster
         Alert.alert("Başarılı", "Profil bilgileriniz başarıyla güncellendi.", [
           { text: "Tamam" },
         ]);
-      }, 300);
-    } catch (error) {
+
+        // Profil bilgilerini yeniden yükle
+        await fetchProfileData();
+      }
+    } catch (error: any) {
       console.error("[Profile] Profil güncelleme hatası:", error);
 
-      // Modal'ı kapat
-      setIsEditProfileModalVisible(false);
+      const errorMessage =
+        error?.message || "Profil bilgileriniz güncellenirken bir hata oluştu.";
 
-      // Gecikme ekleyerek önce modal kapanmasını bekle
-      setTimeout(() => {
-        Alert.alert(
-          "Sunucu Hatası",
-          "Profil bilgileriniz güncellenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.",
-          [{ text: "Tamam" }]
+      if (
+        errorMessage.includes("network") ||
+        errorMessage.includes("timeout") ||
+        errorMessage.includes("bağlantı")
+      ) {
+        NetworkErrorManager.showError(
+          "Ağ bağlantısı sorunu. Profil bilgileri güncellenemedi. Bağlantınızı kontrol edip tekrar deneyin.",
+          6000
         );
-      }, 300);
+      } else {
+        Alert.alert("Hata", errorMessage, [{ text: "Tamam" }]);
+      }
     } finally {
       setLoading(false);
     }
@@ -749,14 +659,52 @@ export default function ProfileScreen() {
   // Kullanıcı çıkışı yapma
   const handleLogout = async () => {
     try {
-      await logout();
-      router.push("/(auth)/signin");
-    } catch (error) {
-      console.error("Çıkış yapılırken hata oluştu:", error);
+      // Çıkış yapmadan önce kullanıcıya onay sor
       Alert.alert(
-        "Hata",
-        "Çıkış yapılırken bir hata oluştu. Lütfen tekrar deneyin."
+        "Çıkış Yap",
+        "Hesabınızdan çıkış yapmak istediğinize emin misiniz?",
+        [
+          {
+            text: "İptal",
+            style: "cancel",
+          },
+          {
+            text: "Çıkış Yap",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                setLoading(true);
+
+                // AsyncStorage'dan token ve diğer verileri temizle
+                await AsyncStorage.multiRemove([
+                  "authToken",
+                  "refreshToken",
+                  "userData",
+                ]);
+
+                // Context'ten logout fonksiyonunu çağır
+                await logout();
+
+                // Yönlendirme öncesi kısa bir bekleme ekle
+                setTimeout(() => {
+                  router.replace("/(auth)/signin");
+                }, 100);
+              } catch (error) {
+                console.error("Çıkış yapılırken hata oluştu:", error);
+                Alert.alert(
+                  "Hata",
+                  "Çıkış yapılırken bir hata oluştu. Lütfen tekrar deneyin."
+                );
+              } finally {
+                setLoading(false);
+              }
+            },
+          },
+        ]
       );
+    } catch (error) {
+      console.error("Çıkış işlemi başlatılırken hata:", error);
+      Alert.alert("Hata", "Çıkış işlemi başlatılamadı. Lütfen tekrar deneyin.");
     }
   };
 
@@ -1453,51 +1401,47 @@ export default function ProfileScreen() {
 
   // Yaş hesaplama fonksiyonu
   const calculateAge = (birthDateStr: string): number => {
-    try {
-      const birthDate = new Date(birthDateStr);
+    const parts = birthDateStr.split("-");
+    if (parts.length !== 3) return 0;
 
-      // Geçerli bir tarih kontrolü
-      if (isNaN(birthDate.getTime())) {
-        return 0;
-      }
+    const birthDate = new Date(
+      parseInt(parts[0]), // yıl
+      parseInt(parts[1]) - 1, // ay (0-11)
+      parseInt(parts[2]) // gün
+    );
 
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
 
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < birthDate.getDate())
-      ) {
-        age--;
-      }
-
-      return age;
-    } catch (error) {
-      console.error("Yaş hesaplanırken hata oluştu:", error);
-      return 0;
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
     }
+
+    return age;
   };
 
   // Doğum tarihi formatını otomatik düzeltme
   const formatBirthDate = (input: string): string => {
-    // Sadece sayıları al
-    const cleaned = input.replace(/[^0-9]/g, "");
-
-    // Formatlama (YYYY-MM-DD)
-    let formatted = "";
-    if (cleaned.length <= 4) {
-      formatted = cleaned;
-    } else if (cleaned.length <= 6) {
-      formatted = `${cleaned.substring(0, 4)}-${cleaned.substring(4)}`;
-    } else {
-      formatted = `${cleaned.substring(0, 4)}-${cleaned.substring(
-        4,
-        6
-      )}-${cleaned.substring(6, 8)}`;
+    // Eğer input zaten YYYY-MM-DD formatındaysa
+    if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+      return input;
     }
 
-    return formatted;
+    // DD.MM.YYYY formatını YYYY-MM-DD'ye çevir
+    const parts = input.split(".");
+    if (parts.length === 3) {
+      const [day, month, year] = parts;
+      // Ay ve gün için sıfır ekle
+      const formattedMonth = month.padStart(2, "0");
+      const formattedDay = day.padStart(2, "0");
+      return `${year}-${formattedMonth}-${formattedDay}`;
+    }
+
+    return input;
   };
 
   // Doğum tarihi kontrolü
@@ -1514,11 +1458,15 @@ export default function ProfileScreen() {
 
     // Geçerli bir tarih mi?
     const birthDate = new Date(year, month, day);
+    const today = new Date();
+
+    // Tarih geçerli mi ve gelecekte değil mi kontrol et
     return (
       birthDate.getFullYear() === year &&
       birthDate.getMonth() === month &&
       birthDate.getDate() === day &&
-      birthDate <= new Date()
+      birthDate <= today &&
+      year >= 1900 // Makul bir minimum yıl kontrolü
     );
   };
 

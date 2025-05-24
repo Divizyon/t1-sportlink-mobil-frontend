@@ -12,6 +12,7 @@ import apiClient from "@/src/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MessageProvider } from "@/src/contexts/MessageContext";
 import OnlineStatusHandler from "@/src/components/OnlineStatusHandler";
+import { NetworkErrorProvider } from "@/components/common/NetworkErrorOverlay";
 
 export const unstable_settings = {
   initialRouteName: "index",
@@ -166,59 +167,67 @@ export default function RootLayout() {
     <GluestackUIProvider mode="light">
       <AuthProvider>
         <MessageProvider>
-          <AuthenticationGuard>
-            <TokenValidationProvider>
-              <OnlineStatusHandler />
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="upcoming-events"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="updated-events"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="event-updates"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="system-notifications/index"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="messages"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="friend-requests/index"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="chat/[id]"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="login"
-                  options={{ headerShown: false, gestureEnabled: false }}
-                />
-                <Stack.Screen
-                  name="register"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="event-details/[id]"
-                  options={{
-                    headerShown: false,
-                    presentation: "card",
-                    animation: "slide_from_right",
-                  }}
-                />
-              </Stack>
-            </TokenValidationProvider>
-          </AuthenticationGuard>
+          <NetworkErrorProvider>
+            <AuthenticationGuard>
+              <TokenValidationProvider>
+                <OnlineStatusHandler />
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen
+                    name="(auth)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="upcoming-events"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="updated-events"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="event-updates"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="system-notifications/index"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="messages"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="friend-requests/index"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="chat/[id]"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="login"
+                    options={{ headerShown: false, gestureEnabled: false }}
+                  />
+                  <Stack.Screen
+                    name="register"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="event-details/[id]"
+                    options={{
+                      headerShown: false,
+                      presentation: "card",
+                      animation: "slide_from_right",
+                    }}
+                  />
+                </Stack>
+              </TokenValidationProvider>
+            </AuthenticationGuard>
+          </NetworkErrorProvider>
         </MessageProvider>
       </AuthProvider>
     </GluestackUIProvider>

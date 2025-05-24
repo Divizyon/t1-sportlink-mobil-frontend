@@ -50,8 +50,8 @@ const CategoryGrid: React.FC<CategoryGridProps> = ({
   ];
 
   const handleCategoryPress = (category: Category) => {
-    const needsAnimation = 
-      category.name.toLowerCase() === "futbol" || 
+    const needsAnimation =
+      category.name.toLowerCase() === "futbol" ||
       category.name.toLowerCase() === "bisiklet" ||
       category.name.toLowerCase() === "basketbol" ||
       category.name.toLowerCase() === "yürüyüş" ||
@@ -94,7 +94,10 @@ const CategoryGrid: React.FC<CategoryGridProps> = ({
           ) : isBicycle && showAnimation ? (
             <BicycleAnimation play={showAnimation} style={styles.animation} />
           ) : isBasketball && showAnimation ? (
-            <BasketballAnimation play={showAnimation} style={styles.animation} />
+            <BasketballAnimation
+              play={showAnimation}
+              style={styles.animation}
+            />
           ) : isWalking ? (
             <WalkingAnimation play={showAnimation} style={styles.animation} />
           ) : isYoga && showAnimation ? (
@@ -117,10 +120,7 @@ const CategoryGrid: React.FC<CategoryGridProps> = ({
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
         {onSeeAllPress && (
-          <TouchableOpacity
-            style={styles.seeAllButton}
-            onPress={onSeeAllPress}
-          >
+          <TouchableOpacity style={styles.seeAllButton} onPress={onSeeAllPress}>
             <Text style={styles.seeAllText}>Tümünü Gör</Text>
             <ChevronRight size={20} color="#666" />
           </TouchableOpacity>

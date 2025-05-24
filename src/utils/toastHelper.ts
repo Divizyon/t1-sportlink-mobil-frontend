@@ -25,4 +25,4 @@ export const showToast = (message: string, type: ToastType = "info") => {
     // iOS'de Alert göster
     Alert.alert(title, message, [{ text: "Tamam" }], { cancelable: true });
   }
-}; 
+};

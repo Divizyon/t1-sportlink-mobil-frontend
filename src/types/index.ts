@@ -4,6 +4,19 @@ export interface User {
   first_name: string;
   last_name: string;
   role: string;
+  created_at?: string;
+  updated_at?: string;
+  profile_picture?: string;
+  status?: string;
+  gender?: string;
+  birthday_date?: string;
+  address?: string;
+  phone?: string;
+  bio?: string;
+  avatar?: string;
+  avatar_url?: string;
+  total_events?: number;
+  friend_count?: number;
 }
 
 export interface LoginCredentials {
