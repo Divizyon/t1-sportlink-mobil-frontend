@@ -1,5 +1,5 @@
-import { configureStore } from '@reduxjs/toolkit';
-import friendsReducer from './slices/friendsSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import friendsReducer from "./slices/friendsSlice";
 // ... diğer importlar ...
 
 export const store = configureStore({
@@ -10,4 +10,4 @@ export const store = configureStore({
 });
 
 export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch; 
+export type AppDispatch = typeof store.dispatch;

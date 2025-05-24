@@ -1,5 +1,4 @@
 import { Text } from "@/components/ui/text";
-import { EVENT_CATEGORIES } from "@/mocks/events";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -9,6 +8,7 @@ import {
   Filter,
   MapPin,
   Users,
+  Search,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -20,16 +20,25 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  TextInput,
 } from "react-native";
 import CreateEventButton from "@/components/dashboard/CreateEventButton";
 import { eventsApi } from "@/services/api/events";
 import { getSportImage } from "@/utils/imageUtils";
 import { formatEventDate, formatEventTime } from "@/utils/eventDateUtils";
+import { LinearGradient } from "expo-linear-gradient";
+import FootballAnimation from "@/components/animations/FootballAnimation";
+import BasketballAnimation from "@/components/animations/BasketballAnimation";
+import TennisAnimation from "@/components/animations/TennisAnimation";
+import YogaAnimation from "@/components/animations/YogaAnimation";
+import RunningAnimation from "@/components/animations/RunningAnimation";
+import BicycleAnimation from "@/components/animations/BicycleAnimation";
+import WalkingAnimation from "@/components/animations/WalkingAnimation";
 
 export default function AllEventsScreen() {
   const params = useLocalSearchParams();
   const categoryId = params.categoryId ? Number(params.categoryId) : null;
-  const categoryName = (params.categoryName as string) || "Tüm Etkinlikler";
+  const categoryName = (params.categoryName as string) || "Aktif Etkinlikler";
   const categoryIcon = (params.categoryIcon as string) || "🏆";
 
   const [events, setEvents] = useState<any[]>([]);
@@ -41,13 +50,16 @@ export default function AllEventsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMoreEvents, setHasMoreEvents] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filtreleme kategorileri
 
   useEffect(() => {
     // Kategori ID'si varsa, o kategoriye ait etkinlikleri getir
     if (categoryId) {
       fetchEventsByCategory(categoryId);
     } else {
-      // Tüm etkinlikleri getir
+      // Aktif etkinlikleri getir
       fetchAllEvents();
     }
   }, [categoryId]);
@@ -57,21 +69,39 @@ export default function AllEventsScreen() {
       setLoading(true);
       setError(null);
 
-      console.log(`Kategoriye göre etkinlikler getiriliyor: ${sportId}`);
-      const eventsData = await eventsApi.getEventsBySportId(sportId, page, 10);
+      console.log(`Kategoriye göre aktif etkinlikler getiriliyor: ${sportId}`);
+      // Önce aktif etkinlikleri getir
+      const activeEvents = await eventsApi.getEventsByStatus(
+        "ACTIVE",
+        page,
+        50
+      );
 
-      if (eventsData && Array.isArray(eventsData)) {
-        console.log(`${eventsData.length} etkinlik bulundu`);
-        setEvents(eventsData);
-        setFilteredEvents(eventsData);
+      if (activeEvents && Array.isArray(activeEvents)) {
+        // Sonra spor kategorisine göre filtrele
+        const filteredBySport = activeEvents.filter(
+          (event) => event.sport_id === sportId
+        );
+        console.log(
+          `${filteredBySport.length} aktif etkinlik bulundu (${sportId} kategorisinde)`
+        );
+        setEvents(filteredBySport);
+        setFilteredEvents(filteredBySport);
+
+        // Daha fazla etkinlik olup olmadığını kontrol et
+        // 50 etkinlik getirip filtrele, sonuç 50'den az ise daha fazla etkinlik yok demektir
+        setHasMoreEvents(activeEvents.length === 50);
       } else {
-        console.log("Etkinlik bulunamadı veya API yanıtı beklenmeyen formatta");
+        console.log(
+          "Aktif etkinlik bulunamadı veya API yanıtı beklenmeyen formatta"
+        );
         setEvents([]);
         setFilteredEvents([]);
+        setHasMoreEvents(false);
       }
     } catch (err) {
-      console.error("Etkinlikleri getirirken hata:", err);
-      setError("Etkinlikler yüklenirken bir hata oluştu");
+      console.error("Kategoriye göre aktif etkinlikleri getirirken hata:", err);
+      setError("Aktif etkinlikler yüklenirken bir hata oluştu");
     } finally {
       setLoading(false);
     }
@@ -82,27 +112,57 @@ export default function AllEventsScreen() {
       setLoading(true);
       setError(null);
 
-      console.log("Tüm etkinlikler getiriliyor");
-      const eventsData = await eventsApi.getAllEvents(page, 10, "events", {
-        sort: "popular",
-      });
+      console.log("Aktif etkinlikler getiriliyor");
+      const eventsData = await eventsApi.getEventsByStatus("ACTIVE", page, 10);
 
       if (eventsData && Array.isArray(eventsData)) {
-        console.log(`${eventsData.length} etkinlik bulundu`);
+        console.log(`${eventsData.length} aktif etkinlik bulundu`);
+
+        // İlk etkinliği detaylı logla (debug için)
+        if (eventsData.length > 0) {
+          console.log(
+            "Örnek etkinlik verisi:",
+            JSON.stringify(eventsData[0], null, 2)
+          );
+        }
+
         setEvents(eventsData);
         setFilteredEvents(eventsData);
+
+        // Daha fazla etkinlik olup olmadığını kontrol et
+        setHasMoreEvents(eventsData.length === 10);
       } else {
-        console.log("Etkinlik bulunamadı veya API yanıtı beklenmeyen formatta");
+        console.log(
+          "Aktif etkinlik bulunamadı veya API yanıtı beklenmeyen formatta"
+        );
         setEvents([]);
         setFilteredEvents([]);
+        setHasMoreEvents(false);
       }
     } catch (err) {
-      console.error("Etkinlikleri getirirken hata:", err);
-      setError("Etkinlikler yüklenirken bir hata oluştu");
+      console.error("Aktif etkinlikleri getirirken hata:", err);
+      setError("Aktif etkinlikler yüklenirken bir hata oluştu");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Arama işlemi için filtreleme
+    if (searchQuery.trim() === "") {
+      setFilteredEvents(events);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = events.filter(
+        (event) =>
+          event.title.toLowerCase().includes(query) ||
+          (event.location_name &&
+            event.location_name.toLowerCase().includes(query)) ||
+          (event.sport?.name && event.sport.name.toLowerCase().includes(query))
+      );
+      setFilteredEvents(filtered);
+    }
+  }, [searchQuery, events]);
 
   useEffect(() => {
     let result = [...events];
@@ -135,7 +195,9 @@ export default function AllEventsScreen() {
       });
     }
 
-    setFilteredEvents(result);
+    if (searchQuery.trim() === "") {
+      setFilteredEvents(result);
+    }
   }, [selectedCategory, sortBy, events]);
 
   const handleBackPress = () => {
@@ -169,28 +231,112 @@ export default function AllEventsScreen() {
     router.push("/(tabs)/dashboard/create-event");
   };
 
+  const loadMore = async () => {
+    if (!hasMoreEvents || loading) return;
+
+    try {
+      const nextPage = page + 1;
+      setLoading(true);
+
+      let newEvents;
+      if (categoryId) {
+        // Kategoriye göre aktif etkinlikleri getir
+        const activeEvents = await eventsApi.getEventsByStatus(
+          "ACTIVE",
+          nextPage,
+          50
+        );
+        if (activeEvents && Array.isArray(activeEvents)) {
+          newEvents = activeEvents.filter(
+            (event) => event.sport_id === categoryId
+          );
+        }
+      } else {
+        // Tüm aktif etkinlikleri getir
+        newEvents = await eventsApi.getEventsByStatus("ACTIVE", nextPage, 10);
+      }
+
+      if (newEvents && Array.isArray(newEvents) && newEvents.length > 0) {
+        console.log(
+          `${newEvents.length} yeni aktif etkinlik yüklendi (sayfa ${nextPage})`
+        );
+        setEvents((prevEvents) => [...prevEvents, ...newEvents]);
+        setPage(nextPage);
+      } else {
+        // Daha fazla etkinlik yok
+        console.log("Daha fazla etkinlik bulunamadı");
+        setHasMoreEvents(false);
+      }
+    } catch (err) {
+      console.error("Daha fazla etkinlik yüklenirken hata:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderEventItem = ({ item }: { item: any }) => {
     // API'den gelen etkinlik verisi için uygun formatta görüntüleme
     const eventDate = item.event_date ? new Date(item.event_date) : new Date();
-    const formattedDate = formatEventDate(item.event_date || "");
-    const formattedTime = formatEventTime(
+
+    // Tarih ve saat "string" kontrolü
+    let formattedDate = formatEventDate(item.event_date || "");
+    if (formattedDate === "Invalid Date" || item.event_date === "string") {
+      formattedDate = "Tarih belirtilmemiş";
+    }
+
+    let formattedTime = formatEventTime(
       item.start_time || "",
       item.end_time || ""
     );
-    const sportName = item.sport?.name || item.category || "Diğer";
+    if (
+      formattedTime === ":" ||
+      item.start_time === "string" ||
+      item.end_time === "string"
+    ) {
+      formattedTime = "Saat belirtilmemiş";
+    }
+
+    // API'den gelen "string" değerlerini düzelt
+    const sportName =
+      item.sport?.name === "string"
+        ? "Diğer"
+        : item.sport?.name || item.category || "Diğer";
+    const title =
+      item.title === "string" ? sportName + " Etkinliği" : item.title;
+    const location =
+      item.location_name === "string"
+        ? "Belirtilmemiş"
+        : item.location_name || item.location || "Belirtilmemiş";
+
+    // Katılımcı bilgilerini kontrol et
     const participants = item.current_participants || item.participants || 0;
     const maxParticipants = item.max_participants || item.maxParticipants || 10;
     const status = item.status?.toLowerCase() || "pending";
 
-    // Etkinlik resmi
-    const imageSource = item.image_url
-      ? { uri: item.image_url }
-      : (getSportImage(sportName) as any);
+    // Etkinlik resmi - API'den gelen resim varsa onu kullan, yoksa spor türüne göre varsayılan resmi kullan
+    let imageSource;
+    if (
+      item.image_url &&
+      item.image_url !== "string" &&
+      item.image_url.startsWith("http")
+    ) {
+      imageSource = { uri: item.image_url };
+    } else {
+      // getSportImage zaten string URL döndürür
+      imageSource = { uri: getSportImage(sportName) };
+    }
+
+    // Katılımcı doluluk yüzdesi
+    const participationPercentage = Math.min(
+      Math.round((participants / maxParticipants) * 100),
+      100
+    );
 
     return (
       <TouchableOpacity
-        style={styles.eventItem}
+        style={styles.eventCard}
         onPress={() => handleEventPress(item.id)}
+        activeOpacity={0.7}
       >
         <View style={styles.eventImageContainer}>
           <Image
@@ -201,10 +347,16 @@ export default function AllEventsScreen() {
           <View style={styles.categoryBadge}>
             <Text style={styles.categoryText}>{sportName}</Text>
           </View>
+
+          {status === "active" || status === "approved" ? (
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>Onaylandı</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.eventContent}>
-          <Text style={styles.eventTitle}>{item.title}</Text>
+          <Text style={styles.eventTitle}>{title}</Text>
 
           <View style={styles.infoContainer}>
             <View style={styles.infoRow}>
@@ -219,36 +371,24 @@ export default function AllEventsScreen() {
 
             <View style={styles.infoRow}>
               <MapPin size={16} color="#3498db" />
-              <Text style={styles.eventInfo}>
-                {item.location_name || item.location || "Belirtilmemiş"}
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Users size={16} color="#3498db" />
-              <Text style={styles.eventInfo}>
-                {participants}/{maxParticipants} Katılımcı
-              </Text>
+              <Text style={styles.eventInfo}>{location}</Text>
             </View>
           </View>
 
-          <View style={styles.statusContainer}>
-            <View
-              style={[
-                styles.statusBadge,
-                status === "active" || status === "approved"
-                  ? styles.approvedBadge
-                  : status === "completed"
-                  ? styles.completedBadge
-                  : styles.pendingBadge,
-              ]}
-            >
-              <Text style={styles.statusText}>
-                {status === "active" || status === "approved"
-                  ? "Onaylandı"
-                  : status === "completed"
-                  ? "Tamamlandı"
-                  : "Beklemede"}
+          <View style={styles.participantContainer}>
+            <View style={styles.progressBarBackground}>
+              <View
+                style={[
+                  styles.progressBar,
+                  { width: `${participationPercentage}%` },
+                  participationPercentage >= 90 && styles.almostFullBar,
+                ]}
+              />
+            </View>
+            <View style={styles.participantInfo}>
+              <Users size={16} color="#3498db" />
+              <Text style={styles.eventInfo}>
+                {participants}/{maxParticipants} Katılımcı
               </Text>
             </View>
           </View>
@@ -257,29 +397,84 @@ export default function AllEventsScreen() {
     );
   };
 
+  // Kategori için uygun animasyonu döndüren fonksiyon
+  const renderCategoryAnimation = () => {
+    const lowerCategory = categoryName.toLowerCase();
+
+    switch (lowerCategory) {
+      case "futbol":
+        return <FootballAnimation style={styles.headerAnimation} />;
+      case "basketbol":
+        return <BasketballAnimation style={styles.headerAnimation} />;
+      case "tenis":
+        return <TennisAnimation style={styles.headerAnimation} />;
+      case "yoga":
+        return <YogaAnimation style={styles.headerAnimation} />;
+      case "koşu":
+        return <RunningAnimation style={styles.headerAnimation} />;
+      case "bisiklet":
+        return <BicycleAnimation style={styles.headerAnimation} />;
+      case "yürüyüş":
+        return <WalkingAnimation style={styles.headerAnimation} />;
+      default:
+        return <Text style={styles.headerIcon}>{categoryIcon}</Text>;
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <ChevronLeft size={24} color="#333" />
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerIcon}>{categoryIcon}</Text>
-          <Text style={styles.headerTitle}>{categoryName}</Text>
-        </View>
-        <TouchableOpacity onPress={toggleFilters} style={styles.filterButton}>
-          <Filter size={20} color="#333" />
-        </TouchableOpacity>
-      </View>
+      {/* Modern Header */}
+      <LinearGradient
+        colors={["#4e54c8", "#8f94fb"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+            <ChevronLeft size={24} color="#fff" />
+          </TouchableOpacity>
 
-      {showFilters && (
-        <View style={styles.filtersContainer}>
-          <View style={styles.filterSectionHeader}>
-            <Text style={styles.filterTitle}>Sıralama</Text>
+          <View style={styles.headerCenter}>
+            <View style={styles.headerTitleContainer}>
+              {renderCategoryAnimation()}
+              <Text style={styles.headerTitle}>{categoryName}</Text>
+            </View>
           </View>
 
+          <TouchableOpacity onPress={toggleFilters} style={styles.filterButton}>
+            <Filter size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Modern Search Bar */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Search size={18} color="#718096" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Etkinlik ara..."
+              placeholderTextColor="#a0aec0"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery ? (
+              <TouchableOpacity
+                onPress={() => setSearchQuery("")}
+                style={styles.clearButton}
+              >
+                <Text style={styles.clearButtonText}>×</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+      </LinearGradient>
+
+      {showFilters && (
+        <View style={styles.sortContainer}>
+          <Text style={styles.sortTitle}>Sıralama</Text>
           <View style={styles.sortButtons}>
             <TouchableOpacity
               style={[
@@ -325,7 +520,7 @@ export default function AllEventsScreen() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#10B981" />
+          <ActivityIndicator size="large" color="#4e54c8" />
           <Text style={styles.loadingText}>Etkinlikler yükleniyor...</Text>
         </View>
       ) : error ? (
@@ -343,6 +538,8 @@ export default function AllEventsScreen() {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.eventsList}
           showsVerticalScrollIndicator={false}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
         />
       )}
 
@@ -354,114 +551,221 @@ export default function AllEventsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#f7f8fa",
   },
   header: {
+    paddingTop: 10,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 10,
+  },
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e1e1e1",
+    paddingVertical: 10,
   },
   backButton: {
-    padding: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: "center",
   },
   headerTitleContainer: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+  },
+  headerAnimation: {
+    width: 30,
+    height: 30,
+    marginRight: 8,
   },
   headerIcon: {
-    fontSize: 20,
+    fontSize: 24,
     marginRight: 8,
+    color: "#fff",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#333",
+    fontWeight: "bold",
+    color: "#fff",
+    textShadowColor: "rgba(0, 0, 0, 0.1)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   filterButton: {
-    padding: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  filtersContainer: {
+  searchContainer: {
+    marginHorizontal: 16,
+    marginTop: 10,
+  },
+  searchInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#2d3748",
+    padding: 0,
+  },
+  clearButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#e2e8f0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  clearButtonText: {
+    fontSize: 16,
+    color: "#718096",
+    lineHeight: 20,
+    textAlign: "center",
+  },
+  categoryFilterContainer: {
+    backgroundColor: "#fff",
+    paddingVertical: 15,
+    marginTop: 15,
+    borderRadius: 20,
+    marginHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  categoryFilterContent: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e1e1e1",
   },
-  filterSectionHeader: {
-    marginTop: 8,
-    marginBottom: 8,
+  categoryFilterItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 10,
+    backgroundColor: "#f7f8fa",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
-  filterTitle: {
+  selectedCategoryItem: {
+    backgroundColor: "#4e54c8",
+    borderColor: "#4e54c8",
+  },
+  categoryFilterIcon: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  categoryFilterText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#4a5568",
+  },
+  selectedCategoryText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  sortContainer: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderRadius: 20,
+    marginHorizontal: 16,
+    marginTop: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  sortTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
-  },
-  categoriesContainer: {
-    paddingVertical: 8,
-  },
-  categoryChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  selectedCategoryChip: {
-    backgroundColor: "#10B981",
-  },
-  categoryChipText: {
-    fontSize: 14,
-    color: "#333",
-  },
-  selectedCategoryChipText: {
-    color: "#fff",
+    color: "#2d3748",
+    marginBottom: 10,
   },
   sortButtons: {
     flexDirection: "row",
-    marginTop: 8,
+    justifyContent: "space-between",
   },
   sortButton: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 20,
-    marginRight: 8,
+    paddingVertical: 10,
+    backgroundColor: "#f7f8fa",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    marginRight: 10,
+    flex: 1,
+    justifyContent: "center",
   },
   selectedSortButton: {
-    backgroundColor: "#10B981",
+    backgroundColor: "#4e54c8",
+    borderColor: "#4e54c8",
   },
   sortButtonText: {
     fontSize: 14,
-    color: "#666",
-    marginLeft: 4,
+    color: "#4a5568",
+    fontWeight: "500",
+    marginLeft: 8,
   },
   selectedSortButtonText: {
     color: "#fff",
+    fontWeight: "600",
   },
   eventsList: {
     padding: 16,
+    paddingTop: 10,
   },
-  eventItem: {
+  eventCard: {
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
     overflow: "hidden",
   },
   eventImageContainer: {
     position: "relative",
-    height: 160,
+    height: 180,
   },
   eventImage: {
     width: "100%",
@@ -471,14 +775,28 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 12,
     left: 12,
-    backgroundColor: "rgba(16, 185, 129, 0.8)",
+    backgroundColor: "rgba(78, 84, 200, 0.8)",
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   categoryText: {
     color: "#fff",
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  statusBadge: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    backgroundColor: "rgba(16, 185, 129, 0.8)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  statusText: {
+    color: "#fff",
+    fontSize: 13,
     fontWeight: "600",
   },
   eventContent: {
@@ -487,11 +805,11 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#333",
+    color: "#2d3748",
     marginBottom: 12,
   },
   infoContainer: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   infoRow: {
     flexDirection: "row",
@@ -500,30 +818,30 @@ const styles = StyleSheet.create({
   },
   eventInfo: {
     fontSize: 14,
-    color: "#666",
-    marginLeft: 8,
+    color: "#4a5568",
+    marginLeft: 10,
   },
-  statusContainer: {
+  participantContainer: {
+    marginTop: 5,
+  },
+  progressBarBackground: {
+    height: 6,
+    backgroundColor: "#e2e8f0",
+    borderRadius: 3,
+    marginBottom: 10,
+    overflow: "hidden",
+  },
+  progressBar: {
+    height: "100%",
+    backgroundColor: "#4e54c8",
+    borderRadius: 3,
+  },
+  almostFullBar: {
+    backgroundColor: "#f56565",
+  },
+  participantInfo: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-  },
-  approvedBadge: {
-    backgroundColor: "rgba(16, 185, 129, 0.2)",
-  },
-  completedBadge: {
-    backgroundColor: "rgba(59, 130, 246, 0.2)",
-  },
-  pendingBadge: {
-    backgroundColor: "rgba(249, 115, 22, 0.2)",
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
+    alignItems: "center",
   },
   loadingContainer: {
     flex: 1,
@@ -531,9 +849,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    marginTop: 8,
+    marginTop: 12,
     fontSize: 16,
-    color: "#666",
+    color: "#4a5568",
   },
   errorContainer: {
     flex: 1,
@@ -543,7 +861,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: "#ef4444",
+    color: "#f56565",
     textAlign: "center",
   },
   emptyContainer: {
@@ -554,7 +872,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: "#666",
+    color: "#4a5568",
     textAlign: "center",
   },
 });

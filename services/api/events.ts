@@ -595,18 +595,18 @@ export const eventsApi = {
   getUserReports: async () => {
     return safeApiCall(async () => {
       console.log("Kullanıcının raporları getiriliyor...");
-      
+
       // Token'ı kontrol et
-      const token = await AsyncStorage.getItem('authToken');
-      console.log('Mevcut token:', token ? 'Token var' : 'Token yok');
+      const token = await AsyncStorage.getItem("authToken");
+      console.log("Mevcut token:", token ? "Token var" : "Token yok");
 
       const response = await apiClient.get("user-reports", {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
-      console.log('API Yanıtı:', response.status, response.data);
+      console.log("API Yanıtı:", response.status, response.data);
       return response.data.data || [];
     }, []);
   },
