@@ -1,8 +1,9 @@
 import React from "react";
-import { StyleSheet, FlatList, View, ActivityIndicator } from "react-native";
+import { StyleSheet, FlatList, View } from "react-native";
 import { Text } from "@/components/ui/text";
 import { Center } from "@/components/ui/center";
 import EventCard from "./EventCard";
+import LoadingAnimation from "../animations/LoadingAnimations";
 
 // Event tipi tanımlama
 interface Event {
@@ -49,7 +50,7 @@ const EventList: React.FC<EventListProps> = ({
   if (isLoading) {
     return (
       <Center style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4F46E5" />
+        <LoadingAnimation size={60} />
         <Text style={styles.loadingText}>Etkinlikler yükleniyor...</Text>
       </Center>
     );

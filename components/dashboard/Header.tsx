@@ -23,8 +23,9 @@ import {
 import { router } from "expo-router";
 import { profileService } from "@/src/api/profileService";
 import { UserProfile } from "@/src/types";
-import { useMessages } from "@/src/contexts/MessageContext";
+import { useMessageStore } from "@/src/store";
 import { useAuth } from "@/src/store/AuthContext";
+import LoadingAnimation from "../animations/LoadingAnimations";
 
 // Theme colors
 const theme = {
@@ -74,22 +75,12 @@ const Header: React.FC<HeaderProps> = ({
   const nameOpacity = useRef(new Animated.Value(1)).current;
   const nameTranslateY = useRef(new Animated.Value(0)).current;
 
-  // Get real-time unread count from context
-  const messageContext = (() => {
-    try {
-      return useMessages();
-    } catch (error) {
-      // Fallback implementation if context throws an error
-      console.warn("MessageContext not available, using fallback:", error);
-      return { unreadCount: 0 };
-    }
-  })();
+  // Zustand store'undan okunmamış mesaj sayısını al
+  const { unreadCount, fetchUnreadMessages } = useMessageStore();
 
-  // Use either prop value or context value (context preferred)
+  // Prop olarak gelen değer sadece yedek olarak kullanılacak (store'dan alınan değer 0 ise)
   const currentUnreadCount =
-    messageContext.unreadCount > 0
-      ? messageContext.unreadCount
-      : unreadMessages;
+    unreadCount > 0 ? unreadCount : unreadMessages || 0;
 
   // Animation values
   const badgeScaleAnim = useRef(new Animated.Value(1)).current;
@@ -98,7 +89,61 @@ const Header: React.FC<HeaderProps> = ({
   // Track previous count for animation
   const [prevCount, setPrevCount] = useState(currentUnreadCount);
 
+  // Auth context'ten kullanıcı bilgilerini al
   const { user } = useAuth();
+
+  // Mesaj bildirimini periyodik olarak güncelle
+  useEffect(() => {
+    // İlk yüklemede okunmamış mesaj sayısını al
+    fetchUnreadMessages();
+
+    // Her 10 saniyede bir okunmamış mesaj sayısını güncelle
+    const interval = setInterval(() => {
+      fetchUnreadMessages();
+    }, 10000); // 15 saniyeden 10 saniyeye düşürüldü
+
+    // Component unmount olduğunda interval'i temizle
+    return () => clearInterval(interval);
+  }, [fetchUnreadMessages]);
+
+  // Okunmamış mesaj sayısındaki değişikliği izle ve animasyon göster
+  useEffect(() => {
+    if (currentUnreadCount !== prevCount) {
+      console.log(
+        `Bildirim sayısı değişti: ${prevCount} -> ${currentUnreadCount}`
+      );
+
+      // Pulse animation when count changes
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(badgeScaleAnim, {
+            toValue: 1.5, // Daha belirgin büyüme
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(badgeOpacityAnim, {
+            toValue: 0.6,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(badgeScaleAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(badgeOpacityAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+
+      setPrevCount(currentUnreadCount);
+    }
+  }, [currentUnreadCount, prevCount, badgeScaleAnim, badgeOpacityAnim]);
 
   // Scroll olayını dinle
   useEffect(() => {
@@ -153,59 +198,39 @@ const Header: React.FC<HeaderProps> = ({
     const fetchProfileData = async () => {
       try {
         setLoading(true);
+
+        // Profile service ile profil verilerini getir
         const profileData = await profileService.getProfile();
         setProfile(profileData);
-      } catch (err) {
-        console.error("Error fetching profile data:", err);
-        setError("Could not load profile information");
-      } finally {
+        console.log("Profil verisi başarıyla alındı:", profileData);
+
+        // Profile verisi başarıyla yüklenirse loading durumunu kapat
         setLoading(false);
+      } catch (err) {
+        console.error("Profil verisi alınırken hata:", err);
+        setError("Profil bilgileri yüklenemedi");
+
+        // Hata durumunda da loading durumunu kapat
+        setLoading(false);
+
+        // Hata durumunda direkt Auth context'teki user bilgilerini kullan
+        console.log("Auth context'ten kullanıcı bilgileri kullanılacak:", user);
       }
     };
 
-    fetchProfileData();
-  }, []);
-
-  // Handle unread message count changes with animation
-  useEffect(() => {
-    if (currentUnreadCount !== prevCount) {
-      // Pulse animation when count changes
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(badgeScaleAnim, {
-            toValue: 1.3,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(badgeOpacityAnim, {
-            toValue: 0.7,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(badgeScaleAnim, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(badgeOpacityAnim, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
-
-      setPrevCount(currentUnreadCount);
+    // Kullanıcı oturum açmışsa profil verilerini getir
+    if (user && user.id) {
+      console.log("Header - Oturum açmış kullanıcı:", user);
+      fetchProfileData();
+    } else {
+      console.log("Header - Oturum açmış kullanıcı yok veya ID eksik");
+      setLoading(false);
     }
-  }, [currentUnreadCount, prevCount]);
+  }, [user]);
 
   // Handle navigation to messages
   const handleMessagesPress = () => {
-    router.push("/(tabs)/profile/friends-list", {
-      withAnchor: true,
-    });
+    router.push("/messages");
   };
 
   // Handle navigation to profile
@@ -213,21 +238,11 @@ const Header: React.FC<HeaderProps> = ({
     router.push("/(tabs)/profile/profile-page");
   };
 
-  // Get the user's display name
-  const displayName = user
-    ? `${user.first_name} ${user.last_name}`
-    : userName || "Kullanıcı";
-
-  // Get the avatar source URL
-  const avatarSource = user?.avatar || userAvatar || DEFAULT_AVATAR;
-
   // Format unread count for display
   const formatUnreadCount = (count: number): string => {
     if (count > 99) return "99+";
     return count.toString();
   };
-
-  const firstName = user?.first_name || "Kullanıcı";
 
   const handleAvatarPress = () => {
     router.push("/(tabs)/profile");
@@ -240,6 +255,25 @@ const Header: React.FC<HeaderProps> = ({
     if (hour < 18) return "Merhaba";
     return "İyi akşamlar";
   };
+
+  // Kullanıcı ismini belirle - öncelik profile, sonra auth context, son olarak props
+  // Burada kullanıcı yoksa userName props'unu, o da yoksa "Kullanıcı" kullan
+  const firstName =
+    profile?.first_name || user?.first_name || userName || "Kullanıcı";
+
+  // Avatar kaynağını belirle - öncelik profile, sonra auth context (avatar veya profile_picture), son olarak props veya default
+  const avatarSource =
+    profile?.avatar ||
+    user?.avatar ||
+    user?.profile_picture ||
+    userAvatar ||
+    DEFAULT_AVATAR;
+
+  // Avatar ve isim hata ayıklama için console.log
+  useEffect(() => {
+    console.log("Header - Kullanılan isim:", firstName);
+    console.log("Header - Kullanılan avatar:", avatarSource);
+  }, [firstName, avatarSource]);
 
   return (
     <Animated.View
@@ -259,13 +293,19 @@ const Header: React.FC<HeaderProps> = ({
             style={styles.avatarContainer}
           >
             {loading ? (
-              <ActivityIndicator size="small" color={theme.primary} />
+              <LoadingAnimation size={24} />
             ) : (
               <Image
                 source={{
                   uri: avatarSource,
                 }}
                 style={styles.avatar}
+                // Resim yüklenemediğinde bir fallback göster
+                onError={() => {
+                  console.log(
+                    "Avatar resmi yüklenirken hata oluştu, varsayılan avatar kullanılıyor"
+                  );
+                }}
               />
             )}
           </TouchableOpacity>
@@ -421,20 +461,27 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: "absolute",
-    top: 0,
-    right: 0,
+    top: -5,
+    right: -5,
     backgroundColor: "#F43F5E",
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+    borderRadius: 12,
+    minWidth: 22,
+    height: 22,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   badgeText: {
     color: "#FFFFFF",
-    fontSize: 10,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "800",
   },
 });
 

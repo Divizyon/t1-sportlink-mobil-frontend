@@ -197,11 +197,21 @@ export const friendshipsApi = {
     try {
       console.log(`[API] Arkadaşlık isteği iptal ediliyor: ID=${requestId}`);
 
-      // PUT metodu ile istek iptali - status "rejected" olarak gönderiliyor
-      // (backend "cancelled" değerini kabul etmiyor)
-      const response = await apiClient.put(
-        `/mobile/friendships/requests/${requestId}`,
-        { status: "rejected" }
+      // requestId'nin sayı olduğundan emin olalım
+      const numericRequestId = Number(requestId);
+      if (isNaN(numericRequestId)) {
+        console.error(`[API] Geçersiz requestId formatı: ${requestId}`);
+        return {
+          status: "error",
+          message: "Geçersiz istek ID formatı",
+          data: null,
+          code: 400,
+        };
+      }
+
+      // Backend'in DELETE metodunu kullanarak istek iptali
+      const response = await apiClient.delete(
+        `/mobile/friendships/requests/${numericRequestId}`
       );
 
       console.log(`[API] İptal yanıtı:`, response.data);
@@ -459,6 +469,32 @@ export const rejectFriendshipRequest = async (requestId: string) => {
     // Hata durumunda bildirim göster
     showToast(`İstek reddedilemedi: ${error.message}`, "error");
 
+    return {
+      status: "error",
+      message: error.message,
+      response: error.response,
+      statusCode: error.status,
+    };
+  }
+};
+
+/**
+ * Giden arkadaşlık isteklerini getirir
+ */
+export const getOutgoingFriendshipRequests = async () => {
+  try {
+    const response = await apiClient.get(
+      "/mobile/friendships/requests/outgoing"
+    );
+    return {
+      status: "success",
+      data: response.data.data || [],
+    };
+  } catch (error: any) {
+    console.log(
+      "[Friendships API] Giden arkadaşlık istekleri alınamadı:",
+      error.message
+    );
     return {
       status: "error",
       message: error.message,

@@ -39,6 +39,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import MapView from "react-native-maps";
 import { Marker } from "react-native-maps";
+import LoadingAnimation from "@/components/animations/LoadingAnimations";
 
 interface CreateEventForm {
   title: string;
@@ -546,7 +547,7 @@ const CreateEventScreen = () => {
             {isLoading ? "Oluşturuluyor..." : "Etkinliği Oluştur"}
           </ButtonText>
           {isLoading && (
-            <ActivityIndicator color="#ffffff" style={{ marginLeft: 10 }} />
+            <LoadingAnimation size={20} style={{ marginLeft: 10 }} />
           )}
         </Button>
       </View>

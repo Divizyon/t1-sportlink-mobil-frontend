@@ -34,12 +34,26 @@ import YogaAnimation from "@/components/animations/YogaAnimation";
 import RunningAnimation from "@/components/animations/RunningAnimation";
 import BicycleAnimation from "@/components/animations/BicycleAnimation";
 import WalkingAnimation from "@/components/animations/WalkingAnimation";
+import * as Location from "expo-location";
+import { showToast } from "@/src/utils/toastHelper";
+import LoadingAnimation from "@/components/animations/LoadingAnimations";
 
 export default function AllEventsScreen() {
   const params = useLocalSearchParams();
   const categoryId = params.categoryId ? Number(params.categoryId) : null;
   const categoryName = (params.categoryName as string) || "Aktif Etkinlikler";
   const categoryIcon = (params.categoryIcon as string) || "🏆";
+  const type = (params.type as string) || "all";
+
+  // Sayfanın başlığını belirle
+  const [screenTitle, setScreenTitle] = useState<string>(categoryName);
+
+  // Kullanıcı konumu için state
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [isLocationLoading, setIsLocationLoading] = useState(false);
 
   const [events, setEvents] = useState<any[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<any[]>([]);
@@ -52,17 +66,140 @@ export default function AllEventsScreen() {
   const [hasMoreEvents, setHasMoreEvents] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Filtreleme kategorileri
-
+  // Sayfanın başlığını ayarla
   useEffect(() => {
-    // Kategori ID'si varsa, o kategoriye ait etkinlikleri getir
+    if (type === "nearby") {
+      setScreenTitle("Yakınımdaki Etkinlikler");
+    } else if (type === "popular") {
+      setScreenTitle("Popüler Etkinlikler");
+    } else if (categoryId) {
+      setScreenTitle(categoryName);
+    } else {
+      setScreenTitle("Aktif Etkinlikler");
+    }
+  }, [type, categoryName, categoryId]);
+
+  // Konum izinlerini kontrol et ve kullanıcı konumunu al
+  useEffect(() => {
+    if (type === "nearby") {
+      getUserLocation();
+    }
+  }, [type]);
+
+  // Etkinlikleri yükle
+  useEffect(() => {
     if (categoryId) {
       fetchEventsByCategory(categoryId);
+    } else if (type === "nearby") {
+      if (userLocation) {
+        fetchNearbyEvents();
+      }
+    } else if (type === "popular") {
+      fetchPopularEvents();
     } else {
-      // Aktif etkinlikleri getir
       fetchAllEvents();
     }
-  }, [categoryId]);
+  }, [categoryId, type, userLocation]);
+
+  // Kullanıcı konumunu getir
+  const getUserLocation = async () => {
+    try {
+      setIsLocationLoading(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== "granted") {
+        console.log("Konum izni reddedildi");
+        showToast("Konum izni gereklidir", "error");
+        setIsLocationLoading(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      setUserLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+    } catch (error) {
+      console.error("Konum alınamadı:", error);
+      showToast("Konum alınamadı", "error");
+    } finally {
+      setIsLocationLoading(false);
+    }
+  };
+
+  // Yakındaki etkinlikleri getir
+  const fetchNearbyEvents = async () => {
+    if (!userLocation) {
+      console.log("Konum bilgisi olmadan yakındaki etkinlikler getirilemez");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log("Yakındaki etkinlikler getiriliyor");
+      const nearbyEvents = await eventsApi.getNearbyEvents(
+        userLocation.latitude,
+        userLocation.longitude,
+        10, // 10km mesafedeki etkinlikler
+        page,
+        10
+      );
+
+      if (nearbyEvents && Array.isArray(nearbyEvents)) {
+        console.log(`${nearbyEvents.length} yakındaki etkinlik bulundu`);
+        setEvents(nearbyEvents);
+        setFilteredEvents(nearbyEvents);
+        setHasMoreEvents(nearbyEvents.length === 10);
+      } else {
+        console.log("Yakındaki etkinlik bulunamadı");
+        setEvents([]);
+        setFilteredEvents([]);
+        setHasMoreEvents(false);
+      }
+    } catch (err) {
+      console.error("Yakındaki etkinlikleri getirirken hata:", err);
+      setError("Yakındaki etkinlikler yüklenirken bir hata oluştu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Popüler etkinlikleri getir
+  const fetchPopularEvents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log("Popüler etkinlikler getiriliyor");
+      const eventsData = await eventsApi.getEventsByStatus("ACTIVE", page, 10);
+
+      if (eventsData && Array.isArray(eventsData)) {
+        // Popüler etkinlikleri katılımcı oranına göre sırala
+        const sortedEvents = [...eventsData].sort((a, b) => {
+          const ratioA = a.current_participants / a.max_participants;
+          const ratioB = b.current_participants / b.max_participants;
+          return ratioB - ratioA;
+        });
+
+        console.log(`${sortedEvents.length} popüler etkinlik bulundu`);
+        setEvents(sortedEvents);
+        setFilteredEvents(sortedEvents);
+        setHasMoreEvents(eventsData.length === 10);
+      } else {
+        console.log("Popüler etkinlik bulunamadı");
+        setEvents([]);
+        setFilteredEvents([]);
+        setHasMoreEvents(false);
+      }
+    } catch (err) {
+      console.error("Popüler etkinlikleri getirirken hata:", err);
+      setError("Popüler etkinlikler yüklenirken bir hata oluştu");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchEventsByCategory = async (sportId: number) => {
     try {
@@ -251,6 +388,29 @@ export default function AllEventsScreen() {
             (event) => event.sport_id === categoryId
           );
         }
+      } else if (type === "nearby" && userLocation) {
+        // Yakındaki etkinlikleri getir
+        newEvents = await eventsApi.getNearbyEvents(
+          userLocation.latitude,
+          userLocation.longitude,
+          10,
+          nextPage,
+          10
+        );
+      } else if (type === "popular") {
+        // Popüler etkinlikleri getir ve sırala
+        const eventsData = await eventsApi.getEventsByStatus(
+          "ACTIVE",
+          nextPage,
+          10
+        );
+        if (eventsData && Array.isArray(eventsData)) {
+          newEvents = [...eventsData].sort((a, b) => {
+            const ratioA = a.current_participants / a.max_participants;
+            const ratioB = b.current_participants / b.max_participants;
+            return ratioB - ratioA;
+          });
+        }
       } else {
         // Tüm aktif etkinlikleri getir
         newEvents = await eventsApi.getEventsByStatus("ACTIVE", nextPage, 10);
@@ -258,7 +418,7 @@ export default function AllEventsScreen() {
 
       if (newEvents && Array.isArray(newEvents) && newEvents.length > 0) {
         console.log(
-          `${newEvents.length} yeni aktif etkinlik yüklendi (sayfa ${nextPage})`
+          `${newEvents.length} yeni etkinlik yüklendi (sayfa ${nextPage})`
         );
         setEvents((prevEvents) => [...prevEvents, ...newEvents]);
         setPage(nextPage);
@@ -440,7 +600,7 @@ export default function AllEventsScreen() {
           <View style={styles.headerCenter}>
             <View style={styles.headerTitleContainer}>
               {renderCategoryAnimation()}
-              <Text style={styles.headerTitle}>{categoryName}</Text>
+              <Text style={styles.headerTitle}>{screenTitle}</Text>
             </View>
           </View>
 
@@ -520,7 +680,7 @@ export default function AllEventsScreen() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4e54c8" />
+          <LoadingAnimation size={80} />
           <Text style={styles.loadingText}>Etkinlikler yükleniyor...</Text>
         </View>
       ) : error ? (

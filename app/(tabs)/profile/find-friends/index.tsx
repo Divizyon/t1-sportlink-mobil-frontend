@@ -32,6 +32,7 @@ import {
 import { friendshipsApi } from "@/services/api/friendships";
 import { usersApi, User } from "@/services/api/users";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import LoadingAnimation from "@/components/animations/LoadingAnimations";
 
 // Kullanıcı için ek tip tanımlamaları
 interface EnhancedUser extends User {
@@ -660,6 +661,14 @@ export default function FindFriendsScreen() {
       return;
     }
 
+    // requestId'nin sayı olduğundan emin olalım
+    const numericRequestId = Number(requestId);
+    if (isNaN(numericRequestId)) {
+      console.error(`[Friends] Geçersiz requestId formatı: ${requestId}`);
+      Alert.alert("Hata", "Geçersiz istek ID formatı");
+      return;
+    }
+
     // İlgili istek kaydını bul (UI güncelleme için)
     const requestToCancel = pendingRequests.find((req) => req.id === requestId);
     if (!requestToCancel) {
@@ -674,7 +683,7 @@ export default function FindFriendsScreen() {
     setPendingRequests((prev) => prev.filter((req) => req.id !== requestId));
 
     try {
-      // İstek gönder - rejected durumuna ayarla
+      // DELETE metodu ile istek iptali
       console.log(`[Friends] İstek iptal isteği gönderiliyor: ${requestId}`);
       const result = await friendshipsApi.cancelRequest(requestId);
 
@@ -902,7 +911,7 @@ export default function FindFriendsScreen() {
 
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#4e54c8" />
+            <LoadingAnimation size={80} />
           </View>
         ) : error ? (
           <View style={styles.errorContainer}>

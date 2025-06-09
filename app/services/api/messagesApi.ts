@@ -44,6 +44,19 @@ export const messagesApi = {
       throw error;
     }
   },
+
+  // Mesajları okundu olarak işaretle
+  markMessagesAsRead: async (userId: string) => {
+    try {
+      console.log("[API Debug] Mesajlar okundu olarak işaretleniyor:", {
+        url: `/mobile/messages/${userId}/read`,
+      });
+      return apiClient.put(`/mobile/messages/${userId}/read`);
+    } catch (error) {
+      console.error("Mesajlar okundu olarak işaretlenirken hata:", error);
+      throw error;
+    }
+  },
 };
 
 export default messagesApi;

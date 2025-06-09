@@ -30,6 +30,7 @@ import { SearchBar } from "../components/SearchBar";
 import { SportFilter } from "../components/SportFilter";
 import { TimeFilter } from "../components/TimeFilter";
 import colors from "@/constants/colors";
+import LoadingAnimation from "./animations/LoadingAnimations";
 
 // Interface tanımlamaları
 interface Event {
@@ -398,7 +399,7 @@ const EventsScreen: React.FC<Props> = ({
       {/* Etkinlik Listesi */}
       {loading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#10b981" />
+          <LoadingAnimation size={80} />
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>

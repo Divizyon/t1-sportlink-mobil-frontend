@@ -7,17 +7,20 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  SafeAreaView,
+  Linking,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView as SafeAreaViewRN } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   News,
   fetchNewsById,
   fetchAnnouncementById,
 } from "../../../services/newsService";
+import LoadingAnimation from "@/components/animations/LoadingAnimations";
 
 // Direkt renk tanımları
 const colors = {
@@ -81,7 +84,7 @@ const NewsDetailScreen = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <SafeAreaViewRN style={styles.container} edges={["top"]}>
         <StatusBar style="light" />
         <LinearGradient
           colors={[colors.gradient1, colors.gradient2]}
@@ -103,15 +106,18 @@ const NewsDetailScreen = () => {
           </View>
         </LinearGradient>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <LoadingAnimation size={80} />
+          <Text style={styles.loadingText}>
+            {isAnnouncement ? "Duyuru" : "Haber"} yükleniyor...
+          </Text>
         </View>
-      </SafeAreaView>
+      </SafeAreaViewRN>
     );
   }
 
   if (error || !newsItem) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <SafeAreaViewRN style={styles.container} edges={["top"]}>
         <StatusBar style="light" />
         <LinearGradient
           colors={[colors.gradient1, colors.gradient2]}
@@ -148,12 +154,12 @@ const NewsDetailScreen = () => {
             </Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </SafeAreaViewRN>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaViewRN style={styles.container} edges={["top"]}>
       <StatusBar style="light" />
       <LinearGradient
         colors={[colors.gradient1, colors.gradient2]}
@@ -260,7 +266,7 @@ const NewsDetailScreen = () => {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </SafeAreaViewRN>
   );
 };
 
@@ -458,6 +464,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: colors.text,
+    marginTop: 12,
   },
   errorContainer: {
     flex: 1,

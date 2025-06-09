@@ -5,7 +5,6 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
   Image,
   ScrollView,
@@ -23,6 +22,7 @@ import {
   News,
 } from "../../services/newsService";
 import { LinearGradient } from "expo-linear-gradient";
+import LoadingAnimation from "@/components/animations/LoadingAnimations";
 
 // Yumuşak yeşil tonlarla modern renk paleti
 const colors = {
@@ -506,7 +506,7 @@ export default function NewsTab() {
 
         {loading && !refreshing && news.length === 0 ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <LoadingAnimation size={80} />
             <Text style={styles.loadingText}>
               {activeTab === "news" ? "Haberler" : "Duyurular"} yükleniyor...
             </Text>
@@ -565,7 +565,7 @@ export default function NewsTab() {
                 </TouchableOpacity>
               ) : loading && news.length > 0 ? (
                 <View style={styles.loadingMore}>
-                  <ActivityIndicator size="small" color={colors.primary} />
+                  <LoadingAnimation size={80} />
                   <Text style={styles.loadingMoreText}>Yükleniyor...</Text>
                 </View>
               ) : null

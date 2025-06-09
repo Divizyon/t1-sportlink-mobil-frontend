@@ -1,13 +1,16 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet } from 'react-native';
-import LottieView from 'lottie-react-native';
+import React, { useEffect, useRef } from "react";
+import { View, StyleSheet } from "react-native";
+import LottieView from "lottie-react-native";
 
 interface RunningAnimationProps {
   play?: boolean;
   style?: any;
 }
 
-const RunningAnimation: React.FC<RunningAnimationProps> = ({ play = false, style }) => {
+const RunningAnimation: React.FC<RunningAnimationProps> = ({
+  play = false,
+  style,
+}) => {
   const animationRef = useRef<LottieView>(null);
 
   useEffect(() => {
@@ -22,7 +25,7 @@ const RunningAnimation: React.FC<RunningAnimationProps> = ({ play = false, style
     <View style={[styles.container, style]}>
       <LottieView
         ref={animationRef}
-        source={require('../../assets/animations/kosu.json')}
+        source={require("../../assets/animations/kosu.json")}
         autoPlay={false}
         loop={false}
         style={styles.animation}
@@ -34,15 +37,15 @@ const RunningAnimation: React.FC<RunningAnimationProps> = ({ play = false, style
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   animation: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
 });
 
-export default RunningAnimation; 
+export default RunningAnimation;

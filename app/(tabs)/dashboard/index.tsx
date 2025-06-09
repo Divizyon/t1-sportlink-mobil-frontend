@@ -11,7 +11,6 @@ import {
   Animated,
 } from "react-native";
 import { router } from "expo-router";
-import * as Location from "expo-location";
 
 // Bileşenler
 import Header from "@/components/dashboard/Header";
@@ -19,12 +18,14 @@ import CurrentEvents from "@/components/dashboard/CurrentEvents";
 import CategoryGrid from "@/components/dashboard/CategoryGrid";
 import SearchModal from "@/components/dashboard/SearchModal";
 import CreateEventButton from "@/components/dashboard/CreateEventButton";
+import NewsSection from "@/components/dashboard/NewsSection";
 
 // API ve Servisler
 import { eventsApi } from "@/services/api/events";
 import { sportsApi } from "@/services/api/sports";
 import { showToast } from "@/src/utils/toastHelper";
 import { useAuth } from "@/src/store/AuthContext";
+import { fetchNews, News } from "@/services/newsService";
 
 // Tema renkleri
 const theme = {
@@ -37,10 +38,10 @@ const theme = {
   border: "#E2E8F0", // Kenar çizgisi
 };
 
-// Kullanıcı konumu için başlangıç değeri
-const initialLocation = {
-  latitude: 0,
-  longitude: 0,
+// Konya koordinatları - Sabit lokasyon olarak kullanılacak
+const KONYA_COORDINATES = {
+  latitude: 37.8746,
+  longitude: 32.4932,
 };
 
 // Dashboard bölümlerini tanımlama
@@ -48,6 +49,7 @@ enum SectionTypes {
   NEARBY_EVENTS = "nearby_events",
   CATEGORIES = "categories",
   POPULAR_EVENTS = "popular_events",
+  NEWS_SECTION = "news_section",
 }
 
 // Bölüm veri tipi tanımı
@@ -57,10 +59,11 @@ interface SectionItem {
 }
 
 export default function DashboardScreen() {
-  // State tanımlamaları
-  const [userCoordinates, setUserCoordinates] = useState(initialLocation);
-  const [isLocationLoading, setIsLocationLoading] = useState(true);
+  // State tanımlamaları - Konya koordinatlarını başlangıç değeri olarak ayarla
+  const [userCoordinates, setUserCoordinates] = useState(KONYA_COORDINATES);
+  const [isLocationLoading, setIsLocationLoading] = useState(false); // Artık konum yüklenmeyeceği için false
   const [isLoading, setIsLoading] = useState(false);
+  const [isNewsLoading, setIsNewsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
 
@@ -73,38 +76,14 @@ export default function DashboardScreen() {
   const [sportCategories, setSportCategories] = useState<any[]>([]);
   const [sportCategoriesLoading, setSportCategoriesLoading] = useState(true);
 
+  // Haberler state'i
+  const [latestNews, setLatestNews] = useState<News[]>([]);
+
   // Bölüm verisi
   const [sections, setSections] = useState<SectionItem[]>([]);
 
   // Auth context'ten kullanıcı bilgisini al
   const { user } = useAuth();
-
-  // Konum izinlerini kontrol et ve kullanıcı konumunu al
-  useEffect(() => {
-    const getLocationPermission = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-
-        if (status !== "granted") {
-          console.log("Konum izni reddedildi");
-          setIsLocationLoading(false);
-          return;
-        }
-
-        const location = await Location.getCurrentPositionAsync({});
-        setUserCoordinates({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-      } catch (error) {
-        console.error("Konum alınamadı:", error);
-      } finally {
-        setIsLocationLoading(false);
-      }
-    };
-
-    getLocationPermission();
-  }, []);
 
   // Spor kategorilerini getir
   useEffect(() => {
@@ -138,12 +117,19 @@ export default function DashboardScreen() {
     fetchSportCategories();
   }, []);
 
-  // Etkinlikleri getir
+  // Konya koordinatları ile etkinlikleri direkt yükle
   useEffect(() => {
-    if (!isLocationLoading && userCoordinates.latitude !== 0) {
-      fetchEvents();
-    }
-  }, [isLocationLoading, userCoordinates]);
+    console.log(
+      "Konya koordinatları ile etkinlikler yükleniyor:",
+      KONYA_COORDINATES
+    );
+    fetchEvents();
+  }, []);
+
+  // Haberleri getir
+  useEffect(() => {
+    fetchLatestNews();
+  }, []);
 
   // Sections verisini güncelle
   useEffect(() => {
@@ -160,29 +146,36 @@ export default function DashboardScreen() {
         type: SectionTypes.POPULAR_EVENTS,
         data: popularEvents,
       },
+      {
+        type: SectionTypes.NEWS_SECTION,
+        data: latestNews,
+      },
     ];
 
     setSections(sectionsData);
-  }, [nearbyEvents, popularEvents, sportCategories]);
+  }, [nearbyEvents, popularEvents, sportCategories, latestNews]);
 
-  // Etkinlikleri getirme fonksiyonu
+  // Etkinlikleri getirme fonksiyonu - Konya koordinatları ile
   const fetchEvents = async () => {
     if (isLoading) return;
 
     setIsLoading(true);
 
     try {
-      // Yakındaki etkinlikleri getir
+      console.log("Konya'daki etkinlikler getiriliyor...");
+
+      // Konya'daki etkinlikleri getir (10km çapında)
       const nearbyEventsData = await eventsApi.getNearbyEvents(
-        userCoordinates.latitude,
-        userCoordinates.longitude,
+        KONYA_COORDINATES.latitude,
+        KONYA_COORDINATES.longitude,
         10, // 10km mesafedeki etkinlikler
         1, // sayfa
         10 // limit
       );
 
+      console.log(`Konya'da ${nearbyEventsData?.length || 0} etkinlik bulundu`);
+
       // Popüler etkinlikleri getir - sadece aktif olanları göster
-      // Backend endpointi direkt olarak kullanıyoruz: /api/events/status/active
       const popularEventsData = await eventsApi.getAllEvents(
         1, // sayfa
         10, // limit
@@ -195,6 +188,13 @@ export default function DashboardScreen() {
 
       setNearbyEvents(mappedNearbyEvents);
       setPopularEvents(mappedPopularEvents);
+
+      // Başarı mesajı göster
+      if (mappedNearbyEvents.length > 0) {
+        console.log(
+          `Konya'da ${mappedNearbyEvents.length} etkinlik listelendi`
+        );
+      }
     } catch (error) {
       console.error("Etkinlikler getirilirken hata oluştu:", error);
       showToast("Etkinlikler yüklenemedi", "error");
@@ -204,7 +204,30 @@ export default function DashboardScreen() {
     }
   };
 
-  // API etkinliklerini UI formatına dönüştürme
+  // Haberleri getir
+  const fetchLatestNews = async () => {
+    setIsNewsLoading(true);
+
+    try {
+      const response = await fetchNews(0, 10); // İlk sayfa, 10 haber
+
+      if (response.success && Array.isArray(response.data)) {
+        console.log(`${response.data.length} haber başarıyla yüklendi`);
+        setLatestNews(response.data);
+      } else {
+        console.error("Haberler başarısız yanıt:", response);
+        setLatestNews([]);
+      }
+    } catch (error) {
+      console.error("Haberler yüklenirken hata oluştu:", error);
+      showToast("Haberler yüklenemedi", "error");
+      setLatestNews([]);
+    } finally {
+      setIsNewsLoading(false);
+    }
+  };
+
+  // API etkinliklerini UI formatına dönüştürme - Konya referanslı mesafe hesaplama
   const mapApiEventsToUIEvents = (apiEvents: any[]) => {
     if (!Array.isArray(apiEvents)) {
       console.error("API etkinlikleri bir dizi değil:", apiEvents);
@@ -224,8 +247,8 @@ export default function DashboardScreen() {
         longitude: event.location_lng || 0,
       },
       distance: calculateDistance(
-        userCoordinates.latitude,
-        userCoordinates.longitude,
+        KONYA_COORDINATES.latitude,
+        KONYA_COORDINATES.longitude,
         event.location_lat,
         event.location_lng
       ),
@@ -295,6 +318,7 @@ export default function DashboardScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchEvents();
+    fetchLatestNews();
   };
 
   // Etkinlik detayına gitme
@@ -302,6 +326,14 @@ export default function DashboardScreen() {
     router.push({
       pathname: "/(tabs)/dashboard/event-details",
       params: { id: eventId },
+    });
+  };
+
+  // Haber detayına gitme
+  const handleNewsPress = (newsId: number) => {
+    router.push({
+      pathname: "/news-detail",
+      params: { id: newsId.toString() },
     });
   };
 
@@ -320,10 +352,33 @@ export default function DashboardScreen() {
 
   // Tüm etkinlikleri görme
   const handleSeeAllEvents = (type: string) => {
-    router.push({
-      pathname: "/all-events",
-      params: { type },
-    });
+    if (type === "nearby") {
+      // Yakınımdaki etkinlikleri göster
+      router.push({
+        pathname: "/all-events",
+        params: {
+          type: "nearby",
+        },
+      });
+    } else if (type === "popular") {
+      // Popüler etkinlikleri göster
+      router.push({
+        pathname: "/all-events",
+        params: {
+          type: "popular",
+        },
+      });
+    } else {
+      // Tüm etkinlikleri göster
+      router.push({
+        pathname: "/all-events",
+      });
+    }
+  };
+
+  // Tüm haberleri görme
+  const handleSeeAllNews = () => {
+    router.push("/news");
   };
 
   // Etkinlik oluşturma
@@ -348,16 +403,12 @@ export default function DashboardScreen() {
       case SectionTypes.NEARBY_EVENTS:
         return (
           <CurrentEvents
-            title="Yakınındaki Etkinlikler"
+            title="Konya'daki Etkinlikler"
             events={item.data}
             onEventPress={handleEventPress}
             onSeeAllPress={() => handleSeeAllEvents("nearby")}
             loading={isLoading}
-            emptyMessage={
-              isLocationLoading
-                ? "Konum bilgisi alınıyor..."
-                : "Yakınınızda etkinlik bulunamadı"
-            }
+            emptyMessage="Konya'da etkinlik bulunamadı"
           />
         );
       case SectionTypes.CATEGORIES:
@@ -379,6 +430,17 @@ export default function DashboardScreen() {
             onSeeAllPress={() => handleSeeAllEvents("popular")}
             loading={isLoading}
             emptyMessage="Henüz popüler etkinlik yok"
+          />
+        );
+      case SectionTypes.NEWS_SECTION:
+        return (
+          <NewsSection
+            title="Güncel Haberler"
+            news={item.data}
+            onNewsPress={handleNewsPress}
+            onSeeAllPress={handleSeeAllNews}
+            loading={isNewsLoading}
+            emptyMessage="Henüz haber yok"
           />
         );
       default:

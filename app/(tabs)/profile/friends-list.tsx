@@ -29,6 +29,7 @@ import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import profileService from "@/src/api/profileService";
 import eventBus from "@/src/utils/EventBus";
+import LoadingAnimation from "@/components/animations/LoadingAnimations";
 
 const { width } = Dimensions.get("window");
 
@@ -306,7 +307,7 @@ export default function FriendsListScreen() {
 
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4e54c8" />
+          <LoadingAnimation size={80} />
           <Text style={styles.loadingText}>Arkadaşların yükleniyor...</Text>
         </View>
       ) : error ? (

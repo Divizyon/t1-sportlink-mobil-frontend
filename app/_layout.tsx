@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "@/src/store/AuthContext";
 import apiClient from "@/src/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MessageProvider } from "@/src/contexts/MessageContext";
+import { useMessageStore } from "@/src/store";
 import OnlineStatusHandler from "@/src/components/OnlineStatusHandler";
 import { NetworkErrorProvider } from "@/components/common/NetworkErrorOverlay";
 
@@ -136,6 +137,28 @@ function AuthenticationGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Zustand store'u periyodik olarak güncellenmesi için özel bileşen
+function MessageStoreUpdater() {
+  const { isAuthenticated } = useAuth();
+  const { fetchUnreadMessages } = useMessageStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      // İlk yüklemede okunmamış mesaj sayısını al
+      fetchUnreadMessages();
+
+      // Her 15 saniyede bir okunmamış mesaj sayısını güncelle
+      const interval = setInterval(() => {
+        fetchUnreadMessages();
+      }, 15000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, fetchUnreadMessages]);
+
+  return null;
+}
+
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     // Add fonts if needed
@@ -170,6 +193,7 @@ export default function RootLayout() {
           <NetworkErrorProvider>
             <AuthenticationGuard>
               <TokenValidationProvider>
+                <MessageStoreUpdater />
                 <OnlineStatusHandler />
                 <Stack screenOptions={{ headerShown: false }}>
                   <Stack.Screen

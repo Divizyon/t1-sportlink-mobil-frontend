@@ -9,20 +9,24 @@ export interface Friend {
 }
 
 export interface FriendshipRequest {
-  id: string | number;
+  id: string;
   requester_id: string;
   receiver_id: string;
-  status: "pending" | "accepted" | "rejected";
+  status: "pending" | "accepted" | "rejected" | "cancelled" | "deleted";
   created_at: string;
-  updated_at: string;
-  requester: {
+  updated_at?: string;
+  requester?: {
     id: string;
-    email: string;
-    is_online: boolean;
-    last_name: string;
-    first_name: string;
-    last_seen_at: string;
-    profile_picture: string;
+    first_name?: string;
+    last_name?: string;
+    profile_picture?: string;
+    email?: string;
   };
-  mutual_friends_count: number;
+  receiver?: {
+    id: string;
+    first_name?: string;
+    last_name?: string;
+    profile_picture?: string;
+    email?: string;
+  };
 }

@@ -34,6 +34,7 @@ import {
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNotificationStore } from "@/store/slices/notificationSlice";
+import LoadingAnimation from "../../components/animations/LoadingAnimations";
 
 // API isteği için timeout değeri (ms)
 const API_TIMEOUT = 15000;
@@ -612,7 +613,7 @@ export default function NotificationsScreen() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4e54c8" />
+          <LoadingAnimation size={80} />
           <Text style={styles.loadingText}>Bildirimler yükleniyor...</Text>
         </View>
       ) : error ? (

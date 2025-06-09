@@ -6,6 +6,7 @@ import { eventsApi } from "../../services/api/events";
 import { useFocusEffect } from "@react-navigation/native";
 import eventRatingService from "../../src/api/eventRatingService";
 import { getSportImage } from "../../utils/imageUtils";
+import LoadingAnimation from "../../components/animations/LoadingAnimations";
 
 // EventDetail arayüzü
 interface EventDetail {
@@ -435,6 +436,7 @@ export default function EventDetailsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
+          <LoadingAnimation size={80} />
           <Text style={styles.loadingText}>Etkinlik yükleniyor...</Text>
         </View>
       </SafeAreaView>

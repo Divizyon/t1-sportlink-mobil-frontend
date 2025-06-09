@@ -24,6 +24,7 @@ import {
 import { router } from "expo-router";
 import { eventsApi } from "@/services/api/events";
 import { usersApi } from "@/services/api/users";
+import LoadingAnimation from "../animations/LoadingAnimations";
 
 type SearchModalProps = {
   visible: boolean;
@@ -311,7 +312,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) => {
             {/* Yükleniyor göstergesi */}
             {isLoading && (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#10B981" />
+                <LoadingAnimation size={60} />
               </View>
             )}
 

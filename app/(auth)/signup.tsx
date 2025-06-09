@@ -311,8 +311,8 @@ export default function SignUpPage() {
               {/* Logo */}
               <Box style={{ marginBottom: 30 }}>
                 <Image
-                  source={require("../../assets/images/logo.png")}
-                  style={{ width: 160, height: 60 }}
+                  source={require("../../assets/images/logo3.png")}
+                  style={{ width: 140, height: 140 }}
                   resizeMode="contain"
                 />
               </Box>

@@ -60,6 +60,7 @@ import eventBus from "@/src/utils/EventBus";
 import AccountSettings from "@/components/profile/AccountSettings";
 import { NetworkErrorManager } from "@/components/common/NetworkErrorOverlay";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import LoadingAnimation from "@/components/animations/LoadingAnimations";
 
 // Menü öğesi tipi tanımlama
 interface MenuItem {
@@ -1684,10 +1685,10 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
 
-      {loading && !userProfile ? (
+      {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
-          <Text style={styles.loadingText}>Profil bilgileri yükleniyor...</Text>
+          <LoadingAnimation size={80} />
+          <Text style={styles.loadingText}>Profil yükleniyor...</Text>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>

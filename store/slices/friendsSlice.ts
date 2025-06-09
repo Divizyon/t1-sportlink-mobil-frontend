@@ -1,12 +1,12 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import apiClient  from '@/services/api';
-import { websocketService } from '@/services/websocket';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import apiClient from "@/services/api";
+import { websocketService } from "@/services/websocket";
 
 export interface FriendRequest {
   id: number;
   senderId: number;
   receiverId: number;
-  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
+  status: "pending" | "accepted" | "rejected" | "cancelled";
   createdAt: string;
   sender: {
     id: number;
@@ -27,68 +27,79 @@ const initialState: FriendsState = {
   requests: [],
   pendingRequests: [],
   loading: false,
-  error: null
+  error: null,
 };
 
 // Async thunks
 export const fetchFriendRequests = createAsyncThunk(
-  'friends/fetchRequests',
+  "friends/fetchRequests",
   async () => {
-    const response = await apiClient.get('/friends/requests');
+    const response = await apiClient.get("/friends/requests");
     return response.data;
   }
 );
 
 export const sendFriendRequest = createAsyncThunk(
-  'friends/sendRequest',
+  "friends/sendRequest",
   async (userId: number) => {
-    const response = await apiClient.post('/friends/request', { userId });
+    const response = await apiClient.post("/friends/request", { userId });
     websocketService.sendFriendRequest(userId);
     return response.data;
   }
 );
 
 export const acceptFriendRequest = createAsyncThunk(
-  'friends/acceptRequest',
+  "friends/acceptRequest",
   async (requestId: number) => {
-    const response = await apiClient.put(`/friends/request/${requestId}/accept`);
+    const response = await apiClient.put(
+      `/friends/request/${requestId}/accept`
+    );
     websocketService.acceptFriendRequest(requestId);
     return response.data;
   }
 );
 
 export const rejectFriendRequest = createAsyncThunk(
-  'friends/rejectRequest',
+  "friends/rejectRequest",
   async (requestId: number) => {
-    const response = await apiClient.put(`/friends/request/${requestId}/reject`);
+    const response = await apiClient.put(
+      `/friends/request/${requestId}/reject`
+    );
     websocketService.rejectFriendRequest(requestId);
     return response.data;
   }
 );
 
 export const cancelFriendRequest = createAsyncThunk(
-  'friends/cancelRequest',
+  "friends/cancelRequest",
   async (requestId: number) => {
-    const response = await apiClient.delete(`/friends/request/${requestId}`);
-    websocketService.cancelFriendRequest(requestId);
+    const numericRequestId = Number(requestId);
+    if (isNaN(numericRequestId)) {
+      throw new Error("Geçersiz istek ID formatı");
+    }
+
+    const response = await apiClient.delete(
+      `/mobile/friendships/requests/${numericRequestId}`
+    );
+    websocketService.cancelFriendRequest(numericRequestId);
     return response.data;
   }
 );
 
 const friendsSlice = createSlice({
-  name: 'friends',
+  name: "friends",
   initialState,
   reducers: {
     updateFriendRequest: (state, action) => {
       const { id, status } = action.payload;
-      const request = state.requests.find(req => req.id === id);
+      const request = state.requests.find((req) => req.id === id);
       if (request) {
         request.status = status;
       }
     },
     clearError: (state) => {
       state.error = null;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -103,7 +114,7 @@ const friendsSlice = createSlice({
       })
       .addCase(fetchFriendRequests.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Bir hata oluştu';
+        state.error = action.error.message || "Bir hata oluştu";
       })
       // Send request
       .addCase(sendFriendRequest.pending, (state) => {
@@ -116,7 +127,7 @@ const friendsSlice = createSlice({
       })
       .addCase(sendFriendRequest.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Bir hata oluştu';
+        state.error = action.error.message || "Bir hata oluştu";
       })
       // Accept request
       .addCase(acceptFriendRequest.pending, (state) => {
@@ -125,14 +136,16 @@ const friendsSlice = createSlice({
       })
       .addCase(acceptFriendRequest.fulfilled, (state, action) => {
         state.loading = false;
-        const request = state.requests.find(req => req.id === action.payload.id);
+        const request = state.requests.find(
+          (req) => req.id === action.payload.id
+        );
         if (request) {
-          request.status = 'accepted';
+          request.status = "accepted";
         }
       })
       .addCase(acceptFriendRequest.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Bir hata oluştu';
+        state.error = action.error.message || "Bir hata oluştu";
       })
       // Reject request
       .addCase(rejectFriendRequest.pending, (state) => {
@@ -141,14 +154,16 @@ const friendsSlice = createSlice({
       })
       .addCase(rejectFriendRequest.fulfilled, (state, action) => {
         state.loading = false;
-        const request = state.requests.find(req => req.id === action.payload.id);
+        const request = state.requests.find(
+          (req) => req.id === action.payload.id
+        );
         if (request) {
-          request.status = 'rejected';
+          request.status = "rejected";
         }
       })
       .addCase(rejectFriendRequest.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Bir hata oluştu';
+        state.error = action.error.message || "Bir hata oluştu";
       })
       // Cancel request
       .addCase(cancelFriendRequest.pending, (state) => {
@@ -158,15 +173,15 @@ const friendsSlice = createSlice({
       .addCase(cancelFriendRequest.fulfilled, (state, action) => {
         state.loading = false;
         state.pendingRequests = state.pendingRequests.filter(
-          id => id !== action.payload.userId
+          (id) => id !== action.payload.userId
         );
       })
       .addCase(cancelFriendRequest.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Bir hata oluştu';
+        state.error = action.error.message || "Bir hata oluştu";
       });
-  }
+  },
 });
 
 export const { updateFriendRequest, clearError } = friendsSlice.actions;
-export default friendsSlice.reducer; 
+export default friendsSlice.reducer;

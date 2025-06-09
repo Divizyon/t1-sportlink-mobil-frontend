@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { router } from "expo-router";
@@ -25,28 +26,45 @@ import {
   getIncomingFriendshipRequests,
   acceptFriendshipRequest,
   rejectFriendshipRequest,
+  getOutgoingFriendshipRequests,
+  friendshipsApi,
 } from "../../services/api/friendships";
 
 export default function FriendRequestsScreen() {
   const [friendRequests, setFriendRequests] = useState<FriendshipRequest[]>([]);
+  const [outgoingRequests, setOutgoingRequests] = useState<FriendshipRequest[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [processingRequestIds, setProcessingRequestIds] = useState<string[]>(
     []
+  );
+  const [activeTab, setActiveTab] = useState<"incoming" | "outgoing">(
+    "incoming"
   );
 
   // Arkadaşlık isteklerini getir
   const fetchFriendRequests = async () => {
     try {
       setLoading(true);
-      const response = await getIncomingFriendshipRequests();
-      if (response.status === "success" && response.data) {
-        console.log("Gelen arkadaşlık istekleri:", response.data.length);
+      const incomingResponse = await getIncomingFriendshipRequests();
+      const outgoingResponse = await getOutgoingFriendshipRequests();
+
+      if (incomingResponse.status === "success" && incomingResponse.data) {
         console.log(
-          "Arkadaşlık isteği detayları:",
-          JSON.stringify(response.data, null, 2)
+          "Gelen arkadaşlık istekleri:",
+          incomingResponse.data.length
         );
-        setFriendRequests(response.data);
+        setFriendRequests(incomingResponse.data);
+      }
+
+      if (outgoingResponse.status === "success" && outgoingResponse.data) {
+        console.log(
+          "Giden arkadaşlık istekleri:",
+          outgoingResponse.data.length
+        );
+        setOutgoingRequests(outgoingResponse.data);
       }
     } catch (error) {
       console.error("Arkadaşlık istekleri getirilirken hata:", error);
@@ -123,6 +141,45 @@ export default function FriendRequestsScreen() {
       }
     } catch (error) {
       console.error("Arkadaşlık isteği reddedilirken hata:", error);
+    } finally {
+      // İşlemi tamamlandı durumunu kaydet
+      setProcessingRequestIds((prev) =>
+        prev.filter((id) => id !== requestId.toString())
+      );
+      setLoading(false);
+    }
+  };
+
+  const handleCancelRequest = async (requestId: string) => {
+    try {
+      // İşlem başladı durumunu kaydet
+      setProcessingRequestIds((prev) => [...prev, requestId.toString()]);
+
+      // requestId'nin sayı olduğundan emin olalım
+      const numericRequestId = Number(requestId);
+      if (isNaN(numericRequestId)) {
+        console.error(`[Friends] Geçersiz requestId formatı: ${requestId}`);
+        Alert.alert("Hata", "Geçersiz istek ID formatı");
+        return;
+      }
+
+      const result = await friendshipsApi.cancelRequest(requestId);
+
+      if (result.status === "success") {
+        // İstek listeden kaldırılıyor
+        setOutgoingRequests((prev) =>
+          prev.filter(
+            (request) => request.id.toString() !== requestId.toString()
+          )
+        );
+        console.log("Arkadaşlık isteği iptal edildi:", requestId);
+        Alert.alert("Başarılı", "Arkadaşlık isteği iptal edildi");
+      } else {
+        Alert.alert("Hata", result.message || "İstek iptal edilemedi");
+      }
+    } catch (error: any) {
+      console.error("Arkadaşlık isteği iptal edilirken hata:", error);
+      Alert.alert("Hata", error.message || "İstek iptal edilemedi");
     } finally {
       // İşlemi tamamlandı durumunu kaydet
       setProcessingRequestIds((prev) =>
@@ -231,6 +288,84 @@ export default function FriendRequestsScreen() {
     );
   };
 
+  const renderOutgoingRequestItem = ({ item }: { item: FriendshipRequest }) => {
+    // Kullanıcı adını güvenli bir şekilde alalım
+    const getReceiverName = () => {
+      // Receiver undefined ise güvenli bir değer döndür
+      if (!item.receiver) {
+        return "Bilinmeyen Kullanıcı";
+      }
+
+      // First_name ve last_name birleştir
+      if (item.receiver.first_name || item.receiver.last_name) {
+        return `${item.receiver.first_name || ""} ${
+          item.receiver.last_name || ""
+        }`.trim();
+      }
+
+      // Hiçbir isim bilgisi yoksa
+      return "Bilinmeyen Kullanıcı";
+    };
+
+    const receiverName = getReceiverName();
+
+    // Kullanıcı adından avatar oluştur
+    const avatarLetter = receiverName.charAt(0).toUpperCase();
+
+    // İsteğin işlem durumunu kontrol et
+    const isProcessing = processingRequestIds.includes(item.id.toString());
+
+    return (
+      <View style={styles.requestItem}>
+        <TouchableOpacity
+          style={styles.profileSection}
+          onPress={() =>
+            item.receiver ? handleViewProfile(item.receiver.id) : null
+          }
+        >
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatarText}>{avatarLetter}</Text>
+          </View>
+
+          <View style={styles.userInfo}>
+            <Text style={styles.name}>{receiverName}</Text>
+            <View style={styles.timeContainer}>
+              <Clock size={12} color="#95a5a6" />
+              <Text style={styles.time}>
+                {item.created_at
+                  ? new Date(item.created_at).toLocaleDateString("tr-TR")
+                  : ""}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              styles.rejectButton,
+              isProcessing && styles.disabledButton,
+            ]}
+            onPress={() =>
+              !isProcessing && handleCancelRequest(item.id.toString())
+            }
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <ActivityIndicator size="small" color="#666" />
+            ) : (
+              <>
+                <X size={18} color="#666" />
+                <Text style={styles.rejectButtonText}>İptal</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
@@ -242,26 +377,77 @@ export default function FriendRequestsScreen() {
         <Text style={styles.headerTitle}>Arkadaşlık İstekleri</Text>
       </View>
 
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "incoming" && styles.activeTab]}
+          onPress={() => setActiveTab("incoming")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "incoming" && styles.activeTabText,
+            ]}
+          >
+            Gelen İstekler
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "outgoing" && styles.activeTab]}
+          onPress={() => setActiveTab("outgoing")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "outgoing" && styles.activeTabText,
+            ]}
+          >
+            Giden İstekler
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
         </View>
-      ) : friendRequests.length === 0 ? (
+      ) : activeTab === "incoming" ? (
+        friendRequests.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <User size={48} color="#95a5a6" />
+            <Text style={styles.emptyText}>Gelen arkadaşlık isteği yok</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={friendRequests}
+            renderItem={renderFriendRequestItem}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.listContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={["#4CAF50"]}
+              />
+            }
+          />
+        )
+      ) : outgoingRequests.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <User size={64} color="#d5d5d5" />
-          <Text style={styles.emptyText}>Arkadaşlık İsteği Yok</Text>
-          <Text style={styles.emptySubText}>
-            Şu anda bekleyen arkadaşlık isteği bulunmuyor.
-          </Text>
+          <User size={48} color="#95a5a6" />
+          <Text style={styles.emptyText}>Giden arkadaşlık isteği yok</Text>
         </View>
       ) : (
         <FlatList
-          data={friendRequests}
-          renderItem={renderFriendRequestItem}
+          data={outgoingRequests}
+          renderItem={renderOutgoingRequestItem}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={styles.listContainer}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#4CAF50"]}
+            />
           }
         />
       )}
@@ -294,7 +480,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  listContent: {
+  listContainer: {
     padding: 16,
   },
   requestItem: {
@@ -417,5 +603,31 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.5,
+  },
+  tabContainer: {
+    flexDirection: "row",
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderRadius: 8,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  activeTab: {
+    backgroundColor: "#4CAF50",
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#555",
+  },
+  activeTabText: {
+    color: "#fff",
   },
 });

@@ -32,6 +32,7 @@ import {
 import { usersApi } from "@/services/api/users";
 import { friendshipsApi, Friend } from "@/services/api/friendships";
 import { UserReportsApi } from "../../../services/api/apiWrapper";
+import LoadingAnimation from "@/components/animations/LoadingAnimations";
 
 // Default profil resmi
 const DEFAULT_PROFILE_IMAGE = "https://randomuser.me/api/portraits/lego/1.jpg";
@@ -154,6 +155,16 @@ const UserProfileScreen = () => {
       );
 
       if (request) {
+        // requestId'nin sayı olduğundan emin olalım
+        const numericRequestId = Number(request.id);
+        if (isNaN(numericRequestId)) {
+          console.error(`[Profile] Geçersiz requestId formatı: ${request.id}`);
+          Alert.alert("Hata", "Geçersiz istek ID formatı");
+          setButtonLoading(false);
+          return;
+        }
+
+        // DELETE metodu ile istek iptali
         await friendshipsApi.cancelRequest(request.id);
         setIsPendingRequest(false);
         Alert.alert("Başarılı", "Arkadaşlık isteği iptal edildi");
@@ -405,7 +416,7 @@ const UserProfileScreen = () => {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4e54c8" />
+          <LoadingAnimation size={80} />
           <Text style={styles.loadingText}>Profil yükleniyor...</Text>
         </View>
       ) : error ? (

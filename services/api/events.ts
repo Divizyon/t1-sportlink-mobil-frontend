@@ -232,6 +232,7 @@ export const eventsApi = {
       console.log("[API] Yakındaki etkinlikler için API isteği:", params);
 
       try {
+        // "/events/nearby" endpointini kullanarak yakındaki etkinlikleri getir
         const response = await apiClient.get(`events/nearby`, { params });
 
         console.log(

@@ -22,6 +22,7 @@ import {
 import { useRouter } from "expo-router";
 import { eventsApi } from "@/services/api/events";
 import { LinearGradient } from "expo-linear-gradient";
+import LoadingAnimation from "@/components/animations/LoadingAnimations";
 
 interface UserReport {
   id: number;
@@ -161,7 +162,7 @@ const UserReportsScreen = () => {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4e54c8" />
+          <LoadingAnimation size={80} />
           <Text style={styles.loadingText}>Raporlarınız yükleniyor...</Text>
         </View>
       ) : error ? (
