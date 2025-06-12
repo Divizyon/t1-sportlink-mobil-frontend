@@ -17,7 +17,7 @@ interface EventProps {
     date: string;
     time: string;
     location: string;
-    participants: number;
+    current_participants: number;
     maxParticipants: number;
     organizer: string;
     category: string;
@@ -59,7 +59,7 @@ export const EventCard: React.FC<EventProps> = ({ event, onPress, style }) => {
 
   // Katılımcı doluluk yüzdesi
   const participationPercentage = Math.min(
-    Math.round((event.participants / event.maxParticipants) * 100),
+    Math.round((event.current_participants / event.maxParticipants) * 100),
     100
   );
 
@@ -175,7 +175,7 @@ export const EventCard: React.FC<EventProps> = ({ event, onPress, style }) => {
               />
             </View>
             <Text style={styles.participantsText}>
-              {event.participants}/{event.maxParticipants} Katılımcı
+              {event.current_participants}/{event.maxParticipants} Katılımcı
             </Text>
           </View>
           <View style={styles.actionContainer}>

@@ -403,7 +403,7 @@ export default function DashboardScreen() {
       case SectionTypes.NEARBY_EVENTS:
         return (
           <CurrentEvents
-            title="Konya'daki Etkinlikler"
+            title="Yakınımdaki Etkinlikler"
             events={item.data}
             onEventPress={handleEventPress}
             onSeeAllPress={() => handleSeeAllEvents("nearby")}

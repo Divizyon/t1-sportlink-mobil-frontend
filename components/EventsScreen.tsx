@@ -69,7 +69,7 @@ interface UIEvent {
   date: string;
   time: string;
   location: string;
-  participants: number;
+  current_participants: number;
   maxParticipants: number;
   organizer: string;
   category: string;
@@ -129,9 +129,9 @@ const EventsScreen: React.FC<Props> = ({
       date: formatEventDate(apiEvent.event_date),
       time: formatEventTime(apiEvent.start_time, apiEvent.end_time),
       location: apiEvent.location_name,
-      participants: apiEvent.current_participants,
-      maxParticipants: apiEvent.max_participants,
-      organizer: apiEvent.creator_name,
+      current_participants: apiEvent.current_participants || 1,
+      maxParticipants: apiEvent.max_participants || 10,
+      organizer: apiEvent.creator_name || "Bilinmeyen",
       category: apiEvent.sport?.name || "Diğer",
       sport: {
         icon: apiEvent.sport?.icon || "🏆",
